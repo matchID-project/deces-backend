@@ -1,5 +1,7 @@
 import express from "express";
 import axios from 'axios';
+import runRequest from './runRequest';
+import buildRequest from './buildRequest';
 const app = express();
 const port = 8080; // default port to listen
 
@@ -9,6 +11,14 @@ app.get( "/", async ( req, res ) => {
   console.log(result.data);
   res.json(result.data);
 });
+
+app.get( "/search", async ( req, res ) => {
+  const requestBody = buildRequest("Jacques Chirac");
+  const result = await runRequest(requestBody);
+  console.log(result.data);
+  res.json(result.data);
+});
+
 
 // start the express server
 app.listen( port, () => {
