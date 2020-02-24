@@ -1,17 +1,20 @@
-function buildMatch(params) {
-  if (params.query) {
-    return buildSimpleMatch(params.query)
+import RequestInput from './types/requestInput';
+
+function buildMatch(requestInput: RequestInput) {
+  if (requestInput.fullText.value) {
+    return buildSimpleMatch(requestInput.fullText.value)
   } else {
-    return buildAvancedMatch(params)
+    return buildAvancedMatch(requestInput)
   }
 }
 
-function buildSimpleMatch(searchInput) {
+function buildSimpleMatch(searchInput: string) {
   let query = searchInput;
   let searchTerm = searchInput.normalize('NFKD').replace(/[\u0300-\u036f]/g, "").split(/\s+/)
   let date = searchTerm.filter( x => x.match(/^\d{2}\/\d{2}\/\d{4}$/)).map( x => x.replace(/(\d{2})\/(\d{2})\/(\d{4})/,"$3$2$1"));
   let names = searchTerm.filter( x => x.match(/[a-z]+/)).filter( x => !x.match(/^(el|d|le|de|la|los)$/));
 
+  const default_query: any = { match_all: {} }
   let date_query
   let names_query
   if (names.length > 0) {
@@ -193,7 +196,7 @@ function buildSimpleMatch(searchInput) {
 
 }
 
-function buildAvancedMatch(searchInput) {
+function buildAvancedMatch(searchInput: any) {
   return {
     function_score: {
       query: {
@@ -240,13 +243,13 @@ function buildAvancedMatch(searchInput) {
 }
 
 
-export default function buildRequest(params: any) { // TODO: add template
-  const match = buildMatch(params);
+export default function buildRequest(requestInput: RequestInput) {
+  const match = buildMatch(requestInput);
   const body = {
     // Static query Configuration
     // --------------------------
     // https://www.elastic.co/guide/en/elasticsearch/reference/7.x/search-request-highlighting.html
-    min_score: 5,
+    min_score: (requestInput.fullText.value ? 5: 0),
     // highlight: {
     //   fragment_size: 200,
     //   number_of_fragments: 1,

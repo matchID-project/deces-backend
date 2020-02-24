@@ -2,6 +2,7 @@ import express from "express";
 import axios from 'axios';
 import runRequest from './runRequest';
 import buildRequest from './buildRequest';
+import RequestInput from './types/requestInput';
 const app = express();
 const port = 8080; // default port to listen
 
@@ -13,14 +14,20 @@ app.get( "/", async ( req, res ) => {
 });
 
 app.get( "/search", async ( req, res ) => {
-  for (const key in req.query) {
-    console.log(key, req.query[key])
-  }
-  let params: any = {} // TODO: set template
+  const requestInput = new RequestInput();
   if (req.query.q) {
-    params['query'] = req.query.q
+    requestInput['fullText'].value = req.query.q
   }
-  const requestBody = buildRequest(params);
+  if (req.query.firstName) {
+    requestInput['firstName'].value = req.query.firstName
+  }
+  if (req.query.birthDate) {
+    requestInput['birthDate'].value = req.query.birthDate
+  }
+  if (req.query.birthYear) {
+    requestInput['birthYear'].value = req.query.birthYear
+  }
+  const requestBody = buildRequest(requestInput);
   const result = await runRequest(requestBody);
   console.log(result.data);
   res.json(result.data);
