@@ -13,7 +13,14 @@ app.get( "/", async ( req, res ) => {
 });
 
 app.get( "/search", async ( req, res ) => {
-  const requestBody = buildRequest("Jacques Chirac");
+  for (const key in req.query) {
+    console.log(key, req.query[key])
+  }
+  let params: any = {} // TODO: set template
+  if (req.query.q) {
+    params['query'] = req.query.q
+  }
+  const requestBody = buildRequest(params);
   const result = await runRequest(requestBody);
   console.log(result.data);
   res.json(result.data);

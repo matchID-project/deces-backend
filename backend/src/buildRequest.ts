@@ -1,8 +1,18 @@
-export default function buildRequest(searchInput: string) {
+function buildMatch(params) {
+  if (params.query) {
+    return buildSimpleMatch(params.query)
+  } else {
+    return buildAvancedMatch(params)
+  }
+}
+
+function buildSimpleMatch(searchInput) {
+  let query = searchInput;
   let searchTerm = searchInput.normalize('NFKD').replace(/[\u0300-\u036f]/g, "").split(/\s+/)
   let date = searchTerm.filter( x => x.match(/^\d{2}\/\d{2}\/\d{4}$/)).map( x => x.replace(/(\d{2})\/(\d{2})\/(\d{4})/,"$3$2$1"));
   let names = searchTerm.filter( x => x.match(/[a-z]+/)).filter( x => !x.match(/^(el|d|le|de|la|los)$/));
 
+  let date_query
   let names_query
   if (names.length > 0) {
     names_query = {
@@ -160,6 +170,78 @@ export default function buildRequest(searchInput: string) {
     }
   }
 
+  query = date_query
+    ? names_query
+      ? {
+          function_score: {
+            query: {
+              bool: {
+                must: [ names_query ],
+                should: [ date_query ]
+              }
+            }
+          }
+        }
+      : date_query
+    : names_query
+      ?
+        names_query
+      :
+        default_query
+
+  return query
+
+}
+
+function buildAvancedMatch(searchInput) {
+  return {
+    function_score: {
+      query: {
+        bool: {
+          must: Object.keys(searchInput).map(key => {
+            if (searchInput[key].value) {
+              return {
+                bool: searchInput[key].query
+                  ? {
+                      must: [
+                        {
+                          [searchInput[key].query]: {
+                            [searchInput[key].field]: searchInput[key].value
+                          }
+                        }
+                      ]
+                    }
+                  : {
+                      must: [
+                        {
+                          match: {
+                            [searchInput[key].field]: {
+                              query: searchInput[key].value,
+                              fuzziness: 2
+                            }
+                          }
+                        }
+                      ],
+                      should: [
+                        {
+                          match: {
+                            [searchInput[key].field]: searchInput[key].value
+                          }
+                        }
+                      ]
+                    }
+              }
+            }
+          }).filter(x => x),
+        }
+      }
+    }
+  }
+}
+
+
+export default function buildRequest(params: any) { // TODO: add template
+  const match = buildMatch(params);
   const body = {
     // Static query Configuration
     // --------------------------
@@ -196,7 +278,7 @@ export default function buildRequest(searchInput: string) {
     // https://www.elastic.co/guide/en/elasticsearch/reference/7.x/full-text-queries.html
     query: {
       bool: {
-        must: [names_query]
+        must: [match]
       }
     },
     // https://www.elastic.co/guide/en/elasticsearch/reference/7.x/search-request-sort.html
