@@ -1,4 +1,4 @@
-export default interface Body {
+export default interface BodyRequest {
   bool: {
     must: [{
       match: {
@@ -24,4 +24,16 @@ export default interface Body {
       }
     ];
   }
+}
+
+export default interface BodyResponse {
+  min_score: number;
+    _source: string[];
+    query: {
+      bool: {
+        must: any[]
+      }
+    },
+    size: number,
+    from: number
 }

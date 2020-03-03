@@ -1,4 +1,6 @@
 import RequestInput from './types/requestInput';
+import BodyResponse from './types/body';
+import NameQuery from './types/queries';
 
 function buildMatch(requestInput: RequestInput) {
   if (requestInput.fullText.value) {
@@ -18,35 +20,7 @@ function buildSimpleMatch(searchInput: string) {
   let date_query
   let names_query
   if (names.length > 0) {
-    names_query = {
-      bool: {
-        must: [
-          {
-            match: {
-              PRENOMS_NOM: {
-                query: names.join(" "),
-                fuzziness: "auto"
-              }
-            }
-          }
-        ],
-        should: [
-          {
-            match: {
-              PRENOM_NOM: names.join(" "),
-            }
-          },
-          {
-            match: {
-              PRENOM_NOM: {
-                query: names.join(" "),
-                fuzziness: "auto"
-              }
-            }
-          }
-        ]
-      }
-    }
+    names_query = new NameQuery(names);
 
     if (names.length === 2) {
       names_query.bool.must.push(
@@ -243,7 +217,7 @@ function buildAvancedMatch(searchInput: any) {
 }
 
 
-export default function buildRequest(requestInput: RequestInput) {
+export default function buildRequest(requestInput: RequestInput): BodyResponse {
   const match = buildMatch(requestInput);
   const body = {
     // Static query Configuration

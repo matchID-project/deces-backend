@@ -1,7 +1,7 @@
 import axios from 'axios';
-import Body from './types/body';
+import BodyRequest from './types/body';
 
-export default async function runRequest(body: Body) {
+export default async function runRequest(body: BodyRequest) {
   const response = await axios("http://elasticsearch:9200/deces/_search", {
     method: 'post',
     data: JSON.stringify(body),
