@@ -21,14 +21,34 @@ export ES_DATA = ${APP_PATH}/esdata
 export ES_NODES = 1
 export ES_MEM = 1024m
 export ES_VERSION = 7.5.0
+export ES_PROXY_PATH = /${API_PATH}/api/v0/search
 
 export NPM_REGISTRY = $(shell echo $$NPM_REGISTRY )
 export NPM_VERBOSE = 1
 
-# backup dir
+# BACKEND dir
 export BACKEND=${APP_PATH}/backend
 export BACKEND_PORT=8080
+
+# frontend dir
+export PORT=8084
+export FRONTEND := ${APP_PATH}/frontend
+export FRONTEND_DEV_PORT := ${PORT}
+export FRONTEND_DEV_HOST = frontend-development
+
+# nginx
+export NGINX = ${APP_PATH}/nginx
+export NGINX_TIMEOUT = 30
+export API_USER_LIMIT_RATE=1r/s
+export API_USER_BURST=20 nodelay
+export API_USER_SCOPE=http_x_forwarded_for
+export API_GLOBAL_LIMIT_RATE=20r/s
+export API_GLOBAL_BURST=200 nodelay
+
+# Backupdir
 export BACKUP_DIR = ${APP_PATH}/backup
+
+
 
 vm_max_count            := $(shell cat /etc/sysctl.conf | egrep vm.max_map_count\s*=\s*262144 && echo true)
 
@@ -95,3 +115,22 @@ backend-dev:
 
 backend-dev-stop:
 	@export EXEC_ENV=development; ${DC} -f ${DC_FILE}-dev-backend.yml down
+
+##############
+#  Frontend  #
+##############
+
+frontend-dev:
+ifneq "$(commit)" "$(lastcommit)"
+	@echo docker-compose up ${APP} frontend for dev after new commit ${APP_VERSION}
+	${DC} -f ${DC_FILE}-dev-frontend.yml up --build -d
+	@echo "${commit}" > ${FRONTEND}/.lastcommit
+else
+	@echo docker-compose up ${APP} frontend for dev
+	${DC} -f  ${DC_FILE}-dev-frontend.yml up -d
+endif
+
+frontend-dev-stop:
+	${DC} -f ${DC_FILE}-dev-frontend.yml down
+
+dev: network frontend-stop frontend-dev
