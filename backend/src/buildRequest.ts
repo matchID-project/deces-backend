@@ -1,5 +1,5 @@
 import RequestInput from './types/requestInput';
-import BodyResponse from './types/body';
+import { BodyResponse } from './types/body';
 import NameQuery from './types/queries';
 
 function buildMatch(requestInput: RequestInput) {

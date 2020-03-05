@@ -1,15 +1,16 @@
 export default class NameQuery {
   bool: {
-    must: [
-      {
-        match: {
-          PRENOMS_NOM: {
-            query: string;
-            fuzziness: string
-          }
-        }
-      }
-    ];
+    must: any; //TODO define type
+    //  [
+    //    {
+    //      match: {
+    //        PRENOMS_NOM: {
+    //          query: string;
+    //          fuzziness: string
+    //        }
+    //      }
+    //    }
+    //  ];
     should: [
       {
         match: {
