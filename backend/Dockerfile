@@ -36,6 +36,7 @@ RUN [ -z "${NPM_LATEST}" ] || npm i npm@latest -g
 COPY package.json ./
 COPY tsconfig.json ./
 COPY tslint.json ./
+COPY tsoa.json ./
 
 RUN pwd
 RUN ls *
