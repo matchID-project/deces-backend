@@ -21,7 +21,8 @@ export ES_DATA = ${APP_PATH}/esdata
 export ES_NODES = 1
 export ES_MEM = 1024m
 export ES_VERSION = 7.5.0
-export ES_PROXY_PATH = ${API_PATH}/api/v0/search
+export API_PATH = deces
+export ES_PROXY_PATH = /${API_PATH}/api/v0/search
 
 export NPM_REGISTRY = $(shell echo $$NPM_REGISTRY )
 export NPM_VERBOSE = 1
