@@ -4,3 +4,4 @@ esdata
 backup
 public/build
 bundle.*
+backend/src/routes
