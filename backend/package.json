@@ -6,11 +6,11 @@
   "scripts": {
     "prebuild": "tslint -c tslint.json -p tsconfig.json --fix",
     "build:routes": "mkdir -p src/routes && ./node_modules/.bin/tsoa routes",
-    "build:swagger": "mkdir -p api && mkdir -p api/dist && ./node_modules/.bin/tsoa swagger",
+    "build:swagger": "mkdir -p src/api && ./node_modules/.bin/tsoa swagger",
     "build:ts": "./node_modules/.bin/tsc --outDir dist",
     "build": "npm run build:routes && npm run build:swagger && npm run build:ts",
     "prestart": "npm run build",
-    "start": "node .",
+    "start": "npm run build && node .",
     "watch-ts": "npm run build:routes && npm run build:swagger && ./node_modules/.bin/tsc --outDir dist -w",
     "watch-node": "nodemon .",
     "dev": "concurrently -k -p \"[{name}]\" -n \"TypeScript,Node\" -c \"cyan.bold,green.bold\" \"npm run watch-ts\" \"npm run watch-node\"",

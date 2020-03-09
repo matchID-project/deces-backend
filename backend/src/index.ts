@@ -1,8 +1,7 @@
 import express from "express";
 import { RegisterRoutes } from './routes/routes';  // here
 import swaggerUi from 'swagger-ui-express'
-import * as swaggerDocument from '../api/dist/swagger.json'
-
+import * as swaggerDocument from './api/swagger.json'
 
 const app = express();
 const port = 8080; // default port to listen

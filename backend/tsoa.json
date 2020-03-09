@@ -4,7 +4,7 @@
     "host": "localhost:8080",
     "entryFile": "./src/index.ts",
     "specVersion": 3,
-    "outputDirectory": "./api/dist",
+    "outputDirectory": "./src/api",
     "controllerPathGlobs": [
       "./src/controllers/**/*controller.ts"
     ]
