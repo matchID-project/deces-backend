@@ -12,18 +12,18 @@ function buildMatch(requestInput: RequestInput) {
 
 function buildSimpleMatch(searchInput: string) {
   let query = searchInput;
-  let searchTerm = searchInput.normalize('NFKD').replace(/[\u0300-\u036f]/g, "").split(/\s+/)
-  let date = searchTerm.filter( x => x.match(/^\d{2}\/\d{2}\/\d{4}$/)).map( x => x.replace(/(\d{2})\/(\d{2})\/(\d{4})/,"$3$2$1"));
-  let names = searchTerm.filter( x => x.match(/[a-z]+/)).filter( x => !x.match(/^(el|d|le|de|la|los)$/));
+  const searchTerm = searchInput.normalize('NFKD').replace(/[\u0300-\u036f]/g, "").split(/\s+/)
+  const date = searchTerm.filter( x => x.match(/^\d{2}\/\d{2}\/\d{4}$/)).map( x => x.replace(/(\d{2})\/(\d{2})\/(\d{4})/,"$3$2$1"));
+  const names = searchTerm.filter( x => x.match(/[a-z]+/)).filter( x => !x.match(/^(el|d|le|de|la|los)$/));
 
-  const default_query: any = { match_all: {} }
-  let date_query
-  let names_query
+  const defaultQuery: any = { match_all: {} }
+  let namesQuery
+  let dateQuery
   if (names.length > 0) {
-    names_query = new NameQuery(names);
+    namesQuery = new NameQuery(names);
 
     if (names.length === 2) {
-      names_query.bool.must.push(
+      namesQuery.bool.must.push(
         {
           bool: {
             minimum_should_match: 1,
@@ -147,24 +147,50 @@ function buildSimpleMatch(searchInput: string) {
     }
   }
 
-  query = date_query
-    ? names_query
+  if (date.length > 0) {
+    dateQuery = {
+      bool: {
+        minimum_should_match: 1,
+        should: [
+          {
+            match: {
+              DATE_NAISSANCE: {
+                query: date,
+                fuzziness: "auto"
+              }
+            }
+          },
+          {
+            match: {
+              DATE_DECES: {
+                query: date,
+                fuzziness: "auto"
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+
+  query = dateQuery
+    ? namesQuery
       ? {
           function_score: {
             query: {
               bool: {
-                must: [ names_query ],
-                should: [ date_query ]
+                must: [ namesQuery ],
+                should: [ dateQuery ]
               }
             }
           }
         }
-      : date_query
-    : names_query
+      : dateQuery
+    : namesQuery
       ?
-        names_query
+        namesQuery
       :
-        default_query
+        defaultQuery
 
   return query
 
