@@ -36,6 +36,7 @@ export PORT=8084
 export FRONTEND := ${APP_PATH}/frontend
 export FRONTEND_DEV_PORT := ${PORT}
 export FRONTEND_DEV_HOST = frontend-development
+export FILE_FRONTEND_APP_VERSION = $(APP)-$(APP_VERSION)-frontend.tar.gz
 
 # nginx
 export NGINX = ${APP_PATH}/nginx
@@ -85,8 +86,7 @@ elasticsearch: network vm_max
 	done;\
 	true)
 	${DC} -f ${DC_FILE}-elasticsearch-huge.yml up -d
-	@echo ${DC_PREFIX}
-	@timeout=${ES_TIMEOUT} ; ret=1 ; until [ "$$timeout" -le 0 -o "$$ret" -eq "0"  ] ; do (docker exec -i ${USE_TTY} ${DC_PREFIX}-elasticsearch curl -s --fail -XGET localhost:9200/_cat/indices > /dev/null) ; ret=$$? ; if [ "$$ret" -ne "0" ] ; then echo "waiting for elasticsearch to start $$timeout" ; fi ; ((timeout--)); sleep 1 ; done ; exit $$ret
+	#@timeout=${ES_TIMEOUT} ; ret=1 ; until [ "$$timeout" -le 0 -o "$$ret" -eq "0"  ] ; do (docker exec -i ${USE_TTY} ${DC_PREFIX}-elasticsearch curl -s --fail -XGET localhost:9200/_cat/indices > /dev/null) ; ret=$$? ; if [ "$$ret" -ne "0" ] ; then echo "waiting for elasticsearch to start $$timeout" ; fi ; ((timeout--)); sleep 1 ; done ; exit $$ret
 
 elasticsearch-stop:
 	@echo docker-compose down matchID elasticsearch
@@ -113,13 +113,26 @@ backend-dev:
 	@export EXEC_ENV=development;\
 		${DC} -f ${DC_FILE}-dev-backend.yml up --build -d --force-recreate 2>&1 | grep -v orphan
 
-
 backend-dev-stop:
 	@export EXEC_ENV=development; ${DC} -f ${DC_FILE}-dev-backend.yml down
+
+# production mode
+backend-start:
+	@echo docker-compose up backend for production ${VERSION}
+	@export EXEC_ENV=production; ${DC} -f ${DC_FILE}.yml up --build -d 2>&1 | grep -v orphan
+
+backend-stop:
+	@echo docker-compose down backend for production ${VERSION}
+	@export EXEC_ENV=production; ${DC} -f ${DC_FILE}.yml down  --remove-orphan
 
 ##############
 #  Frontend  #
 ##############
+
+frontend-start:
+	@echo docker-compose up ${APP} frontend
+	${DC} -f ${DC_FILE}.yml up -d
+	@timeout=${NGINX_TIMEOUT} ; ret=1 ; until [ "$$timeout" -le 0 -o "$$ret" -eq "0"  ] ; do (curl -s --fail -XGET localhost:${PORT} > /dev/null) ; ret=$$? ; if [ "$$ret" -ne "0" ] ; then echo "waiting for nginx to start $$timeout" ; fi ; ((timeout--)); sleep 1 ; done ; exit $$ret
 
 frontend-dev:
 ifneq "$(commit)" "$(lastcommit)"
@@ -134,4 +147,30 @@ endif
 frontend-dev-stop:
 	${DC} -f ${DC_FILE}-dev-frontend.yml down
 
+frontend-stop:
+	${DC} -f ${DC_FILE}.yml down
+
+${FRONTEND}/$(FILE_FRONTEND_APP_VERSION):
+	( cd ${FRONTEND} && tar -zcvf $(FILE_FRONTEND_APP_VERSION) --exclude ${APP}.tar.gz \
+		.eslintrc.js \
+		rollup.config.js \
+        src \
+        public )
+
+frontend-check-build:
+	${DC} -f $(DC_FILE)-build.yml config -q
+
+frontend-build-dist: ${FRONTEND}/$(FILE_FRONTEND_APP_VERSION) frontend-check-build
+	@echo building ${APP} frontend in ${FRONTEND}
+	${DC} -f $(DC_FILE)-build.yml build $(DC_BUILD_ARGS)
+
 dev: network frontend-stop frontend-dev
+
+
+###########
+#  Start  #
+###########
+
+start: elasticsearch frontend backend-start
+	@sleep 2 && docker-compose logs
+

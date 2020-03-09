@@ -11,7 +11,6 @@ ARG NPM_FIX
 ARG NPM_LATEST
 ARG NPM_VERBOSE
 ARG app_path
-ARG app_name
 ARG port
 
 # Base dir /app
@@ -37,9 +36,6 @@ COPY package.json ./
 COPY tsconfig.json ./
 COPY tslint.json ./
 COPY tsoa.json ./
-
-RUN pwd
-RUN ls *
 
 RUN npm --no-git-tag-version version ${APP_VERSION}
 RUN if [ -z "${NPM_VERBOSE}" ]; then\
@@ -71,3 +67,40 @@ VOLUME /${app_path}/dist
 EXPOSE ${port}
 
 CMD ["npm","run", "dev"]
+
+
+###############################
+# Step 3: "production" target #
+###############################
+FROM base as production
+ARG http_proxy
+ARG https_proxy
+ARG no_proxy
+ARG npm_registry
+ARG MIRROR_DEBIAN
+ARG app_path
+ARG port
+ARG NPM_AUDIT_DRY_RUN
+ENV NODE_ENV=production
+ENV APP_VERSION=${app_ver}
+
+# TODO 
+# Copy only the transpiled code to use in production (in /app)
+
+COPY package.json ./
+COPY tsconfig.json ./
+COPY tslint.json ./
+COPY tsoa.json ./
+ADD src ./src
+
+# Expose the listening port of your app
+EXPOSE ${port}
+
+# Install production dependencies and clean cache
+RUN npm --no-git-tag-version version ${APP_VERSION} && \
+    npm install --production && \
+    npm config set audit-level moderate && \
+    npm audit --json --registry=https://registry.npmjs.org || ${NPM_AUDIT_DRY_RUN:-false} && \
+    npm cache clean --force
+
+CMD ["npm","run", "start"]
