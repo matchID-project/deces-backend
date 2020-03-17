@@ -50,7 +50,7 @@ export API_GLOBAL_BURST=200 nodelay
 # Backupdir
 export BACKUP_DIR = ${APP_PATH}/backup
 
-
+export DOCKER_USERNAME=matchid
 
 vm_max_count            := $(shell cat /etc/sysctl.conf | egrep vm.max_map_count\s*=\s*262144 && echo true)
 

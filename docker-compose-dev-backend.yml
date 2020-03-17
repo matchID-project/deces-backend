@@ -2,11 +2,11 @@ version: '3.4'
 
 services:
   nginx:
-    image: ${APP}-nginx-development:${APP_VERSION}
-    container_name: ${DC_PREFIX}-nginx-development
+    image: ${DOCKER_USERNAME}/deces-nginx-${EXEC_ENV}:${APP_VERSION}
+    container_name: ${DC_PREFIX}-nginx-${EXEC_ENV}
     build:
       context: ${NGINX}
-      target: development
+      target: ${EXEC_ENV}
       dockerfile: ${NGINX}/Dockerfile
       args:
         app_name: ${APP}
@@ -29,7 +29,7 @@ services:
       - ${PORT}:80
     restart: always
   backend:
-    image: deces-backend-${EXEC_ENV}:${APP_VERSION}
+    image: ${DOCKER_USERNAME}/deces-backend-${EXEC_ENV}:${APP_VERSION}
     container_name: deces-backend-${EXEC_ENV}
     build:
       context: ${BACKEND}
