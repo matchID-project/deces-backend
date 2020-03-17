@@ -1,6 +1,6 @@
 {
   "swagger": {
-    "basePath": "/api/v1",
+    "basePath": "/api/v0",
     "host": "localhost:8080",
     "entryFile": "./src/index.ts",
     "specVersion": 3,
@@ -10,7 +10,7 @@
     ]
   },
   "routes": {
-    "basePath": "/api/v1",
+    "basePath": "/api/v0",
     "entryFile": "./src/index.ts",
     "routesDir": "./src/routes",
     "middleware": "express"

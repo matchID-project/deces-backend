@@ -8,7 +8,7 @@ const port = 8080; // default port to listen
 
 RegisterRoutes(app);  // and here
 
-app.use('/api/v1/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+app.use(`${process.env.BACKEND_PROXY_PATH}/docs`, swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // start the express server
 app.listen( port, () => {
