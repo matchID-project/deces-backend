@@ -26,17 +26,11 @@ export NPM_REGISTRY = $(shell echo $$NPM_REGISTRY )
 export NPM_VERBOSE = 1
 
 # BACKEND dir
+export PORT=8084
 export BACKEND=${APP_PATH}/backend
 export BACKEND_PORT=8080
 export BACKEND_DEV_HOST=backend
 export BACKEND_PROXY_PATH=/api/v0
-
-# frontend dir
-export PORT=8084
-export FRONTEND := ${APP_PATH}/frontend
-export FRONTEND_DEV_PORT := ${PORT}
-export FRONTEND_DEV_HOST = frontend-development
-export FILE_FRONTEND_APP_VERSION = $(APP)-$(APP_VERSION)-frontend.tar.gz
 
 # nginx
 export NGINX = ${APP_PATH}/nginx
@@ -126,53 +120,11 @@ backend-stop:
 	@export EXEC_ENV=production; ${DC} -f ${DC_FILE}.yml down  --remove-orphan
 
 
-dev: network backend-stop backend-dev
-
-##############
-#  Frontend  #
-##############
-
-frontend-start:
-	@echo docker-compose up ${APP} frontend
-	${DC} -f ${DC_FILE}.yml up -d
-	@timeout=${NGINX_TIMEOUT} ; ret=1 ; until [ "$$timeout" -le 0 -o "$$ret" -eq "0"  ] ; do (curl -s --fail -XGET localhost:${PORT} > /dev/null) ; ret=$$? ; if [ "$$ret" -ne "0" ] ; then echo "waiting for nginx to start $$timeout" ; fi ; ((timeout--)); sleep 1 ; done ; exit $$ret
-
-frontend-dev:
-ifneq "$(commit)" "$(lastcommit)"
-	@echo docker-compose up ${APP} frontend for dev after new commit ${APP_VERSION}
-	${DC} -f ${DC_FILE}-dev-frontend.yml up --build -d
-	@echo "${commit}" > ${FRONTEND}/.lastcommit
-else
-	@echo docker-compose up ${APP} frontend for dev
-	${DC} -f  ${DC_FILE}-dev-frontend.yml up -d
-endif
-
-frontend-dev-stop:
-	${DC} -f ${DC_FILE}-dev-frontend.yml down
-
-frontend-stop:
-	${DC} -f ${DC_FILE}.yml down
-
-${FRONTEND}/$(FILE_FRONTEND_APP_VERSION):
-	( cd ${FRONTEND} && tar -zcvf $(FILE_FRONTEND_APP_VERSION) --exclude ${APP}.tar.gz \
-		.eslintrc.js \
-		rollup.config.js \
-        src \
-        public )
-
-frontend-check-build:
-	${DC} -f $(DC_FILE)-build.yml config -q
-
-frontend-build-dist: ${FRONTEND}/$(FILE_FRONTEND_APP_VERSION) frontend-check-build
-	@echo building ${APP} frontend in ${FRONTEND}
-	${DC} -f $(DC_FILE)-build.yml build $(DC_BUILD_ARGS)
-
-
+dev: network backend-dev-stop backend-dev
 
 ###########
 #  Start  #
 ###########
 
-start: elasticsearch frontend backend-start
+start: elasticsearch backend-start
 	@sleep 2 && docker-compose logs
-
