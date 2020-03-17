@@ -30,6 +30,8 @@ export NPM_VERBOSE = 1
 # BACKEND dir
 export BACKEND=${APP_PATH}/backend
 export BACKEND_PORT=8080
+export BACKEND_DEV_HOST=backend
+export BACKEND_PROXY_PATH=/api/v0
 
 # frontend dir
 export PORT=8084
@@ -125,6 +127,9 @@ backend-stop:
 	@echo docker-compose down backend for production ${VERSION}
 	@export EXEC_ENV=production; ${DC} -f ${DC_FILE}.yml down  --remove-orphan
 
+
+dev: network backend-stop backend-dev
+
 ##############
 #  Frontend  #
 ##############
@@ -164,7 +169,6 @@ frontend-build-dist: ${FRONTEND}/$(FILE_FRONTEND_APP_VERSION) frontend-check-bui
 	@echo building ${APP} frontend in ${FRONTEND}
 	${DC} -f $(DC_FILE)-build.yml build $(DC_BUILD_ARGS)
 
-dev: network frontend-stop frontend-dev
 
 
 ###########

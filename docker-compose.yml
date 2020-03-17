@@ -4,7 +4,6 @@ version: '3.4'
 
 services:
   nginx:
-    #image: ${DOCKER_USERNAME}/${DC_PREFIX}:${APP_VERSION}
     image: ${APP}-nginx:${APP_VERSION}
     container_name: ${DC_PREFIX}-nginx
     build:
@@ -20,6 +19,9 @@ services:
       - ES_HOST
       - ES_INDEX
       - ES_PORT
+      - BACKEND_PROXY_PATH
+      - BACKEND_PORT
+      - BACKEND_DEV_HOST
       - API_USER_LIMIT_RATE
       - API_USER_BURST
       - API_USER_SCOPE
