@@ -111,7 +111,7 @@ elasticsearch-clean: elasticsearch-stop
 backend-dev:
 	@echo docker-compose up backend for dev
 	@export EXEC_ENV=development;\
-		${DC} -f ${DC_FILE}-dev-backend.yml up --build -d --force-recreate 2>&1 | grep -v orphan
+		${DC} -f ${DC_FILE}-dev-backend.yml up --build -d --force-recreate backend 2>&1 | grep -v orphan
 
 backend-dev-stop:
 	@export EXEC_ENV=development; ${DC} -f ${DC_FILE}-dev-backend.yml down
