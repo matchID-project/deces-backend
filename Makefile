@@ -1,8 +1,6 @@
 export APP = deces-backend
 export APP_PATH := $(shell pwd)
-export APP_VERSION	:= 1.0
-#export APP_VERSION	:= $(shell git describe --tags || cat VERSION )
-
+export APP_VERSION	:= $(shell git describe --tags )
 export USE_TTY := $(shell test -t 1 && USE_TTY="-t")
 
 # docker compose

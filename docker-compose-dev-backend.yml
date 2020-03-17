@@ -29,8 +29,8 @@ services:
       - ${PORT}:80
     restart: always
   backend:
-    image: ${APP}-backend-${EXEC_ENV}:${APP_VERSION}
-    container_name: ${APP}-backend-${EXEC_ENV}
+    image: deces-backend-${EXEC_ENV}:${APP_VERSION}
+    container_name: deces-backend-${EXEC_ENV}
     build:
       context: ${BACKEND}
       target: ${EXEC_ENV}
