@@ -14,23 +14,40 @@ export class IndexController extends Controller {
   }
 
   @Get('/search')
-  public async search(@Query() q?: string, @Query() firstName?: string, @Query() birthDate?: string, @Query() birthYear?: string) {
+  public async search(
+    @Query() q?: string,
+    @Query() firstName?: string, 
+    @Query() lastName?: string, 
+    @Query() birthDate?: string,
+    @Query() birthYear?: string,
+    @Query() birthCity?: string,
+    @Query() birthDepartment?: string,
+    @Query() birthCountry?: string,
+    @Query() deathDate?: string,
+    @Query() deathYear?: string,
+    @Query() deathCity?: string,
+    @Query() deathDepartment?: string,
+    @Query() deathCountry?: string
+  ) {
     const requestInput = new RequestInput();
     if (q != null) {
       requestInput.fullText.value = q
       const requestBody = buildRequest(requestInput);
       const result = await runRequest(requestBody);
       return  { msg: result.data };
-    } else if (firstName || birthDate || birthYear) {
-      if (firstName) {
-        requestInput.firstName.value = firstName
-      }
-      if (birthDate) {
-        requestInput.birthDate.value = birthDate
-      }
-      if (birthYear) {
-        requestInput.birthYear.value = birthYear
-      }
+    } else if (firstName || lastName || birthDate || birthYear || birthCity || birthDepartment || birthCountry || deathDate || deathYear || deathCity || deathDepartment || deathCountry) {
+      // TODO: This could be better
+     requestInput['firstName'].value = firstName
+     requestInput['birthDate'].value = birthDate
+     requestInput['birthYear'].value = birthYear
+     requestInput['birthCity'].value = birthCity
+     requestInput['birthDepartment'].value = birthDepartment
+     requestInput['birthCountry'].value = birthCountry
+     requestInput['deathDate'].value = deathDate
+     requestInput['deathYear'].value = deathYear
+     requestInput['deathCity'].value = deathCity
+     requestInput['deathDepartment'].value = deathDepartment
+     requestInput['deathCountry'].value = deathCountry
       const requestBody = buildRequest(requestInput);
       const result = await runRequest(requestBody);
       return  { msg: result.data };

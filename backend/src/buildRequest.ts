@@ -1,6 +1,7 @@
 import RequestInput from './types/requestInput';
 import { BodyResponse } from './types/body';
 import NameQuery from './types/queries';
+import buildRequestFilter from "./buildRequestFilter";
 
 function buildMatch(requestInput: RequestInput) {
   if (requestInput.fullText.value) {
@@ -11,19 +12,21 @@ function buildMatch(requestInput: RequestInput) {
 }
 
 function buildSimpleMatch(searchInput: string) {
-  let query = searchInput;
-  const searchTerm = searchInput.normalize('NFKD').replace(/[\u0300-\u036f]/g, "").split(/\s+/)
-  const date = searchTerm.filter( x => x.match(/^\d{2}\/\d{2}\/\d{4}$/)).map( x => x.replace(/(\d{2})\/(\d{2})\/(\d{4})/,"$3$2$1"));
-  const names = searchTerm.filter( x => x.match(/[a-z]+/)).filter( x => !x.match(/^(el|d|le|de|la|los)$/));
+  let searchTerm = searchInput.normalize('NFKD').replace(/[\u0300-\u036f]/g, "").split(/\s+/)
+  let date = searchTerm.filter( x => x.match(/^\d{2}\/\d{2}\/\d{4}$/)).map( x => x.replace(/(\d{2})\/(\d{2})\/(\d{4})/,"$3$2$1"));
+  date = date.length ? [date[0]] : null;
+  let names = searchTerm.filter( x => x.match(/[a-z]+/)).filter( x => !x.match(/^(el|d|le|de|la|los)$/));
 
-  const defaultQuery: any = { match_all: {} }
-  let namesQuery
-  let dateQuery
+  const default_query = { match_all: {} }
+
+  let names_query
+  let date_query
+
   if (names.length > 0) {
-    namesQuery = new NameQuery(names);
+    names_query = new NameQuery(names);
 
     if (names.length === 2) {
-      namesQuery.bool.must.push(
+      names_query.bool.must.push(
         {
           bool: {
             minimum_should_match: 1,
@@ -147,15 +150,15 @@ function buildSimpleMatch(searchInput: string) {
     }
   }
 
-  if (date.length > 0) {
-    dateQuery = {
+  if (date) {
+    date_query = {
       bool: {
         minimum_should_match: 1,
         should: [
           {
             match: {
               DATE_NAISSANCE: {
-                query: date,
+                query: date[0],
                 fuzziness: "auto"
               }
             }
@@ -163,7 +166,7 @@ function buildSimpleMatch(searchInput: string) {
           {
             match: {
               DATE_DECES: {
-                query: date,
+                query: date[0],
                 fuzziness: "auto"
               }
             }
@@ -173,24 +176,24 @@ function buildSimpleMatch(searchInput: string) {
     }
   }
 
-  query = dateQuery
-    ? namesQuery
+  let query = date_query
+    ? names_query
       ? {
           function_score: {
             query: {
               bool: {
-                must: [ namesQuery ],
-                should: [ dateQuery ]
+                must: [ names_query ],
+                should: [ date_query ]
               }
             }
           }
         }
-      : dateQuery
-    : namesQuery
+      : date_query
+    : names_query
       ?
-        namesQuery
+        names_query
       :
-        defaultQuery
+        default_query
 
   return query
 
@@ -202,38 +205,11 @@ function buildAvancedMatch(searchInput: any) {
       query: {
         bool: {
           must: Object.keys(searchInput).map(key => {
-            if (searchInput[key].value) {
-              return {
-                bool: searchInput[key].query
-                  ? {
-                      must: [
-                        {
-                          [searchInput[key].query]: {
-                            [searchInput[key].field]: searchInput[key].value
-                          }
-                        }
-                      ]
-                    }
-                  : {
-                      must: [
-                        {
-                          match: {
-                            [searchInput[key].field]: {
-                              query: searchInput[key].value,
-                              fuzziness: 2
-                            }
-                          }
-                        }
-                      ],
-                      should: [
-                        {
-                          match: {
-                            [searchInput[key].field]: searchInput[key].value
-                          }
-                        }
-                      ]
-                    }
-              }
+            let value = searchInput[key].mask && searchInput[key].mask.transform && searchInput[key].value
+                        ? searchInput[key].mask.transform(searchInput[key].value)
+                        : searchInput[key].value;
+            if (value) {
+              return searchInput[key].query(searchInput[key].field, value, searchInput[key].fuzzy)
             }
           }).filter(x => x),
         }
@@ -245,6 +221,7 @@ function buildAvancedMatch(searchInput: any) {
 
 export default function buildRequest(requestInput: RequestInput): BodyResponse {
   const match = buildMatch(requestInput);
+  //const filter = buildRequestFilter(myFilters); // TODO
   const body = {
     // Static query Configuration
     // --------------------------
@@ -268,7 +245,8 @@ export default function buildRequest(requestInput: RequestInput): BodyResponse {
       "NUM_DECES",
       "PAYS_DECES","PAYS_DECES_CODEISO3",
       "PAYS_NAISSANCE","PAYS_NAISSANCE_CODEISO3",
-      "SEXE","UID"],
+      "SEXE","UID",
+      "SOURCE"],
     // aggs: {
     //   COMMUNE_NAISSANCE: { terms: { field: "COMMUNE_NAISSANCE.keyword", size: 30 } },
     //   PAYS_NAISSANCE: {
