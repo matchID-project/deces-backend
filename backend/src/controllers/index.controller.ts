@@ -19,12 +19,10 @@ export class IndexController extends Controller {
     @Query() firstName?: string, 
     @Query() lastName?: string, 
     @Query() birthDate?: string,
-    @Query() birthYear?: string,
     @Query() birthCity?: string,
     @Query() birthDepartment?: string,
     @Query() birthCountry?: string,
     @Query() deathDate?: string,
-    @Query() deathYear?: string,
     @Query() deathCity?: string,
     @Query() deathDepartment?: string,
     @Query() deathCountry?: string
@@ -35,16 +33,14 @@ export class IndexController extends Controller {
       const requestBody = buildRequest(requestInput);
       const result = await runRequest(requestBody);
       return  { msg: result.data };
-    } else if (firstName || lastName || birthDate || birthYear || birthCity || birthDepartment || birthCountry || deathDate || deathYear || deathCity || deathDepartment || deathCountry) {
+    } else if (firstName || lastName || birthDate || birthCity || birthDepartment || birthCountry || deathDate || deathCity || deathDepartment || deathCountry) {
       // TODO: This could be better
      requestInput['firstName'].value = firstName
      requestInput['birthDate'].value = birthDate
-     requestInput['birthYear'].value = birthYear
      requestInput['birthCity'].value = birthCity
      requestInput['birthDepartment'].value = birthDepartment
      requestInput['birthCountry'].value = birthCountry
      requestInput['deathDate'].value = deathDate
-     requestInput['deathYear'].value = deathYear
      requestInput['deathCity'].value = deathCity
      requestInput['deathDepartment'].value = deathDepartment
      requestInput['deathCountry'].value = deathCountry

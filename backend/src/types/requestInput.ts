@@ -66,20 +66,6 @@ export default class RequestInput {
     size: number;
     active: boolean;
   }
-  birthYear: {
-    path: string;
-    url: string;
-    before: string;
-    section: string;
-    value: string;
-    field: string;
-    query: any;
-    placeholder: string;
-    fuzzy: boolean;
-    title: string;
-    size: string;
-    active: boolean;
-  }
   birthCity: {
     path: string;
     url: string;
@@ -140,19 +126,6 @@ export default class RequestInput {
     active: boolean;
   }
 
-  deathYear : {
-    path: string;
-    url: string;
-    section: string;
-    before: string;
-    value: string;
-    field: string;
-    query: any;
-    fuzzy: boolean;
-    placeholder: string;
-    size: string;
-    active: boolean
-  }
   deathCity:  {
     path: string;
     url: string;
@@ -248,20 +221,6 @@ export default class RequestInput {
       size: 2,
       active: true
     }
-    this.birthYear = {
-      path: "birth.date",
-      url: "by",
-      before: "en",
-      section:"naissance",
-      value: "",
-      field: "DATE_NAISSANCE",
-      query: prefixQuery,
-      placeholder: "1911",
-      fuzzy: false,
-      title:"saisissez l'année de naissance",
-      size: "1-5",
-      active: false,
-    }
 
     this.birthCity = {
       path: "birth.location",
@@ -324,20 +283,6 @@ export default class RequestInput {
       },
       size: 2,
       active: true,
-    }
-
-    this.deathYear = {
-      path: "death.date",
-      url: "dy",
-      section:"décès",
-      before: "en",
-      value: "",
-      field: "DATE_DECES",
-      query: prefixQuery,
-      fuzzy: false,
-      placeholder: "1974",
-      size: "1-5",
-      active: false
     }
 
     this.deathCity =  {
