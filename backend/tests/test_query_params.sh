@@ -1,50 +1,50 @@
-if curl -s -XGET http://localhost:8080/api/v0/search?firstName=Harry | grep -q 'Harry'; then
-   echo "firstName: OK"
+if curl -s -XGET http://localhost:8080/api/v0/search?deathDate=1970\&firstName=Harry | grep -q 'Harry'; then
+    echo "firstName: OK"
 else
-  echo "firstName: KO!"
+    echo -e "\e[31mfirstName: KO!\e[0m"
 fi
-if curl -s -XGET http://localhost:8080/api/v0/search?lastName=Potter | grep -q 'Potter'; then
-   echo "lastName: OK"
+if curl -s -XGET http://localhost:8080/api/v0/search?deathDate=1970\&lastName=Pottier | grep -q 'Pottier'; then
+    echo "lastName: OK"
 else
-  echo "lastName: KO!"
+    echo -e "\e[31mlastName: KO!\e[0m"
 fi
-if curl -s  -XGET http://localhost:8080/api/v0/search?birthCountry=Fidji | grep -q 'Fidji'; then
-   echo "birthCountry: OK"
+if curl -s  -XGET http://localhost:8080/api/v0/search?deathDate=1970\&birthCountry=France | grep -q 'France'; then
+    echo "birthCountry: OK"
 else
-  echo "birthCountry: KO!"
+    echo -e "\e[31mbirthCountry: KO!\e[0m"
 fi
-if curl -s -XGET http://localhost:8080/api/v0/search?deathCountry=Colombie | grep -q 'Colombie'; then
-   echo "deathCountry: OK"
+if curl -s -XGET http://localhost:8080/api/v0/search?deathDate=1970\&deathCountry=Colombie | grep -q 'Colombie'; then
+    echo "deathCountry: OK"
 else
-  echo "deathCountry: KO!"
+    echo -e "\e[31mdeathCountry: KO!\e[0m"
 fi
-if curl -s -XGET http://localhost:8080/api/v0/search?birthDate=29/02/1988 | grep -q '19880229'; then
-   echo "birthDate: OK"
+if curl -s -XGET http://localhost:8080/api/v0/search?deathDate=1970\&birthDate=28/03/1930 | grep -q '19300328'; then
+    echo "birthDate: OK"
 else
-  echo "birthDate: KO!"
+    echo -e "\e[31mbirthDate: KO!\e[0m"
 fi
-if curl -s -XGET http://localhost:8080/api/v0/search?deathDate=29/02/1988 | grep -q '19880229'; then
-   echo "deathDate: OK"
+if curl -s -XGET http://localhost:8080/api/v0/search?deathDate=22/02/1970 | grep -q '19700222'; then
+    echo "deathDate: OK"
 else
-  echo "deathDate: KO!"
+    echo -e "\e[31mdeathDate: KO!\e[0m"
 fi
-if curl -s -XGET http://localhost:8080/api/v0/search?birthCity=Kuala%20Lumpur | grep -q 'Kuala Lumpur'; then
-   echo "birthCity: OK"
+if curl -s -XGET http://localhost:8080/api/v0/search?deathDate=1970\&birthCity=Metz | grep -q 'Metz'; then
+    echo "birthCity: OK"
 else
-  echo "birthCity: KO!"
+    echo -e "\e[31mbirthCity: KO!\e[0m"
 fi
-if curl -s -XGET http://localhost:8080/api/v0/search?deathCity=Le%20Caire | grep -q 'Le Caire'; then
-   echo "deathCity: OK"
+if curl -s -XGET http://localhost:8080/api/v0/search?deathDate=1970\&deathCity=Nice | grep -q 'Nice'; then
+    echo "deathCity: OK"
 else
-  echo "deathCity: KO!"
+    echo -e "\e[31mdeathCity: KO!\e[0m"
 fi
-if curl -s -XGET http://localhost:8080/api/v0/search?birthDepartment=57 | grep -q '57'; then
-   echo "birthDepartment: OK"
+if curl -s -XGET http://localhost:8080/api/v0/search?deathDate=1970\&birthDepartment=57 | grep -q '57'; then
+    echo "birthDepartment: OK"
 else
-  echo "birthDepartment: KO!"
+    echo -e "\e[31mbirthDepartement: KO!\e[0m"
 fi
-if curl -s -XGET http://localhost:8080/api/v0/search?deathDepartment=75 | grep -q '75'; then
-   echo "deathDepartment: OK"
+if curl -s -XGET http://localhost:8080/api/v0/search?deathDate=1970\&deathDepartment=75 | grep -q '75'; then
+    echo "deathDepartment: OK"
 else
-  echo "deathDepartment: KO!"
+    echo -e "\e[31mdeathDepartement: KO!\e[0m"
 fi
