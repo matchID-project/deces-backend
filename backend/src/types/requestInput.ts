@@ -31,7 +31,7 @@ export default class RequestInput {
     value: string;
     field: string[];
     query: any;
-    fuzzy: string;
+    fuzzy: string|boolean;
     placeholder: string;
     title: string;
     size: number;
@@ -44,7 +44,7 @@ export default class RequestInput {
     section: string;
     field: string;
     query: any;
-    fuzzy: string;
+    fuzzy: string|boolean;
     placeholder: string;
     title: string;
     size: number;
@@ -59,7 +59,7 @@ export default class RequestInput {
     field: string;
     placeholder: string;
     query: any;
-    fuzzy: string;
+    fuzzy: string|boolean;
     title: string;
     mask: {
       typing: any;
@@ -76,7 +76,7 @@ export default class RequestInput {
     value: string;
     field: string;
     query: any;
-    fuzzy: string;
+    fuzzy: string|boolean;
     placeholder: string;
     title: string;
     size: string;
@@ -89,7 +89,7 @@ export default class RequestInput {
     value: string;
     field: string;
     query: any;
-    fuzzy: boolean;
+    fuzzy: string|boolean;
     placeholder: string;
     title: string;
     size: string;
@@ -102,7 +102,7 @@ export default class RequestInput {
     value: string;
     field: string;
     query: any;
-    fuzzy: string;
+    fuzzy: string|boolean;
     title: string;
     placeholder: string;
     size: number;
@@ -116,7 +116,7 @@ export default class RequestInput {
     value: string;
     field: string;
     query: any;
-    fuzzy: string;
+    fuzzy: string|boolean;
     placeholder: string;
     multiQuery: string;
     title: string;
@@ -136,7 +136,7 @@ export default class RequestInput {
     value: string;
     field: string;
     query: any;
-    fuzzy: string;
+    fuzzy: string|boolean;
     title: string;
     placeholder: string;
     size: string;
@@ -149,7 +149,7 @@ export default class RequestInput {
     value: string;
     field: string;
     query: any;
-    fuzzy: boolean;
+    fuzzy: string|boolean;
     placeholder: string;
     title: string;
     size: string;
@@ -162,7 +162,7 @@ export default class RequestInput {
     value: string;
     field: string;
     query: any;
-    fuzzy: string;
+    fuzzy: string|boolean;
     placeholder: string;
     title: string;
     size: number;

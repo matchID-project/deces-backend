@@ -113,7 +113,7 @@ backend-dev-stop:
 # production mode
 backend-start:
 	@echo docker-compose up backend for production ${VERSION}
-	@export EXEC_ENV=production; ${DC} -f ${DC_FILE}.yml up --build -d 2>&1 | grep -v orphan
+	@export EXEC_ENV=production; ${DC} -f ${DC_FILE}.yml up --build -d backend 2>&1 | grep -v orphan
 
 backend-stop:
 	@echo docker-compose down backend for production ${VERSION}
