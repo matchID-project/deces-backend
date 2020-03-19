@@ -48,3 +48,13 @@ if curl -s -XGET http://localhost:8080/api/v0/search?deathDate=1970\&deathDepart
 else
     echo -e "\e[31mdeathDepartement: KO!\e[0m"
 fi
+if curl -s -XGET http://localhost:8080/api/v0/search?deathDate=1970\&firstName=Ana\&fuzzy=false | grep -q '"hits":{"total":{"value":2' ; then
+    echo "fuzzy: OK"
+else
+    echo -e "\e[31mfuzzy: KO!\e[0m"
+fi
+if curl -s -XGET http://localhost:8080/api/v0/search?deathDate=1970\&q=Georges%20Pompidou | grep -q 'Pompidou' ; then
+    echo "fullText: OK"
+else
+    echo -e "\e[31mfullText: KO!\e[0m"
+fi
