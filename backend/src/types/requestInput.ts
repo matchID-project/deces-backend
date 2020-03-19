@@ -13,6 +13,8 @@ import {
 
 export default class RequestInput {
   [key: string]: any; // Index signature
+  size: number;
+  page: number;
   fullText: {
     path: string;
     url: string;
@@ -167,7 +169,9 @@ export default class RequestInput {
     active: boolean;
   }
 
-  constructor() {
+  constructor(size: number = 20, page: number = 1) {
+    this.size = size;
+    this.page = page;
     this.fullText = {
       path: "fullText",
       url: "q",

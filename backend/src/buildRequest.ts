@@ -218,10 +218,16 @@ function buildAvancedMatch(searchInput: any) {
   }
 }
 
+function buildFrom(current: number, resultsPerPage: number) {
+  if (!current || !resultsPerPage) return;
+  return (current - 1) * resultsPerPage;
+}
 
 export default function buildRequest(requestInput: RequestInput): BodyResponse {
   const match = buildMatch(requestInput);
   //const filter = buildRequestFilter(myFilters); // TODO
+  const size = requestInput.size;
+  const from = buildFrom(requestInput.page, size);
   const body = {
     // Static query Configuration
     // --------------------------
@@ -263,8 +269,8 @@ export default function buildRequest(requestInput: RequestInput): BodyResponse {
       }
     },
     // https://www.elastic.co/guide/en/elasticsearch/reference/7.x/search-request-sort.html
-    size: 20,
-    from: 0
+    size: size,
+    from: from
   };
 
   return body;
