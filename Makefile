@@ -119,6 +119,9 @@ backend-stop:
 	@echo docker-compose down backend for production ${VERSION}
 	@export EXEC_ENV=production; ${DC} -f ${DC_FILE}.yml down  --remove-orphan
 
+backend-test:
+	@echo Testing API parameters
+	@docker exec -i ${USE_TTY} ${APP}-development bash /deces-backend/tests/test_query_params.sh
 
 dev: network backend-dev-stop backend-dev
 

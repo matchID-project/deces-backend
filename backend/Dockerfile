@@ -62,6 +62,7 @@ ENV NPM_CONFIG_LOGLEVEL debug
 
 VOLUME /${app_path}/src
 VOLUME /${app_path}/dist
+VOLUME /${app_path}/tests
 
 # Expose the listening port of your app
 EXPOSE ${port}
@@ -91,6 +92,7 @@ COPY package.json ./
 COPY tsconfig.json ./
 COPY tslint.json ./
 COPY tsoa.json ./
+ADD tests ./tets
 ADD src ./src
 
 # Expose the listening port of your app

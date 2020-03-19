@@ -59,6 +59,7 @@ services:
     volumes:
       - ${BACKEND}/src:/${APP}/src/
       - ${BACKEND}/dist:/${APP}/dist/
+      - ${BACKEND}/tests:/${APP}/tests/
       - /${APP}/node_modules
 
 networks:
