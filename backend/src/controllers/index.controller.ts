@@ -25,7 +25,8 @@ export class IndexController extends Controller {
     @Query() deathDate?: string,
     @Query() deathCity?: string,
     @Query() deathDepartment?: string,
-    @Query() deathCountry?: string
+    @Query() deathCountry?: string,
+    @Query() fuzzy: boolean = true
   ) {
     const requestInput = new RequestInput();
     if (q != null) {
@@ -33,17 +34,25 @@ export class IndexController extends Controller {
       const requestBody = buildRequest(requestInput);
       const result = await runRequest(requestBody);
       return  { msg: result.data };
-    } else if (firstName || lastName || birthDate || birthCity || birthDepartment || birthCountry || deathDate || deathCity || deathDepartment || deathCountry) {
-      // TODO: This could be better
-     requestInput['firstName'].value = firstName
-     requestInput['birthDate'].value = birthDate
-     requestInput['birthCity'].value = birthCity
-     requestInput['birthDepartment'].value = birthDepartment
-     requestInput['birthCountry'].value = birthCountry
-     requestInput['deathDate'].value = deathDate
-     requestInput['deathCity'].value = deathCity
-     requestInput['deathDepartment'].value = deathDepartment
-     requestInput['deathCountry'].value = deathCountry
+    } else if (firstName || lastName || birthDate || birthCity || birthDepartment || birthCountry || deathDate || deathCity || deathDepartment || deathCountry || fuzzy) {
+      Object.keys(requestInput).map((key: string) => {
+        requestInput[key].fuzzy = fuzzy ? "auto" : false;
+      });
+      const inputParams: any = {
+        firstName: firstName,
+        lastName: lastName,
+        birthDate: birthDate,
+        birthCity: birthCity,
+        birthDepartment: birthDepartment,
+        birthCountry: birthCountry,
+        deathDate: deathDate,
+        deathCity: deathCity,
+        deathCountry: deathCountry,
+        deathDepartment: deathDepartment
+      }
+      Object.keys(inputParams).map((key: string) => {
+        requestInput[key].value = inputParams[key];
+      });
       const requestBody = buildRequest(requestInput);
       const result = await runRequest(requestBody);
       return  { msg: result.data };

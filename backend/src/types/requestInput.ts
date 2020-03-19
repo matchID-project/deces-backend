@@ -12,6 +12,7 @@ import {
 } from '../queries'
 
 export default class RequestInput {
+  [key: string]: any; // Index signature
   fullText: {
     path: string;
     url: string;
