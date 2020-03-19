@@ -16,8 +16,8 @@ export class IndexController extends Controller {
   @Get('/search')
   public async search(
     @Query() q?: string,
-    @Query() firstName?: string, 
-    @Query() lastName?: string, 
+    @Query() firstName?: string,
+    @Query() lastName?: string,
     @Query() birthDate?: string,
     @Query() birthCity?: string,
     @Query() birthDepartment?: string,
@@ -38,16 +38,16 @@ export class IndexController extends Controller {
       return  { msg: result.data };
     } else if (firstName || lastName || birthDate || birthCity || birthDepartment || birthCountry || deathDate || deathCity || deathDepartment || deathCountry) {
       const inputParams: any = {
-        firstName: firstName,
-        lastName: lastName,
-        birthDate: birthDate,
-        birthCity: birthCity,
-        birthDepartment: birthDepartment,
-        birthCountry: birthCountry,
-        deathDate: deathDate,
-        deathCity: deathCity,
-        deathCountry: deathCountry,
-        deathDepartment: deathDepartment
+        firstName,
+        lastName,
+        birthDate,
+        birthCity,
+        birthDepartment,
+        birthCountry,
+        deathDate,
+        deathCity,
+        deathCountry,
+        deathDepartment
       }
       Object.keys(inputParams).map((key: string) => {
         requestInput[key].value = inputParams[key];

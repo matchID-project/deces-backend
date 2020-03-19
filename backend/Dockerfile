@@ -92,7 +92,7 @@ COPY package.json ./
 COPY tsconfig.json ./
 COPY tslint.json ./
 COPY tsoa.json ./
-ADD tests ./tets
+ADD tests ./tests
 ADD src ./src
 
 # Expose the listening port of your app

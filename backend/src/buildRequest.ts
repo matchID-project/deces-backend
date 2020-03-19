@@ -12,21 +12,21 @@ function buildMatch(requestInput: RequestInput) {
 }
 
 function buildSimpleMatch(searchInput: string) {
-  let searchTerm = searchInput.normalize('NFKD').replace(/[\u0300-\u036f]/g, "").split(/\s+/)
+  const searchTerm = searchInput.normalize('NFKD').replace(/[\u0300-\u036f]/g, "").split(/\s+/)
   let date = searchTerm.filter( x => x.match(/^\d{2}\/\d{2}\/\d{4}$/)).map( x => x.replace(/(\d{2})\/(\d{2})\/(\d{4})/,"$3$2$1"));
   date = date.length ? [date[0]] : null;
-  let names = searchTerm.filter( x => x.match(/[a-z]+/)).filter( x => !x.match(/^(el|d|le|de|la|los)$/));
+  const names = searchTerm.filter( x => x.match(/[a-z]+/)).filter( x => !x.match(/^(el|d|le|de|la|los)$/));
 
-  const default_query = { match_all: {} }
+  const defaultQuery = { match_all: {} }
 
-  let names_query
-  let date_query
+  let namesQuery
+  let dateQuery
 
   if (names.length > 0) {
-    names_query = new NameQuery(names);
+    namesQuery = new NameQuery(names);
 
     if (names.length === 2) {
-      names_query.bool.must.push(
+      namesQuery.bool.must.push(
         {
           bool: {
             minimum_should_match: 1,
@@ -151,7 +151,7 @@ function buildSimpleMatch(searchInput: string) {
   }
 
   if (date) {
-    date_query = {
+    dateQuery = {
       bool: {
         minimum_should_match: 1,
         should: [
@@ -176,24 +176,24 @@ function buildSimpleMatch(searchInput: string) {
     }
   }
 
-  let query = date_query
-    ? names_query
+  const query = dateQuery
+    ? namesQuery
       ? {
           function_score: {
             query: {
               bool: {
-                must: [ names_query ],
-                should: [ date_query ]
+                must: [ namesQuery ],
+                should: [ dateQuery ]
               }
             }
           }
         }
-      : date_query
-    : names_query
+      : dateQuery
+    : namesQuery
       ?
-        names_query
+        namesQuery
       :
-        default_query
+        defaultQuery
 
   return query
 
@@ -205,7 +205,7 @@ function buildAvancedMatch(searchInput: any) {
       query: {
         bool: {
           must: Object.keys(searchInput).map(key => {
-            let value = searchInput[key].mask && searchInput[key].mask.transform && searchInput[key].value
+            const value = searchInput[key].mask && searchInput[key].mask.transform && searchInput[key].value
                         ? searchInput[key].mask.transform(searchInput[key].value)
                         : searchInput[key].value;
             if (value) {
@@ -225,7 +225,7 @@ function buildFrom(current: number, resultsPerPage: number) {
 
 export default function buildRequest(requestInput: RequestInput): BodyResponse {
   const match = buildMatch(requestInput);
-  //const filter = buildRequestFilter(myFilters); // TODO
+  // const filter = buildRequestFilter(myFilters); // TODO
   const size = requestInput.size;
   const from = buildFrom(requestInput.page, size);
   const body = {
@@ -241,7 +241,7 @@ export default function buildRequest(requestInput: RequestInput): BodyResponse {
     //     description: {}
     //   }
     // },
-    //https://www.elastic.co/guide/en/elasticsearch/reference/7.x/search-request-source-filtering.html#search-request-source-filtering
+    // https://www.elastic.co/guide/en/elasticsearch/reference/7.x/search-request-source-filtering.html#search-request-source-filtering
     _source: [
       "CODE_INSEE_DECES","CODE_INSEE_NAISSANCE",
       "COMMUNE_DECES","COMMUNE_NAISSANCE",
@@ -269,8 +269,8 @@ export default function buildRequest(requestInput: RequestInput): BodyResponse {
       }
     },
     // https://www.elastic.co/guide/en/elasticsearch/reference/7.x/search-request-sort.html
-    size: size,
-    from: from
+    size,
+    from
   };
 
   return body;

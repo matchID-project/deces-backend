@@ -1,6 +1,6 @@
 export default class NameQuery {
   bool: {
-    must: any; //TODO define type
+    must: any; // TODO define type
     //  [
     //    {
     //      match: {

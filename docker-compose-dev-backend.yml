@@ -9,7 +9,6 @@ services:
       target: ${EXEC_ENV}
       dockerfile: ${NGINX}/Dockerfile
       args:
-        app_name: ${APP}
         app_ver: ${APP_VERSION}
     environment:
       - APP
@@ -42,7 +41,6 @@ services:
         npm_registry: ${NPM_REGISTRY}
         MIRROR_DEBIAN: ${MIRROR_DEBIAN}
         app_path: /${APP}
-        app_name: ${APP}
         app_ver: ${APP_VERSION}
         port: ${BACKEND_PORT}
         NPM_FIX: ${NPM_FIX}

@@ -21,7 +21,7 @@ function getTermFilterValue(field: string, fieldValue: string) {
   return { [`${field}.keyword`]: fieldValue };
 }
 
-function getTermFilter(filter: Filter) { //TODO preciser
+function getTermFilter(filter: Filter) { // TODO preciser
   if (filter.type === "any") {
     return {
       bool: {
