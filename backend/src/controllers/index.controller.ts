@@ -19,17 +19,12 @@ interface RequestBody {
   deathCountry?: string;
   size?: number;
   page?: number;
-  fuzzy?: boolean;
+  fuzzy?: string;
 }
 
 
 @Route('')
 export class IndexController extends Controller {
-  @Get('')
-  public async index() {
-    const result = await axios.get("http://elasticsearch:9200/deces")
-    return { msg: result.data };
-  }
 
   @Get('/search')
   public async search(
@@ -51,8 +46,8 @@ export class IndexController extends Controller {
     const requestInput = new RequestInput(size, page);
     if (q != null) {
       requestInput.fullText.value = q
-      const requestBody = buildRequest(requestInput);
-      const result = await runRequest(requestBody);
+      const requestBuild = buildRequest(requestInput);
+      const result = await runRequest(requestBuild);
       return  { msg: result.data };
     } else if (firstName || lastName || birthDate || birthCity || birthDepartment || birthCountry || deathDate || deathCity || deathDepartment || deathCountry) {
       const inputParams: any = {
@@ -71,8 +66,8 @@ export class IndexController extends Controller {
         requestInput[key].value = inputParams[key];
         requestInput[key].fuzzy = fuzzy ? "auto" : false;
       });
-      const requestBody = buildRequest(requestInput);
-      const result = await runRequest(requestBody);
+      const requestBuild = buildRequest(requestInput);
+      const result = await runRequest(requestBuild);
       return  { msg: result.data };
     } else {
       return { msg: 'Empty'};
@@ -86,9 +81,9 @@ export class IndexController extends Controller {
     requestInput['page'] = requestBody['page'] ? requestBody['page'] : 1;
     requestInput['size'] = requestBody['size'] ? requestBody['size'] : 20;
     Object.keys(requestBody).map((key: string) => {
-      if (key !== 'q' && key !== 'page' && key !== 'size') {
+      if (key !== 'q' && key !== 'page' && key !== 'size' && key != 'fuzzy') {
         requestInput[key].value = requestBody[key];
-        requestInput[key].fuzzy = requestBody.fuzzy ? "auto" : false;
+        requestInput[key].fuzzy = (requestBody.fuzzy && requestBody.fuzzy == 'false') ? false : "auto" ;
       }
     })
     const requestBuild = buildRequest(requestInput);

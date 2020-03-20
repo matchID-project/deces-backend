@@ -108,7 +108,7 @@ if curl -s -X POST -H "Content-Type: application/json" -d '{"deathDate":"1970","
 else
     echo -e "\e[31mdeathDepartement: KO!\e[0m"
 fi
-if curl -s -X POST -H "Content-Type: application/json" -d '{"deathDate":"1970","firstName": "Ana"}' http://localhost:8080/api/v0/search | grep -q '"hits":{"total":{"value":2'; then
+if curl -s -X POST -H "Content-Type: application/json" -d '{"deathDate":"1970","firstName": "Ana", "fuzzy": "false"}' http://localhost:8080/api/v0/search | grep -q '"hits":{"total":{"value":2'; then
     echo "fuzzy: OK"
 else
     echo -e "\e[31mfuzzy: KO!\e[0m"
