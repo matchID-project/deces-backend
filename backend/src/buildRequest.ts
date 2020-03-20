@@ -1,4 +1,4 @@
-import RequestInput from './types/requestInput';
+import { RequestInput } from './types/requestInput';
 import { BodyResponse } from './types/body';
 import NameQuery from './types/queries';
 import buildRequestFilter from "./buildRequestFilter";
