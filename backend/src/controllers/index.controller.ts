@@ -83,8 +83,10 @@ export class IndexController extends Controller {
   public async searchpost(@Body() requestBody: RequestBody) {
     const requestInput = new RequestInput();
     requestInput['fullText'].value = requestBody['q'] ? requestBody['q'] : "";
+    requestInput['page'] = requestBody['page'] ? requestBody['page'] : 1;
+    requestInput['size'] = requestBody['size'] ? requestBody['size'] : 20;
     Object.keys(requestBody).map((key: string) => {
-      if (key !== 'q') {
+      if (key !== 'q' && key !== 'page' && key !== 'size') {
         requestInput[key].value = requestBody[key];
         requestInput[key].fuzzy = requestBody.fuzzy ? "auto" : false;
       }
