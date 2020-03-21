@@ -11,6 +11,28 @@ import {
     matchQuery
 } from '../queries'
 
+
+const referenceSort: any = {
+  score: "_score",
+  firstName: "PRENOM.raw",
+  lastName: "NOM.raw",
+  birthDate: "DATE_NAISSANCE.raw",
+  birthCity: "COMMUNE_NAISSANCE.raw",
+  birthDepartment: "DEPARTEMENT_NAISSANCE",
+  birthCountry: "PAYS_NAISSANCE.raw",
+  deathDate: "DATE_DECES.raw",
+  deathCity: "COMMUNE_DECES.raw",
+  deathDepartment: "DEPARTEMENT_DECES",
+  deathCountry: "PAYS_DECES.raw"
+}
+
+export function buildSort (inputs?: any) {
+  return inputs.map((item: string) => {
+    let _myvar = Object.keys(item)[0]
+    return {field: referenceSort[_myvar], order: Object.values(item)[0]}
+  }).filter((x:any) => x.order).map((x: any) => { return { [x.field]: x.order } })
+}
+
 export interface RequestBody {
   [key: string]: any; // Index signature
   q?: string;
@@ -27,9 +49,10 @@ export interface RequestBody {
   size?: number;
   page?: number;
   fuzzy?: string;
+  sort?: any;
 }
 
-class RequestBodyInterface {
+export class RequestBodyInterface {
   [key: string]: any; // Index signature
   size: number;
   page: number;
@@ -193,6 +216,7 @@ export class RequestInputPost extends RequestBodyInterface {
     super()
     this.size = requestBody.size ? requestBody.size : 20;
     this.page = requestBody.page ? requestBody.page: 1;
+    this.sort = requestBody.sort ? requestBody.sort: [{score: 'desc'}];
     this.fullText = {
       path: "fullText",
       url: "q",
@@ -357,10 +381,11 @@ export class RequestInputPost extends RequestBodyInterface {
 }
 
 export class RequestInput extends RequestBodyInterface {
-  constructor(q: string, firstName: string, lastName: string, birthDate: string, birthCity: string, birthDepartment: string, birthCountry: string, deathDate: string, deathCity: string, deathDepartment: string, deathCountry: string, size: number, page: number, fuzzy: string) {
+  constructor(q: string, firstName: string, lastName: string, birthDate: string, birthCity: string, birthDepartment: string, birthCountry: string, deathDate: string, deathCity: string, deathDepartment: string, deathCountry: string, size: number, page: number, fuzzy: string, sort: string) {
     super()
     this.size = size ? size : 20;
     this.page = page ? page : 1;
+    this.sort = sort ? sort: [{score: 'desc'}];
     this.fullText = {
       path: "fullText",
       url: "q",

@@ -1,9 +1,9 @@
-import { RequestInput } from './types/requestInput';
+import { RequestBodyInterface, buildSort } from './types/requestInput';
 import { BodyResponse } from './types/body';
 import NameQuery from './types/queries';
 import buildRequestFilter from "./buildRequestFilter";
 
-function buildMatch(requestInput: RequestInput) {
+function buildMatch(requestInput: RequestBodyInterface) {
   if (requestInput.fullText.value) {
     return buildSimpleMatch(requestInput.fullText.value)
   } else {
@@ -199,7 +199,7 @@ function buildSimpleMatch(searchInput: string) {
 
 }
 
-function buildAvancedMatch(searchInput: any) {
+function buildAvancedMatch(searchInput: RequestBodyInterface) {
   return {
     function_score: {
       query: {
@@ -223,7 +223,8 @@ function buildFrom(current: number, resultsPerPage: number) {
   return (current - 1) * resultsPerPage;
 }
 
-export default function buildRequest(requestInput: RequestInput): BodyResponse {
+export default function buildRequest(requestInput: RequestBodyInterface): BodyResponse {
+  const sort = buildSort(requestInput.sort);
   const match = buildMatch(requestInput);
   // const filter = buildRequestFilter(myFilters); // TODO
   const size = requestInput.size;
@@ -268,6 +269,7 @@ export default function buildRequest(requestInput: RequestInput): BodyResponse {
         must: [match]
       }
     },
+    sort: sort,
     // https://www.elastic.co/guide/en/elasticsearch/reference/7.x/search-request-sort.html
     size,
     from

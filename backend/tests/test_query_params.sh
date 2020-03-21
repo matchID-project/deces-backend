@@ -53,7 +53,7 @@ if curl -s -XGET http://localhost:8080/api/v0/search?deathDate=1970\&firstName=A
 else
     echo -e "\e[31mfuzzy: KO!\e[0m"
 fi
-if curl -s -XGET http://localhost:8080/api/v0/search?deathDate=1970\&q=Georges%20Pompidou | grep -q 'Pompidou' ; then
+if curl -s -XGET http://localhost:8080/api/v0/search?deathDate=1970\&q=Georges%20Bosq | grep -q 'Bosq' ; then
     echo "fullText: OK"
 else
     echo -e "\e[31mfullText: KO!\e[0m"
@@ -113,8 +113,13 @@ if curl -s -X POST -H "Content-Type: application/json" -d '{"deathDate":"1970","
 else
     echo -e "\e[31mfuzzy: KO!\e[0m"
 fi
-if curl -s -X POST -H "Content-Type: application/json" -d '{"deathDate":"1970","q": "Georges Pompidou"}' http://localhost:8080/api/v0/search | grep -q 'Pompidou'; then
+if curl -s -X POST -H "Content-Type: application/json" -d '{"deathDate":"1970","q": "Georges Bosq"}' http://localhost:8080/api/v0/search | grep -q 'Bosq'; then
     echo "fullText: OK"
 else
     echo -e "\e[31mfullText: KO!\e[0m"
+fi
+if curl -s -X POST -H "Content-Type: application/json" -d '{"deathDate":"1970","q": "Georges Bosq", "sort": [{"firstName": "asc"}]}' http://localhost:8080/api/v0/search | grep -q 'Bosq'; then
+    echo "sort: OK"
+else
+    echo -e "\e[31msort: KO!\e[0m"
 fi

@@ -23,9 +23,10 @@ export class IndexController extends Controller {
     @Query() deathCountry?: string,
     @Query() size?: number,
     @Query() page?: number,
-    @Query() fuzzy?: string
+    @Query() fuzzy?: string,
+    @Query() sort?: string
   ) {
-    const requestInput = new RequestInput(q, firstName, lastName, birthDate, birthCity, birthDepartment, birthCountry, deathDate, deathCity, deathDepartment, deathCountry, size, page, fuzzy);
+    const requestInput = new RequestInput(q, firstName, lastName, birthDate, birthCity, birthDepartment, birthCountry, deathDate, deathCity, deathDepartment, deathCountry, size, page, fuzzy, sort);
     const requestBuild = buildRequest(requestInput);
     const result = await runRequest(requestBuild);
     return  { msg: result.data };
