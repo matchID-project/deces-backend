@@ -3,7 +3,7 @@ upstream elasticsearch {
 }
 
 upstream backend-dev {
-  server deces-backend-backend-production:8080;
+  server <BACKEND_HOST>:<BACKEND_PORT>;
 }
 
 server {

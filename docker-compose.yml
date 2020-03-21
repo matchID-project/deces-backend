@@ -20,7 +20,7 @@ services:
       - ES_PORT
       - BACKEND_PROXY_PATH
       - BACKEND_PORT
-      - BACKEND_DEV_HOST
+      - BACKEND_HOST
       - API_USER_LIMIT_RATE
       - API_USER_BURST
       - API_USER_SCOPE

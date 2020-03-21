@@ -29,8 +29,8 @@ export NPM_VERBOSE = 1
 export PORT=8084
 export BACKEND=${APP_PATH}/backend
 export BACKEND_PORT=8080
-export BACKEND_DEV_HOST=backend
-export BACKEND_PROXY_PATH=/api/v0
+export BACKEND_HOST=backend
+export BACKEND_PROXY_PATH=/${API_PATH}/api/v1
 
 # nginx
 export NGINX = ${APP_PATH}/nginx
