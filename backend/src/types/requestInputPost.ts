@@ -11,18 +11,36 @@ import {
 } from '../queries'
 import { RequestBodyInterface } from './requestBodyInterface';
 
+export interface RequestBody {
+  [key: string]: any; // Index signature
+  q?: string;
+  firstName?: string;
+  lastName?: string;
+  birthDate?: string;
+  birthCity?: string;
+  birthDepartment?: string;
+  birthCountry?: string;
+  deathDate?: string;
+  deathCity?: string;
+  deathDepartment?: string;
+  deathCountry?: string;
+  size?: number;
+  page?: number;
+  fuzzy?: string;
+  sort?: any;
+}
 
 
-export class RequestInput extends RequestBodyInterface {
-  constructor(q: string, firstName: string, lastName: string, birthDate: string, birthCity: string, birthDepartment: string, birthCountry: string, deathDate: string, deathCity: string, deathDepartment: string, deathCountry: string, size: number, page: number, fuzzy: string, sort: string) {
+export class RequestInputPost extends RequestBodyInterface {
+  constructor(requestBody: RequestBody) { //, size: number = 20, page: number = 1) {
     super()
-    this.size = size ? size : 20;
-    this.page = page ? page : 1;
-    this.sort = sort ? sort: [{score: 'desc'}];
+    this.size = requestBody.size ? requestBody.size : 20;
+    this.page = requestBody.page ? requestBody.page: 1;
+    this.sort = requestBody.sort ? requestBody.sort: [{score: 'desc'}];
     this.fullText = {
       path: "fullText",
       url: "q",
-      value: q ? q : "",
+      value: requestBody.q ? requestBody.q : "",
       field: "fullText",
       placeholder: "prénom, nom, date de naissance ou de décès, ... e.g. Georges Pompidou",
       title: "saisissez en recherche libre nom, prénom, date de naissance ou de décès",
@@ -32,10 +50,10 @@ export class RequestInput extends RequestBodyInterface {
     this.firstName =  {
       path: "name",
       url: "fn",
-      value: firstName ? firstName : "",
+      value: requestBody.firstName ? requestBody.firstName : "",
       field: ["PRENOM","PRENOMS"],
       query: firstNameQuery,
-      fuzzy: (fuzzy && fuzzy === 'false') ? false : "auto",
+      fuzzy: (requestBody.fuzzy && requestBody.fuzzy === 'false') ? false : "auto",
       placeholder: "Georges",
       title: "saisissez le prénom",
       size: 4,
@@ -44,11 +62,11 @@ export class RequestInput extends RequestBodyInterface {
     this.lastName = {
       path: "name",
       url: "ln",
-      value: lastName ? lastName : "",
+      value: requestBody.lastName ? requestBody.lastName : "",
       field: "NOM",
       section:"nom/prénoms",
       query: fuzzyTermQuery,
-      fuzzy: (fuzzy && fuzzy === 'false') ? false : "auto",
+      fuzzy: (requestBody.fuzzy && requestBody.fuzzy === 'false') ? false : "auto",
       placeholder: "Pompidou",
       title: "saisissez le nom",
       size: 6,
@@ -59,11 +77,11 @@ export class RequestInput extends RequestBodyInterface {
       url: "bd",
       before: "le",
       section:"naissance",
-      value: birthDate ? birthDate : "",
+      value: requestBody.birthDate ? requestBody.birthDate : "",
       field: "DATE_NAISSANCE",
       placeholder: "1910-1912 ou 1911 ou 05/07/1911",
       query: dateRangeStringQuery,
-      fuzzy: (fuzzy && fuzzy === 'false') ? false : "auto",
+      fuzzy: (requestBody.fuzzy && requestBody.fuzzy === 'false') ? false : "auto",
       title:"saisissez la date de naissance: 05/07/1911 ou 1911 ou un intervalle : 1909-1915, 01/01/1911-01/09/1911",
       mask: {
         typing: dateRangeTypingMask,
@@ -78,10 +96,10 @@ export class RequestInput extends RequestBodyInterface {
       path: "birth.location",
       url: "bc",
       before: "à",
-      value: birthCity ? birthCity : "",
+      value: requestBody.birthCity ? requestBody.birthCity : "",
       field: "COMMUNE_NAISSANCE",
       query: fuzzyTermQuery,
-      fuzzy: (fuzzy && fuzzy === 'false') ? false : "auto",
+      fuzzy: (requestBody.fuzzy && requestBody.fuzzy === 'false') ? false : "auto",
       placeholder: "commune: Montboudif",
       title:"saisissez la commune de naissance",
       size: "3-5",
@@ -92,7 +110,7 @@ export class RequestInput extends RequestBodyInterface {
       path: "birth.location",
       url: "bdep",
       before: "dans le",
-      value: birthDepartment ? birthDepartment : "",
+      value: requestBody.birthDepartment ? requestBody.birthDepartment : "",
       field: "DEPARTEMENT_NAISSANCE",
       query: matchQuery,
       fuzzy: false,
@@ -106,10 +124,10 @@ export class RequestInput extends RequestBodyInterface {
       path: "birth.location",
       url: "bco",
       before: "en/au",
-      value: birthCountry ? birthCountry : "",
+      value: requestBody.birthCountry ? requestBody.birthCountry : "",
       field: "PAYS_NAISSANCE",
       query: fuzzyTermQuery,
-      fuzzy: (fuzzy && fuzzy === 'false') ? false : "auto",
+      fuzzy: (requestBody.fuzzy && requestBody.fuzzy === 'false') ? false : "auto",
       title:"saisissez le pays de naissance",
       placeholder: "pays: France",
       size: 3,
@@ -121,10 +139,10 @@ export class RequestInput extends RequestBodyInterface {
       url: "dd",
       before: "le",
       section:"décès",
-      value: deathDate ? deathDate : "",
+      value: requestBody.deathDate ? requestBody.deathDate : "",
       field: "DATE_DECES",
       query: dateRangeStringQuery,
-      fuzzy: (fuzzy && fuzzy === 'false') ? false : "auto",
+      fuzzy: (requestBody.fuzzy && requestBody.fuzzy === 'false') ? false : "auto",
       placeholder: "1970-1980 ou 1974 ou 04/02/1974",
       multiQuery: "range",
       title:"saisissez la date de décès: 04/02/1974 ou 1974 ou un intervalle : 1970-1980 ou 01/01/1974-01/06/1974",
@@ -141,10 +159,10 @@ export class RequestInput extends RequestBodyInterface {
       path: "death.location",
       url: "dc",
       before: "à",
-      value: deathCity ? deathCity : "",
+      value: requestBody.deathCity ? requestBody.deathCity : "",
       field: "COMMUNE_DECES",
       query: fuzzyTermQuery,
-      fuzzy: (fuzzy && fuzzy === 'false') ? false : "auto",
+      fuzzy: (requestBody.fuzzy && requestBody.fuzzy === 'false') ? false : "auto",
       title:"saisissez la commune de décès",
       placeholder: "commune: Paris",
       size: "3-5",
@@ -155,7 +173,7 @@ export class RequestInput extends RequestBodyInterface {
       path: "death.location",
       url: "ddep",
       before: "dans le",
-      value: deathDepartment ? deathDepartment : "",
+      value: requestBody.deathDepartment ? requestBody.deathDepartment : "",
       field: "DEPARTEMENT_DECES",
       query: matchQuery,
       fuzzy: false,
@@ -169,10 +187,10 @@ export class RequestInput extends RequestBodyInterface {
       path: "death.location",
       url: "dco",
       before: "en/au",
-      value: deathCountry ? deathCountry : "",
+      value: requestBody.deathCountry ? requestBody.deathCountry : "",
       field: "PAYS_DECES",
       query: fuzzyTermQuery,
-      fuzzy: (fuzzy && fuzzy === 'false') ? false : "auto",
+      fuzzy: (requestBody.fuzzy && requestBody.fuzzy === 'false') ? false : "auto",
       placeholder: "pays: France",
       title:"saisissez le pays de décès",
       size: 3,

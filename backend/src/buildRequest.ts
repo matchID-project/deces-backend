@@ -1,4 +1,4 @@
-import { RequestBodyInterface, buildSort } from './types/requestInput';
+import { RequestBodyInterface } from './types/requestBodyInterface';
 import { BodyResponse } from './types/body';
 import NameQuery from './types/queries';
 import buildRequestFilter from "./buildRequestFilter";
@@ -221,6 +221,27 @@ function buildAvancedMatch(searchInput: RequestBodyInterface) {
 function buildFrom(current: number, resultsPerPage: number) {
   if (!current || !resultsPerPage) return;
   return (current - 1) * resultsPerPage;
+}
+
+const referenceSort: any = {
+  score: "_score",
+  firstName: "PRENOM.raw",
+  lastName: "NOM.raw",
+  birthDate: "DATE_NAISSANCE.raw",
+  birthCity: "COMMUNE_NAISSANCE.raw",
+  birthDepartment: "DEPARTEMENT_NAISSANCE",
+  birthCountry: "PAYS_NAISSANCE.raw",
+  deathDate: "DATE_DECES.raw",
+  deathCity: "COMMUNE_DECES.raw",
+  deathDepartment: "DEPARTEMENT_DECES",
+  deathCountry: "PAYS_DECES.raw"
+}
+
+export function buildSort (inputs?: any) {
+  return inputs.map((item: string) => {
+    let _myvar = Object.keys(item)[0]
+    return {field: referenceSort[_myvar], order: Object.values(item)[0]}
+  }).filter((x:any) => x.order).map((x: any) => { return { [x.field]: x.order } })
 }
 
 export default function buildRequest(requestInput: RequestBodyInterface): BodyResponse {

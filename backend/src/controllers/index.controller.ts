@@ -2,7 +2,8 @@ import { Controller, Get, Post, Body, Route, Query } from 'tsoa';
 import axios from 'axios';
 import runRequest from '../runRequest';
 import buildRequest from '../buildRequest';
-import { RequestInput, RequestInputPost, RequestBody } from '../types/requestInput';
+import { RequestInput } from '../types/requestInput';
+import { RequestInputPost, RequestBody } from '../types/requestInputPost';
 
 
 @Route('')
