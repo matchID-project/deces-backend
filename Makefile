@@ -31,6 +31,7 @@ export BACKEND=${APP_PATH}/backend
 export BACKEND_PORT=8080
 export BACKEND_HOST=backend
 export BACKEND_PROXY_PATH=/${API_PATH}/api/v1
+export FILE_BACKEND_DIST_APP_VERSION = $(APP)-$(APP_VERSION)-backend-dist.tar.gz
 
 # nginx
 export NGINX = ${APP_PATH}/nginx
@@ -101,6 +102,14 @@ elasticsearch-restore: elasticsearch-stop
 elasticsearch-clean: elasticsearch-stop
 	@sudo rm -rf ${ES_DATA} > /dev/null 2>&1 || true
 
+backend-dist:
+	export EXEC_ENV=development; ${DC} -f $(DC_FILE)-dev-backend.yml run -T --no-deps --rm backend npm run build  && tar czvf ${BACKEND}/${FILE_BACKEND_DIST_APP_VERSION} -C ${BACKEND} dist
+
+backend-build-image: ${BACKEND}/${FILE_BACKEND_DIST_APP_VERSION}
+	export EXEC_ENV=production; ${DC} -f $(DC_FILE).yml build backend
+
+backend-build-all: backend-dist backend-build-image
+
 # development mode
 backend-dev:
 	@echo docker-compose up backend for dev
@@ -113,7 +122,7 @@ backend-dev-stop:
 # production mode
 backend-start:
 	@echo docker-compose up backend for production ${VERSION}
-	@export EXEC_ENV=production; ${DC} -f ${DC_FILE}.yml up --build -d backend 2>&1 | grep -v orphan
+	@export EXEC_ENV=production; ${DC} -f ${DC_FILE}.yml up -d backend 2>&1 | grep -v orphan
 
 backend-stop:
 	@echo docker-compose down backend for production ${VERSION}
