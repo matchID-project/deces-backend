@@ -32,7 +32,7 @@ export interface RequestBody {
 
 
 export class RequestInputPost extends RequestBodyInterface {
-  constructor(requestBody: RequestBody) { //, size: number = 20, page: number = 1) {
+  constructor(requestBody: RequestBody) {
     super()
     this.size = requestBody.size ? requestBody.size : 20;
     this.page = requestBody.page ? requestBody.page: 1;

@@ -32,7 +32,7 @@ export class IndexController extends Controller {
     const result = await runRequest(requestBuild);
     return  { msg: result.data };
   }
-  
+
   @Post('/search')
   public async searchpost(@Body() requestBody: RequestBody) {
     const requestInput = new RequestInputPost(requestBody);

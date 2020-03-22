@@ -239,7 +239,7 @@ const referenceSort: any = {
 
 export function buildSort (inputs?: any) {
   return inputs.map((item: string) => {
-    let _myvar = Object.keys(item)[0]
+    const _myvar = Object.keys(item)[0]
     return {field: referenceSort[_myvar], order: Object.values(item)[0]}
   }).filter((x:any) => x.order).map((x: any) => { return { [x.field]: x.order } })
 }
@@ -290,7 +290,7 @@ export default function buildRequest(requestInput: RequestBodyInterface): BodyRe
         must: [match]
       }
     },
-    sort: sort,
+    sort,
     // https://www.elastic.co/guide/en/elasticsearch/reference/7.x/search-request-sort.html
     size,
     from
