@@ -110,15 +110,6 @@ backend-build-image: ${BACKEND}/${FILE_BACKEND_DIST_APP_VERSION}
 
 backend-build-all: network backend-dist backend-build-image
 
-# development mode
-backend-dev:
-	@echo docker-compose up backend for dev
-	@export EXEC_ENV=development;\
-		${DC} -f ${DC_FILE}-dev-backend.yml up --build -d --force-recreate backend 2>&1 | grep -v orphan
-
-backend-dev-stop:
-	@export EXEC_ENV=development; ${DC} -f ${DC_FILE}-dev-backend.yml down
-
 # production mode
 backend-start:
 	@echo docker-compose up backend for production ${VERSION}
@@ -129,6 +120,19 @@ backend-stop:
 	@export EXEC_ENV=production; ${DC} -f ${DC_FILE}.yml down  --remove-orphan
 
 backend-test:
+	@echo Testing API parameters
+	@docker exec -i ${USE_TTY} ${APP} bash /deces-backend/tests/test_query_params.sh
+
+# development mode
+backend-dev:
+	@echo docker-compose up backend for dev
+	@export EXEC_ENV=development;\
+		${DC} -f ${DC_FILE}-dev-backend.yml up --build -d --force-recreate backend 2>&1 | grep -v orphan
+
+backend-dev-stop:
+	@export EXEC_ENV=development; ${DC} -f ${DC_FILE}-dev-backend.yml down
+
+backend-dev-test:
 	@echo Testing API parameters
 	@docker exec -i ${USE_TTY} ${APP}-development bash /deces-backend/tests/test_query_params.sh
 

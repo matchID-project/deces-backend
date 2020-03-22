@@ -92,6 +92,7 @@ RUN  [ -f "${app_name}-${app_ver}-backend-dist.tar.gz" ] && \
      rm -rf ${app_name}-${app_ver}-backend-dist.tar.gz
 
 COPY package.json ./
+ADD tests ./tests
 
 # Expose the listening port of your app
 EXPOSE ${port}
