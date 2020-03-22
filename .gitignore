@@ -6,3 +6,4 @@ public/build
 bundle.*
 backend/src/routes
 backend/src/api
+*.tar.gz
