@@ -46,6 +46,13 @@ export API_GLOBAL_BURST=200 nodelay
 export BACKUP_DIR = ${APP_PATH}/backup
 
 export DOCKER_USERNAME=matchid
+export DOCKER_PASSWORD
+export DC_IMAGE_NAME=${DC_PREFIX}
+export GIT_BRANCH ?= $(shell git branch | grep '*' | awk '{print $$2}')
+export GIT_BRANCH_MASTER=master
+
+dummy		    := $(shell touch artifacts)
+include ./artifacts
 
 vm_max_count            := $(shell cat /etc/sysctl.conf | egrep vm.max_map_count\s*=\s*262144 && echo true)
 
@@ -102,6 +109,40 @@ elasticsearch-restore: elasticsearch-stop
 elasticsearch-clean: elasticsearch-stop
 	@sudo rm -rf ${ES_DATA} > /dev/null 2>&1 || true
 
+
+# DOCKER
+
+docker-tag:
+	echo ${APP_VERSION} 
+	echo ${DOCKER_USERNAME} 
+	echo ${DC_IMAGE_NAME} 
+	echo ${GIT_BRANCH}
+	echo ${GIT_BRANCH_MASTER} 
+	echo ${DOCKER_USERNAME}
+	echo ${DC_IMAGE_NAME} 
+	@if [ "${GIT_BRANCH}" = "${GIT_BRANCH_MASTER}" ]; then \
+		docker tag ${DOCKER_USERNAME}/${DC_IMAGE_NAME}:${APP_VERSION} ${DOCKER_USERNAME}/${DC_IMAGE_NAME}:latest; \
+	else \
+		docker tag ${DOCKER_USERNAME}/${DC_IMAGE_NAME}:${APP_VERSION} ${DOCKER_USERNAME}/${DC_IMAGE_NAME}:${GIT_BRANCH}; \
+	fi
+
+docker-login:
+	@echo docker login for ${DOCKER_USERNAME}
+	@echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
+
+docker-push: docker-login docker-tag
+	@docker push ${DOCKER_USERNAME}/${DC_IMAGE_NAME}:${APP_VERSION}
+	@if [ "${GIT_BRANCH}" == "${GIT_BRANCH_MASTER}" ];then\
+		docker push ${DOCKER_USERNAME}/${DC_IMAGE_NAME}:latest;\
+	else\
+		docker push ${DOCKER_USERNAME}/${DC_IMAGE_NAME}:${GIT_BRANCH};\
+	fi
+
+#############
+#  Backend  #
+#############
+
+# build
 backend-dist:
 	export EXEC_ENV=development; ${DC} -f $(DC_FILE)-dev-backend.yml run -T --no-deps --rm backend npm run build  && tar czvf ${BACKEND}/${FILE_BACKEND_DIST_APP_VERSION} -C ${BACKEND} dist
 

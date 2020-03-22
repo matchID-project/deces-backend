@@ -8,5 +8,14 @@ jobs:
 
     steps:
       - uses: actions/checkout@v1
-      - name: Build the Docker image
+      - name: Extract branch name
+        shell: bash
+        run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
+        id: extract_branch
+      - name: Build the docker image
         run: make backend-build-all
+      - name: Push the docker image
+        run: make docker-push
+        env:
+          GIT_BRANCH: ${{ steps.extract_branch.outputs.branch }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
