@@ -63,7 +63,7 @@ network-stop:
 	docker network rm ${DC_NETWORK}
 
 network:
-	@docker network create ${DC_NETWORK_OPT} ${DC_NETWORK} 2> /dev/null; true
+	@docker network create ${DC_NETWORK} 2> /dev/null; true
 
 ###################
 #  Elasticsearch  #
@@ -108,7 +108,7 @@ backend-dist:
 backend-build-image: ${BACKEND}/${FILE_BACKEND_DIST_APP_VERSION}
 	export EXEC_ENV=production; ${DC} -f $(DC_FILE).yml build backend
 
-backend-build-all: backend-dist backend-build-image
+backend-build-all: network backend-dist backend-build-image
 
 # development mode
 backend-dev:
