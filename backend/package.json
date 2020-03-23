@@ -5,12 +5,11 @@
   "main": "dist/index.js",
   "scripts": {
     "build:lint": "tslint -c tslint.json -p tsconfig.json --fix",
-    "build:routes": "mkdir -p src/routes && ./node_modules/.bin/tsoa routes",
-    "build:swagger": "mkdir -p src/api && ./node_modules/.bin/tsoa swagger",
+    "build:tsoa": "mkdir -p src/routes && mkdir -p src/api && ./node_modules/.bin/tsc src/tsoa.ts --outDir dist && node dist/tsoa.js",
     "build:ts": "./node_modules/.bin/tsc --outDir dist",
-    "build": "npm run build:lint && npm run build:routes && npm run build:swagger && npm run build:ts",
+    "build": "npm run build:lint && npm run build:tsoa && npm run build:ts",
     "start": "node .",
-    "watch-ts": "npm run build:lint && npm run build:routes && npm run build:swagger && ./node_modules/.bin/tsc --outDir dist -w",
+    "watch-ts": "npm run build:lint && npm run build:tsoa && ./node_modules/.bin/tsc --outDir dist -w",
     "watch-node": "nodemon .",
     "dev": "concurrently -k -p \"[{name}]\" -n \"TypeScript,Node\" -c \"cyan.bold,green.bold\" \"npm run watch-ts\" \"npm run watch-node\"",
     "test": "echo \"Error: no test specified\" && exit 1"

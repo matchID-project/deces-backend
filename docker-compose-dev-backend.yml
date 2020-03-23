@@ -52,6 +52,7 @@ services:
       - APP=${APP}
       - APP_VERSION=${APP_VERSION}
       - BACKEND_PROXY_PATH=${BACKEND_PROXY_PATH}
+      - BACKEND_HOSTNAME=${BACKEND_HOSTNAME}
       - ES_URL=${ES_HOST}:${ES_PORT}
       - ES_INDEX=${ES_INDEX}
     volumes:

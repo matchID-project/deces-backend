@@ -47,7 +47,6 @@ VOLUME /${app_path}/tests
 COPY package.json ./
 COPY tsconfig.json ./
 COPY tslint.json ./
-COPY tsoa.json ./
 
 RUN if [ -z "${NPM_VERBOSE}" ]; then\
       npm install;  \

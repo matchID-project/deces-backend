@@ -13,6 +13,8 @@ jobs:
         shell: bash
         run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
         id: extract_branch
+        env:
+          BACKEND_HOSTNAME: deces.matchid.io
       - name: Build the docker image
         run: make backend-build-all
       - name: Make deploy local
