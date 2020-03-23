@@ -13,10 +13,10 @@ jobs:
         shell: bash
         run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
         id: extract_branch
-      - name: Build the docker image
+      - name: Build the dev docker image
         if: steps.extract_branch.outputs.branch == 'dev'
         run: make backend-build-all BACKEND_HOSTNAME=dev-deces.matchid.io
-      - name: Build the docker image
+      - name: Build the master docker image
         if: steps.extract_branch.outputs.branch == 'master'
         run: make backend-build-all BACKEND_HOSTNAME=deces.matchid.io
       - name: Make deploy local
