@@ -43,6 +43,7 @@ services:
         npm_registry: ${NPM_REGISTRY}
         MIRROR_DEBIAN: ${MIRROR_DEBIAN}
         app_path: /${APP}
+        app_name: ${APP}
         app_ver: ${APP_VERSION}
         port: ${BACKEND_PORT}
         NPM_FIX: ${NPM_FIX}
@@ -53,6 +54,7 @@ services:
       - BACKEND_PORT=${BACKEND_PORT}
       - APP=${APP}
       - APP_VERSION=${APP_VERSION}
+      - BACKEND_PROXY_PATH=${BACKEND_PROXY_PATH}
       - ES_URL=${ES_HOST}:${ES_PORT}
       - ES_INDEX=${ES_INDEX}
 
