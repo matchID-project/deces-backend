@@ -86,6 +86,19 @@ config:
 	@ln -s ${APP_PATH}/${GIT_TOOLS}/aws ${APP_PATH}/aws
 	@touch config
 
+clean-data: elasticsearch-clean backup-dir-clean
+	@sudo rm -rf ${DATA_VERSION_FILE} ${DATAPREP_VERSION_FILE}\
+		${DATA_VERSION_FILE}.list > /dev/null 2>&1 || true
+
+clean-remote:
+	@make -C ${APP_PATH}/${GIT_TOOLS} remote-clean > /dev/null 2>&1 || true
+
+clean-config:
+	@rm -rf ${APP_PATH}/${GIT_TOOLS} ${APP_PATH}/aws config > /dev/null 2>&1 || true
+
+clean-local: clean-data clean-config
+
+clean: clean-remote clean-local
 
 ${GIT_DATAPREP}:
 	@cd ${APP_PATH};\

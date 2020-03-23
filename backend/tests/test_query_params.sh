@@ -53,7 +53,7 @@ if curl -s -XGET http://localhost:${BACKEND_PORT}/deces/api/v1/search?deathDate=
 else
     echo -e "\e[31mfuzzy: KO!\e[0m"
 fi
-if curl -s -XGET http://localhost:${BACKEND_PORT}/deces/api/v1/search?deathDate=1970\&q=Georges%20Bosq | grep -q 'Bosq' ; then
+if curl -s -XGET http://localhost:${BACKEND_PORT}/deces/api/v1/search?deathDate=1970\&lastName=Georges%20Bosq | grep -q 'Bosq' ; then
     echo "fullText: OK"
 else
     echo -e "\e[31mfullText: KO!\e[0m"
@@ -113,12 +113,12 @@ if curl -s -X POST -H "Content-Type: application/json" -d '{"deathDate":"1970","
 else
     echo -e "\e[31mfuzzy: KO!\e[0m"
 fi
-if curl -s -X POST -H "Content-Type: application/json" -d '{"deathDate":"1970","q": "Georges Bosq"}' http://localhost:${BACKEND_PORT}/deces/api/v1/search | grep -q 'Bosq'; then
+if curl -s -X POST -H "Content-Type: application/json" -d '{"deathDate":"1970","lastName": "Bosq"}' http://localhost:${BACKEND_PORT}/deces/api/v1/search | grep -q 'Bosq'; then
     echo "fullText: OK"
 else
     echo -e "\e[31mfullText: KO!\e[0m"
 fi
-if curl -s -X POST -H "Content-Type: application/json" -d '{"deathDate":"1970","q": "Georges Bosq", "sort": [{"firstName": "asc"}]}' http://localhost:${BACKEND_PORT}/deces/api/v1/search | grep -q 'Bosq'; then
+if curl -s -X POST -H "Content-Type: application/json" -d '{"deathDate":"1970","lastName": "Bosq", "sort": [{"firstName": "asc"}]}' http://localhost:${BACKEND_PORT}/deces/api/v1/search | grep -q 'Bosq'; then
     echo "sort: OK"
 else
     echo -e "\e[31msort: KO!\e[0m"
