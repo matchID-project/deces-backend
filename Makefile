@@ -148,7 +148,7 @@ elasticsearch: network vm_max
 	done;\
 	true)
 	${DC} -f ${DC_FILE}-elasticsearch-huge.yml up -d
-	@timeout=${ES_TIMEOUT} ; ret=1 ; until [ "$$timeout" -le 0 -o "$$ret" -eq "0"  ] ; do (docker exec -i ${USE_TTY} ${DC_PREFIX}-elasticsearch curl -s --fail -XGET localhost:9200/_cat/indices > /dev/null) ; ret=$$? ; if [ "$$ret" -ne "0" ] ; then echo "waiting for elasticsearch to start $$timeout" ; fi ; ((timeout--)); sleep 1 ; done ; exit $$ret
+	@timeout=${ES_TIMEOUT} ; ret=1 ; until [ "$$timeout" -le 0 -o "$$ret" -eq "0"  ] ; do (docker exec -i ${USE_TTY} ${DC_PREFIX}-elasticsearch curl -s --fail -XGET localhost:9200/_cat/indices > /dev/null) ; ret=$$? ; if [ "$$ret" -ne "0" ] ; then echo "waiting for elasticsearch to start $$timeout" ; fi ; timeout=$$((timeout-1)); sleep 1 ; done ; exit $$ret
 
 
 elasticsearch-s3-pull: backup-dir ${DATAPREP_VERSION_FILE} ${DATA_VERSION_FILE}
@@ -189,14 +189,12 @@ deploy-local: config elasticsearch-s3-pull elasticsearch-restore elasticsearch d
 # DOCKER
 
 docker-tag:
-	echo ${APP_VERSION} 
-	echo ${DOCKER_USERNAME} 
-	echo ${DC_IMAGE_NAME} 
-	echo ${GIT_BRANCH}
-	echo ${GIT_BRANCH_MASTER} 
-	echo ${DOCKER_USERNAME}
-	echo ${DC_IMAGE_NAME} 
-	@if [ "${GIT_BRANCH}" = "${GIT_BRANCH_MASTER}" ]; then \
+	@echo app_version ${APP_VERSION} 
+	@echo docker username ${DOCKER_USERNAME} 
+	@echo docker image ${DC_IMAGE_NAME} 
+	@echo git current branch ${GIT_BRANCH}
+	@echo git master branch ${GIT_BRANCH_MASTER} 
+	@if [ "$$GIT_BRANCH" = "$$GIT_BRANCH_MASTER" ]; then \
 		docker tag ${DOCKER_USERNAME}/${DC_IMAGE_NAME}:${APP_VERSION} ${DOCKER_USERNAME}/${DC_IMAGE_NAME}:latest; \
 	else \
 		docker tag ${DOCKER_USERNAME}/${DC_IMAGE_NAME}:${APP_VERSION} ${DOCKER_USERNAME}/${DC_IMAGE_NAME}:${GIT_BRANCH}; \
