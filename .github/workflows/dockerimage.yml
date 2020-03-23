@@ -1,12 +1,10 @@
-name: Docker-Image-Build-CI
+name: Docker image build CI
 
-on:
-  push:
-    branches:
-      - master
+on: [push]
 
 jobs:
   build:
+    name: Docker image build CI
     runs-on: ubuntu-latest
 
     steps:
@@ -17,7 +15,14 @@ jobs:
         id: extract_branch
       - name: Build the docker image
         run: make backend-build-all
+      - name: Make deploy local
+        run: make deploy-local
+        env:
+          FILES_TO_PROCESS: deces-1970.txt.gz
+          aws_access_key_id: ${{ secrets.aws_access_key_id }}
+          aws_secret_access_key: ${{ secrets.aws_secret_access_key }}
       - name: Push the docker image
+        if: steps.extract_branch.outputs.branch == 'master'
         run: make docker-push
         env:
           GIT_BRANCH: ${{ steps.extract_branch.outputs.branch }}
