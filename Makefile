@@ -1,3 +1,5 @@
+SHELL := /bin/bash
+
 export APP = deces-backend
 export APP_PATH := $(shell pwd)
 export APP_VERSION	:= $(shell git describe --tags )
