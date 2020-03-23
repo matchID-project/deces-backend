@@ -13,10 +13,12 @@ jobs:
         shell: bash
         run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
         id: extract_branch
-        env:
-          BACKEND_HOSTNAME: deces.matchid.io
       - name: Build the docker image
-        run: make backend-build-all
+        if: steps.extract_branch.outputs.branch == 'dev'
+        run: make backend-build-all BACKEND_HOSTNAME=dev-deces.matchid.io
+      - name: Build the docker image
+        if: steps.extract_branch.outputs.branch == 'master'
+        run: make backend-build-all BACKEND_HOSTNAME=deces.matchid.io
       - name: Make deploy local
         run: make deploy-local
         env:
@@ -24,8 +26,8 @@ jobs:
           aws_access_key_id: ${{ secrets.aws_access_key_id }}
           aws_secret_access_key: ${{ secrets.aws_secret_access_key }}
       - name: Push the docker image
-        if: steps.extract_branch.outputs.branch == 'master'
-        run: make docker-push
+        if: steps.extract_branch.outputs.branch == 'master' || steps.extract_branch.outputs.branch == 'dev'
+        run: make docker-push GIT_BRANCH="$GIT_BRANCH"
         env:
           GIT_BRANCH: ${{ steps.extract_branch.outputs.branch }}
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}

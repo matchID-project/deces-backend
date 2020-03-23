@@ -191,29 +191,8 @@ deploy-local: config elasticsearch-s3-pull elasticsearch-restore elasticsearch d
 
 # DOCKER
 
-docker-tag:
-	@echo app_version ${APP_VERSION} 
-	@echo docker username ${DOCKER_USERNAME} 
-	@echo docker image ${DC_IMAGE_NAME} 
-	@echo git current branch ${GIT_BRANCH}
-	@echo git master branch ${GIT_BRANCH_MASTER} 
-	@if [ "$$GIT_BRANCH" = "$$GIT_BRANCH_MASTER" ]; then \
-		docker tag ${DOCKER_USERNAME}/${DC_IMAGE_NAME}:${APP_VERSION} ${DOCKER_USERNAME}/${DC_IMAGE_NAME}:latest; \
-	else \
-		docker tag ${DOCKER_USERNAME}/${DC_IMAGE_NAME}:${APP_VERSION} ${DOCKER_USERNAME}/${DC_IMAGE_NAME}:${GIT_BRANCH}; \
-	fi
-
-docker-login:
-	@echo docker login for ${DOCKER_USERNAME}
-	@echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
-
-docker-push: docker-login docker-tag
-	@docker push ${DOCKER_USERNAME}/${DC_IMAGE_NAME}:${APP_VERSION}
-	@if [ "${GIT_BRANCH}" == "${GIT_BRANCH_MASTER}" ];then\
-		docker push ${DOCKER_USERNAME}/${DC_IMAGE_NAME}:latest;\
-	else\
-		docker push ${DOCKER_USERNAME}/${DC_IMAGE_NAME}:${GIT_BRANCH};\
-	fi
+docker-push:
+	@make -C ${APP_PATH}/${GIT_TOOLS} docker-push DC_IMAGE_NAME=${DC_IMAGE_NAME} APP_VERSION=${APP_VERSION}
 
 docker-check:
 	@if [ ! -f ".${DOCKER_USERNAME}-${DC_IMAGE_NAME}:${APP_VERSION}" ]; then\
