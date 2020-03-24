@@ -14,7 +14,7 @@ jobs:
         run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
         id: extract_branch
       - name: Build the dev docker image
-        if: steps.extract_branch.outputs.branch == 'dev'
+        if: steps.extract_branch.outputs.branch != 'master'
         run: make backend-build-all BACKEND_HOSTNAME=dev-deces.matchid.io
       - name: Build the master docker image
         if: steps.extract_branch.outputs.branch == 'master'
