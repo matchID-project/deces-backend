@@ -89,6 +89,12 @@ else
     echo -e "\e[31mfield content error: KO!\e[0m"
     exit 1
 fi
+if curl -s -XGET http://localhost:${BACKEND_PORT}/deces/api/v1/search?birthDate=1970\&q=Georges | grep -q 'simple and complex request' ; then
+    echo "simple and complex request error: OK"
+else
+    echo -e "\e[31msimple and complex request error: KO!\e[0m"
+    exit 1
+fi
 echo "POST--->"
 if curl -s -X POST -H "Content-Type: application/json" -d '{"deathDate":"1970","firstName": "Harry"}' http://localhost:${BACKEND_PORT}/deces/api/v1/search | grep -q 'Harry'; then
     echo "firstName: OK"
@@ -202,5 +208,11 @@ if curl -s -X POST -H "Content-Type: application/json" -d '{"deathDate": "19"}' 
     echo "field content error: OK"
 else
     echo -e "\e[31mfield content error: KO!\e[0m"
+    exit 1
+fi
+if curl -s -X POST -H "Content-Type: application/json" -d '{"deathDate": "1970", "q": "Georges"}' http://localhost:${BACKEND_PORT}/deces/api/v1/search | grep -qi 'simple and complex request'; then
+    echo "simple and complex request: OK"
+else
+    echo -e "\e[31msimple and complex request: KO!\e[0m"
     exit 1
 fi

@@ -35,6 +35,10 @@ export class IndexController extends Controller {
         this.setStatus(400);
         return  { msg: "error - field content error" };
       }
+      if ((firstName || lastName || birthDate || birthCity || birthDepartment || birthCountry || deathDate || deathCity || deathDepartment || deathCountry) && q) {
+        this.setStatus(400);
+        return  { msg: "error - simple and complex request at the same time" };
+      }
       const requestBuild = buildRequest(requestInput);
       const result = await runRequest(requestBuild);
       this.setStatus(200);
@@ -55,6 +59,10 @@ export class IndexController extends Controller {
       if (notValidFields.length > 0) {
         this.setStatus(400);
         return  { msg: "error - unknown field" };
+      }
+      if ((requestBody.firstName || requestBody.lastName || requestBody.birthDate || requestBody.birthCity || requestBody.birthDepartment || requestBody.birthCountry || requestBody.deathDate || requestBody.deathCity || requestBody.deathDepartment || requestBody.deathCountry) && requestBody.q) {
+        this.setStatus(400);
+        return  { msg: "error - simple and complex request at the same time" };
       }
       const requestInput = new RequestInputPost(requestBody);
       if (requestInput.error) {
