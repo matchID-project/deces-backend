@@ -32,8 +32,29 @@ export interface RequestBody {
 
 
 export class RequestInputPost extends RequestBodyInterface {
+  error: boolean = false;
   constructor(requestBody: RequestBody) {
     super()
+    if (requestBody.birthDate) {
+      let validRange = /^\d{4}-\d{4}$/.test(requestBody.birthDate);
+      let validYear = /^\d{4}$/.test(requestBody.birthDate);
+      let validDate = /^\d{2}\/\d{2}\/\d{4}$/.test(requestBody.birthDate);
+      if (validRange || validYear || validDate) {
+        this.error = false;
+      } else {
+        this.error = true;
+      }
+    }
+    if (requestBody.deathDate) {
+      let validRange = /^\d{4}-\d{4}$/.test(requestBody.deathDate);
+      let validYear = /^\d{4}$/.test(requestBody.deathDate);
+      let validDate = /^\d{2}\/\d{2}\/\d{4}$/.test(requestBody.deathDate);
+      if (validRange || validYear || validDate) {
+        this.error = false;
+      } else {
+        this.error = true;
+      }
+    }
     this.size = requestBody.size ? requestBody.size : 20;
     this.page = requestBody.page ? requestBody.page: 1;
     this.sort = requestBody.sort ? requestBody.sort: [{score: 'desc'}];

@@ -31,6 +31,10 @@ export class IndexController extends Controller {
   ) {
     if (q || firstName || lastName || birthDate || birthCity || birthDepartment || birthCountry || deathDate || deathCity || deathDepartment || deathCountry) {
       const requestInput = new RequestInput(q, firstName, lastName, birthDate, birthCity, birthDepartment, birthCountry, deathDate, deathCity, deathDepartment, deathCountry, size, page, fuzzy, sort);
+      if (requestInput.error) {
+        this.setStatus(400);
+        return  { msg: "error - field content error" };
+      }
       const requestBuild = buildRequest(requestInput);
       const result = await runRequest(requestBuild);
       this.setStatus(200);
@@ -53,6 +57,10 @@ export class IndexController extends Controller {
         return  { msg: "error - unknown field" };
       }
       const requestInput = new RequestInputPost(requestBody);
+      if (requestInput.error) {
+        this.setStatus(400);
+        return  { msg: "error - field content error" };
+      }
       const requestBuild = buildRequest(requestInput);
       const result = await runRequest(requestBuild);
       this.setStatus(200);

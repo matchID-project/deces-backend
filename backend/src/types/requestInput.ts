@@ -14,8 +14,29 @@ import { RequestBodyInterface } from './requestBodyInterface';
 
 
 export class RequestInput extends RequestBodyInterface {
+  error: boolean = false;
   constructor(q: string, firstName: string, lastName: string, birthDate: string, birthCity: string, birthDepartment: string, birthCountry: string, deathDate: string, deathCity: string, deathDepartment: string, deathCountry: string, size: number, page: number, fuzzy: string, sort: string) {
     super()
+    if (birthDate) {
+      let validRange = /^\d{4}-\d{4}$/.test(birthDate);
+      let validYear = /^\d{4}$/.test(birthDate);
+      let validDate = /^\d{2}\/\d{2}\/\d{4}$/.test(birthDate);
+      if (validRange || validYear || validDate) {
+        this.error = false;
+      } else {
+        this.error = true;
+      }
+    }
+    if (deathDate) {
+      let validRange = /^\d{4}-\d{4}$/.test(deathDate);
+      let validYear = /^\d{4}$/.test(deathDate);
+      let validDate = /^\d{2}\/\d{2}\/\d{4}$/.test(deathDate);
+      if (validRange || validYear || validDate) {
+        this.error = false;
+      } else {
+        this.error = true;
+      }
+    }
     this.size = size ? size : 20;
     this.page = page ? page : 1;
     this.sort = sort ? sort: [{score: 'desc'}];

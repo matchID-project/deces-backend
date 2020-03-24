@@ -83,6 +83,12 @@ else
     echo -e "\e[31mwrong field: KO!\e[0m"
     exit 1
 fi
+if curl -s -XGET http://localhost:${BACKEND_PORT}/deces/api/v1/search?birthDate=19 | grep -q 'field content error' ; then
+    echo "field content error: OK"
+else
+    echo -e "\e[31mfield content error: KO!\e[0m"
+    exit 1
+fi
 echo "POST--->"
 if curl -s -X POST -H "Content-Type: application/json" -d '{"deathDate":"1970","firstName": "Harry"}' http://localhost:${BACKEND_PORT}/deces/api/v1/search | grep -q 'Harry'; then
     echo "firstName: OK"
@@ -190,5 +196,11 @@ if curl -s -X POST -H "Content-Type: application/json" -d '{"bob": "pop"}' http:
     echo "unknown field: OK"
 else
     echo -e "\e[31munknown field: KO!\e[0m"
+    exit 1
+fi
+if curl -s -X POST -H "Content-Type: application/json" -d '{"deathDate": "19"}' http://localhost:${BACKEND_PORT}/deces/api/v1/search | grep -qi 'field content'; then
+    echo "field content error: OK"
+else
+    echo -e "\e[31mfield content error: KO!\e[0m"
     exit 1
 fi
