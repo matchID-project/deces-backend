@@ -1,3 +1,4 @@
+echo "GET--->"
 if curl -s -XGET http://localhost:${BACKEND_PORT}/deces/api/v1/search?deathDate=1970\&firstName=Harry | grep -q 'Harry'; then
     echo "firstName: OK"
 else
@@ -64,12 +65,37 @@ else
     echo -e "\e[31mfuzzy: KO!\e[0m"
     exit 1
 fi
-if curl -s -XGET http://localhost:${BACKEND_PORT}/deces/api/v1/search?deathDate=1970\&lastName=Georges%20Bosq | grep -q 'Bosq' ; then
+if curl -s -XGET http://localhost:${BACKEND_PORT}/deces/api/v1/search?q=Michel+Bosq+02%2F08%2F1970 | grep -q 'Bosq' ; then
     echo "fullText: OK"
 else
     echo -e "\e[31mfullText: KO!\e[0m"
     exit 1
 fi
+if curl -s -XGET http://localhost:${BACKEND_PORT}/deces/api/v1/search | grep -q 'error' ; then
+    echo "empty request: OK"
+else
+    echo -e "\e[31mempty request: KO!\e[0m"
+    exit 1
+fi
+if curl -s -XGET http://localhost:${BACKEND_PORT}/deces/api/v1/search?bob=pop | grep -q 'error' ; then
+    echo "wrong field: OK"
+else
+    echo -e "\e[31mwrong field: KO!\e[0m"
+    exit 1
+fi
+if curl -s -XGET http://localhost:${BACKEND_PORT}/deces/api/v1/search?birthDate=19 | grep -q 'field content error' ; then
+    echo "field content error: OK"
+else
+    echo -e "\e[31mfield content error: KO!\e[0m"
+    exit 1
+fi
+if curl -s -XGET http://localhost:${BACKEND_PORT}/deces/api/v1/search?birthDate=1970\&q=Georges | grep -q 'simple and complex request' ; then
+    echo "simple and complex request error: OK"
+else
+    echo -e "\e[31msimple and complex request error: KO!\e[0m"
+    exit 1
+fi
+echo "POST--->"
 if curl -s -X POST -H "Content-Type: application/json" -d '{"deathDate":"1970","firstName": "Harry"}' http://localhost:${BACKEND_PORT}/deces/api/v1/search | grep -q 'Harry'; then
     echo "firstName: OK"
 else
@@ -136,7 +162,7 @@ else
     echo -e "\e[31mfuzzy: KO!\e[0m"
     exit 1
 fi
-if curl -s -X POST -H "Content-Type: application/json" -d '{"deathDate":"1970","lastName": "Bosq"}' http://localhost:${BACKEND_PORT}/deces/api/v1/search | grep -q 'Bosq'; then
+if curl -s -X POST -H "Content-Type: application/json" -d '{"q": "Michel Bosq 02/08/1970"}' http://localhost:${BACKEND_PORT}/deces/api/v1/search | grep -q 'Bosq'; then
     echo "fullText: OK"
 else
     echo -e "\e[31mfullText: KO!\e[0m"
@@ -146,5 +172,47 @@ if curl -s -X POST -H "Content-Type: application/json" -d '{"deathDate":"1970","
     echo "sort: OK"
 else
     echo -e "\e[31msort: KO!\e[0m"
+    exit 1
+fi
+if curl -s -X POST -H "Content-Type: application/json" -d '{}' http://localhost:${BACKEND_PORT}/deces/api/v1/search | grep -q 'error'; then
+    echo "empty query: OK"
+else
+    echo -e "\e[31mempty query: KO!\e[0m"
+    exit 1
+fi
+if curl -s -X POST -H "Content-Type: application/json" -d '{}' http://localhost:${BACKEND_PORT}/deces/api/v1/search | grep -q 'error'; then
+    echo "empty query: OK"
+else
+    echo -e "\e[31mempty query: KO!\e[0m"
+    exit 1
+fi
+if curl -s -X POST -H "Content-Type: text/plain" -d '{"q": "Georges"}' http://localhost:${BACKEND_PORT}/deces/api/v1/search | grep -q 'error'; then
+    echo "wrong content type: OK"
+else
+    echo -e "\e[31mwrong content type: KO!\e[0m"
+    exit 1
+fi
+if curl -s -X POST -H "Content-Type: application/json" -d '{"q: "Georges"}' http://localhost:${BACKEND_PORT}/deces/api/v1/search | grep -qi 'bad json'; then
+    echo "bad JSON format: OK"
+else
+    echo -e "\e[31mbad JSON format: KO!\e[0m"
+    exit 1
+fi
+if curl -s -X POST -H "Content-Type: application/json" -d '{"bob": "pop"}' http://localhost:${BACKEND_PORT}/deces/api/v1/search | grep -qi 'unknown field'; then
+    echo "unknown field: OK"
+else
+    echo -e "\e[31munknown field: KO!\e[0m"
+    exit 1
+fi
+if curl -s -X POST -H "Content-Type: application/json" -d '{"deathDate": "19"}' http://localhost:${BACKEND_PORT}/deces/api/v1/search | grep -qi 'field content'; then
+    echo "field content error: OK"
+else
+    echo -e "\e[31mfield content error: KO!\e[0m"
+    exit 1
+fi
+if curl -s -X POST -H "Content-Type: application/json" -d '{"deathDate": "1970", "q": "Georges"}' http://localhost:${BACKEND_PORT}/deces/api/v1/search | grep -qi 'simple and complex request'; then
+    echo "simple and complex request: OK"
+else
+    echo -e "\e[31msimple and complex request: KO!\e[0m"
     exit 1
 fi
