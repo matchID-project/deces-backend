@@ -18,9 +18,9 @@ export class RequestInput extends RequestBodyInterface {
   constructor(q: string, firstName: string, lastName: string, birthDate: string, birthCity: string, birthDepartment: string, birthCountry: string, deathDate: string, deathCity: string, deathDepartment: string, deathCountry: string, size: number, page: number, fuzzy: string, sort: string) {
     super()
     if (birthDate) {
-      let validRange = /^\d{4}-\d{4}$/.test(birthDate);
-      let validYear = /^\d{4}$/.test(birthDate);
-      let validDate = /^\d{2}\/\d{2}\/\d{4}$/.test(birthDate);
+      const validRange = /^\d{4}-\d{4}$/.test(birthDate);
+      const validYear = /^\d{4}$/.test(birthDate);
+      const validDate = /^\d{2}\/\d{2}\/\d{4}$/.test(birthDate);
       if (validRange || validYear || validDate) {
         this.error = false;
       } else {
@@ -28,9 +28,9 @@ export class RequestInput extends RequestBodyInterface {
       }
     }
     if (deathDate) {
-      let validRange = /^\d{4}-\d{4}$/.test(deathDate);
-      let validYear = /^\d{4}$/.test(deathDate);
-      let validDate = /^\d{2}\/\d{2}\/\d{4}$/.test(deathDate);
+      const validRange = /^\d{4}-\d{4}$/.test(deathDate);
+      const validYear = /^\d{4}$/.test(deathDate);
+      const validDate = /^\d{2}\/\d{2}\/\d{4}$/.test(deathDate);
       if (validRange || validYear || validDate) {
         this.error = false;
       } else {
