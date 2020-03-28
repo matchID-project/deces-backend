@@ -59,7 +59,7 @@ else
     echo -e "\e[31mdeathDepartement: KO!\e[0m"
     exit 1
 fi
-if curl -s -XGET http://localhost:${BACKEND_PORT}/deces/api/v1/search?deathDate=1970\&firstName=Ana\&fuzzy=false | grep -q '"hits":{"total":{"value":2' ; then
+if curl -s -XGET http://localhost:${BACKEND_PORT}/deces/api/v1/search?deathDate=1970\&firstName=Ana\&fuzzy=false | grep -q '"response":{"total":2' ; then
     echo "fuzzy: OK"
 else
     echo -e "\e[31mfuzzy: KO!\e[0m"

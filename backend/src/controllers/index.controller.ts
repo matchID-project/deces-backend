@@ -1,9 +1,10 @@
 import { Controller, Get, Post, Body, Route, Query, SuccessResponse, Response } from 'tsoa';
-import axios from 'axios';
 import runRequest from '../runRequest';
 import buildRequest from '../buildRequest';
 import { RequestInput } from '../types/requestInput';
 import { RequestInputPost, RequestBody } from '../types/requestInputPost';
+import { buildResult } from '../types/result';
+//import getDataGouvCatalog from '../getDataGouvCatalog';
 
 
 @Route('')
@@ -39,10 +40,13 @@ export class IndexController extends Controller {
         this.setStatus(400);
         return  { msg: "error - simple and complex request at the same time" };
       }
+      const searchKeys = {q, firstName, lastName, birthDate, birthCity, birthDepartment, birthCountry, deathDate, deathCity, deathDepartment, deathCountry, size, page, fuzzy, sort}
+
       const requestBuild = buildRequest(requestInput);
       const result = await runRequest(requestBuild);
+      const builtResult = buildResult(result.data, requestInput.page, requestInput.size, searchKeys)
       this.setStatus(200);
-      return  { msg: result.data };
+      return  builtResult;
     } else {
       this.setStatus(400);
       return  { msg: "error - empty request" };
