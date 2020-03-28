@@ -255,6 +255,7 @@ export default function buildRequest(requestInput: RequestBodyInterface): BodyRe
     // --------------------------
     // https://www.elastic.co/guide/en/elasticsearch/reference/7.x/search-request-highlighting.html
     min_score: (requestInput.fullText.value ? 5: 0),
+    track_total_hits: true,
     // highlight: {
     //   fragment_size: 200,
     //   number_of_fragments: 1,
