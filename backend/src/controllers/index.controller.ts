@@ -3,8 +3,8 @@ import runRequest from '../runRequest';
 import buildRequest from '../buildRequest';
 import { RequestInput } from '../types/requestInput';
 import { RequestInputPost, RequestBody } from '../types/requestInputPost';
-import { buildResult } from '../types/result';
-//import getDataGouvCatalog from '../getDataGouvCatalog';
+import { buildResult, buildResultPost } from '../types/result';
+// import getDataGouvCatalog from '../getDataGouvCatalog';
 
 
 @Route('')
@@ -75,8 +75,9 @@ export class IndexController extends Controller {
       }
       const requestBuild = buildRequest(requestInput);
       const result = await runRequest(requestBuild);
+      const builtResult = buildResultPost(result.data, requestInput)
       this.setStatus(200);
-      return  { msg: result.data };
+      return  builtResult;
     } else {
       this.setStatus(400);
       return  { msg: "error - empty request" };
