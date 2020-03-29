@@ -29,7 +29,7 @@ interface Person {
   };
 }
 
-interface Result {
+export interface Result {
   request: any;
   response: {
     total: number;
