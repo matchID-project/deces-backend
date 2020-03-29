@@ -169,4 +169,9 @@ export class IndexController extends Controller {
   public msg() {
     return { msg: 'OK' };
   }
+
+  @Get('/version')
+  public version() {
+    return process.env.APP_VERSION;
+  }
 }
