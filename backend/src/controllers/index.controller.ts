@@ -42,6 +42,7 @@ export class IndexController extends Controller {
         },
         death:{
           date:"19700604",
+          certificateId: "69 N",
           location:{
             "city":"Clermont-Ferrand",
             "cityCode":"63113",
@@ -126,6 +127,7 @@ export class IndexController extends Controller {
         },
         death:{
           date:"19700604",
+          certificateId: "69 N",
           location:{
             "city":"Clermont-Ferrand",
             "cityCode":"63113",

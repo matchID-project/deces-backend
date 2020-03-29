@@ -20,6 +20,7 @@ interface Person {
   };
   death: {
     date: string;
+    certificateId: string;
     location: {
       city: string;
       cityCode: string;
@@ -86,6 +87,7 @@ export function buildResult (result: any, page: any, size: any, searchKeys: any)
       },
       death: {
         date: item._source.DATE_DECES,
+        certificateId: item._source.NUM_DECES,
         location: {
           city: item._source.COMMUNE_DECES, // str|str[]
           cityCode: item._source.CODE_INSEE_DECES,
@@ -139,6 +141,7 @@ export function buildResultPost (result: any, requestInput: any): Result {
       },
       death: {
         date: item._source.DATE_DECES,
+        certificateId: item._source.NUM_DECES,
         location: {
           city: item._source.COMMUNE_DECES, // str|str[]
           cityCode: item._source.CODE_INSEE_DECES,
