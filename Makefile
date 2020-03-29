@@ -65,6 +65,11 @@ export DATASET=fichier-des-personnes-decedees
 export S3_BUCKET=${DATASET}
 export AWS=${APP_PATH}/aws
 
+
+export DATAGOUV_CATALOG_URL = https://www.data.gouv.fr/api/1/datasets/${DATASET}/
+export DATAGOUV_RESOURCES_URL = https://static.data.gouv.fr/resources/${DATASET}
+export DATAGOUV_PROXY_PATH = /${API_PATH}/api/v0/getDataGouvFile
+
 dummy		    := $(shell touch artifacts)
 include ./artifacts
 

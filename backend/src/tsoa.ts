@@ -7,6 +7,7 @@ import { generateRoutes, generateSwaggerSpec, RoutesConfig, SwaggerConfig } from
     entryFile: './src/index.ts',
     specVersion: 3,
     outputDirectory: './src/api',
+    noImplicitAdditionalProperties: "silently-remove-extras",
     controllerPathGlobs: ['./src/controllers/**/*controller.ts'],
   };
 
