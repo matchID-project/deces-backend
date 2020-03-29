@@ -7,6 +7,7 @@ interface Person {
     first: string[];
     last: string;
   };
+  sex: string;
   birth: {
     date: string;
     location: {
@@ -72,6 +73,7 @@ export function buildResult (result: any, page: any, size: any, searchKeys: any)
         first: item._source.PRENOMS.split(' '),
         last: item._source.NOM
       },
+      sex: item._source.SEXE,
       birth: {
         date: item._source.DATE_NAISSANCE,
         location: {
@@ -124,6 +126,7 @@ export function buildResultPost (result: any, requestInput: any): Result {
         first: item._source.PRENOMS.split(' '),
         last: item._source.NOM
       },
+      sex: item._source.SEXE,
       birth: {
         date: item._source.DATE_NAISSANCE,
         location: {

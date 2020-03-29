@@ -29,6 +29,7 @@ export class IndexController extends Controller {
         source:"1970",
         id:"ba7582a6344757e67351bf42096c952a12108e06",
         name:{"first":["Jean","Pierre"],"last":"Dupont"},
+        sex: "M",
         birth:{
           date:"19691111",
           location:{
@@ -112,6 +113,7 @@ export class IndexController extends Controller {
         source:"1970",
         id:"ba7582a6344757e67351bf42096c952a12108e06",
         name:{"first":["Jean","Pierre"],"last":"Dupont"},
+        sex: "M",
         birth:{
           date:"19691111",
           location:{
