@@ -5,6 +5,10 @@ export APP_PATH := $(shell pwd)
 export APP_VERSION	:= $(shell git describe --tags )
 export USE_TTY := $(shell test -t 1 && USE_TTY="-t")
 
+# make options
+export MAKEBIN = $(shell which make)
+export MAKE = ${MAKEBIN} --no-print-directory -s
+
 # docker compose
 export DC := /usr/local/bin/docker-compose
 export DC_DIR=${APP_PATH}
@@ -47,8 +51,8 @@ export API_GLOBAL_BURST=200 nodelay
 
 # Backupdir
 export BACKUP_DIR = ${APP_PATH}/backup
-export DATAPREP_VERSION_FILE = .dataprep.sha1
-export DATA_VERSION_FILE = .data.sha1
+export DATAPREP_VERSION_FILE = ${APP_PATH}/.dataprep.sha1
+export DATA_VERSION_FILE = ${APP_PATH}/.data.sha1
 export FILES_TO_PROCESS?=deces-([0-9]{4}|2020-m[0-9]{2}).txt.gz
 
 export DC_IMAGE_NAME=${DC_PREFIX}
@@ -95,7 +99,7 @@ config:
 	@touch config
 
 clean-data: elasticsearch-clean backup-dir-clean
-	@sudo rm -rf ${DATA_VERSION_FILE} ${DATAPREP_VERSION_FILE}\
+	@sudo rm -rf ${GIT_DATAPREP} ${DATA_VERSION_FILE} ${DATAPREP_VERSION_FILE}\
 		${DATA_VERSION_FILE}.list > /dev/null 2>&1 || true
 
 clean-remote:
@@ -175,7 +179,7 @@ elasticsearch-stop:
 	@echo docker-compose down matchID elasticsearch
 	@if [ -f "${DC_FILE}-elasticsearch-huge.yml" ]; then ${DC} -f ${DC_FILE}-elasticsearch-huge.yml down;fi
 
-elasticsearch-restore: elasticsearch-stop elasticsearch-s3-pull
+elasticsearch-restore: elasticsearch-stop elasticsearch-storage-pull
 	@if [ -d "$(ES_DATA)" ] ; then (echo purging ${ES_DATA} && sudo rm -rf ${ES_DATA} && echo purge done) ; fi
 	@\
 	DATAPREP_VERSION=$$(cat ${DATAPREP_VERSION_FILE});\
@@ -194,7 +198,7 @@ elasticsearch-clean: elasticsearch-stop
 
 # deploy
 
-deploy-local: config elasticsearch-s3-pull elasticsearch-restore elasticsearch docker-check up backup-dir-clean backend-test
+deploy-local: config elasticsearch-storage-pull elasticsearch-restore elasticsearch docker-check up backup-dir-clean backend-test
 
 # DOCKER
 
