@@ -5,6 +5,10 @@ export APP_PATH := $(shell pwd)
 export APP_VERSION	:= $(shell git describe --tags )
 export USE_TTY := $(shell test -t 1 && USE_TTY="-t")
 
+# make options
+export MAKEBIN = $(shell which make)
+export MAKE = ${MAKEBIN} --no-print-directory -s
+
 # docker compose
 export DC := /usr/local/bin/docker-compose
 export DC_DIR=${APP_PATH}
@@ -20,7 +24,7 @@ export ES_INDEX = deces
 export ES_DATA = ${APP_PATH}/esdata
 export ES_NODES = 1
 export ES_MEM = 1024m
-export ES_VERSION = 7.5.0
+export ES_VERSION = 7.6.1
 export ES_BACKUP_BASENAME := esdata
 export API_PATH = deces
 export ES_PROXY_PATH = /${API_PATH}/api/v0/search
@@ -47,8 +51,8 @@ export API_GLOBAL_BURST=200 nodelay
 
 # Backupdir
 export BACKUP_DIR = ${APP_PATH}/backup
-export DATAPREP_VERSION_FILE = .dataprep.sha1
-export DATA_VERSION_FILE = .data.sha1
+export DATAPREP_VERSION_FILE = ${APP_PATH}/.dataprep.sha1
+export DATA_VERSION_FILE = ${APP_PATH}/.data.sha1
 export FILES_TO_PROCESS?=deces-([0-9]{4}|2020-m[0-9]{2}).txt.gz
 
 export DC_IMAGE_NAME=${DC_PREFIX}
@@ -59,10 +63,10 @@ export GIT_TOOLS = tools
 export GIT_DATAPREP = deces-dataprep
 export DOCKER_USERNAME=matchid
 export DOCKER_PASSWORD
-export aws_access_key_id
-export aws_secret_access_key
+export STORAGE_ACCESS_KEY
+export STORAGE_SECRET_KEY
 export DATASET=fichier-des-personnes-decedees
-export S3_BUCKET=${DATASET}
+export STORAGE_BUCKET=${DATASET}
 export AWS=${APP_PATH}/aws
 
 
@@ -95,7 +99,7 @@ config:
 	@touch config
 
 clean-data: elasticsearch-clean backup-dir-clean
-	@sudo rm -rf ${DATA_VERSION_FILE} ${DATAPREP_VERSION_FILE}\
+	@sudo rm -rf ${GIT_DATAPREP} ${DATA_VERSION_FILE} ${DATAPREP_VERSION_FILE}\
 		${DATA_VERSION_FILE}.list > /dev/null 2>&1 || true
 
 clean-remote:
@@ -119,10 +123,10 @@ ${DATAPREP_VERSION_FILE}: ${GIT_DATAPREP}
 	| sha1sum | awk '{print $1}' | cut -c-8 > ${DATAPREP_VERSION_FILE}
 
 ${DATA_VERSION_FILE}:
-	@${AWS} s3 ls ${S3_BUCKET} | egrep '${FILES_TO_PROCESS}' |\
-		awk '{print $$NF}' | sort > ${DATA_VERSION_FILE}.list
-	@cat ${DATA_VERSION_FILE}.list | sed 's/\s*$$//g' | sha1sum | awk '{print $1}' |\
-		cut -c-8 > ${DATA_VERSION_FILE}
+	@${MAKE} -C ${APP_PATH}/${GIT_TOOLS} catalog-tag CATALOG_TAG=${DATA_VERSION_FILE}\
+		DATAGOUV_DATASET=${DATASET} STORAGE_BUCKET=${STORAGE_BUCKET}\
+		STORAGE_ACCESS_KEY=${STORAGE_ACCESS_KEY} STORAGE_SECRET_KEY=${STORAGE_SECRET_KEY}\
+		FILES_PATTERN='${FILES_TO_PROCESS}'
 
 #############
 #  Network  #
@@ -159,21 +163,23 @@ elasticsearch: network vm_max
 	@timeout=${ES_TIMEOUT} ; ret=1 ; until [ "$$timeout" -le 0 -o "$$ret" -eq "0"  ] ; do (docker exec -i ${USE_TTY} ${DC_PREFIX}-elasticsearch curl -s --fail -XGET localhost:9200/_cat/indices > /dev/null) ; ret=$$? ; if [ "$$ret" -ne "0" ] ; then echo "waiting for elasticsearch to start $$timeout" ; fi ; timeout=$$((timeout-1)); sleep 1 ; done ; exit $$ret
 
 
-elasticsearch-s3-pull: backup-dir ${DATAPREP_VERSION_FILE} ${DATA_VERSION_FILE}
+elasticsearch-storage-pull: backup-dir ${DATAPREP_VERSION_FILE} ${DATA_VERSION_FILE}
 	@\
 	DATAPREP_VERSION=$$(cat ${DATAPREP_VERSION_FILE});\
 	DATA_VERSION=$$(cat ${DATA_VERSION_FILE});\
-	ESBACKUPFILE=${ES_BACKUP_BASENAME}_$${DATAPREP_VERSION}_$${DATA_VERSION}.tar;\
+	ES_BACKUP_FILE=${ES_BACKUP_BASENAME}_$${DATAPREP_VERSION}_$${DATA_VERSION}.tar;\
 	if [ ! -f "${BACKUP_DIR}/$$ESBACKUPFILE" ];then\
-		echo pulling s3://${S3_BUCKET}/$$ESBACKUPFILE;\
-		${AWS} s3 cp s3://${S3_BUCKET}/$$ESBACKUPFILE ${BACKUP_DIR}/$$ESBACKUPFILE;\
+		echo pulling ${STORAGE_BUCKET}/$$ES_BACKUP_FILE;\
+		${MAKE} -C ${APP_PATH}/${GIT_TOOLS} storage-pull\
+			FILE=$$ES_BACKUP_FILE DATA_DIR=${BACKUP_DIR}\
+			STORAGE_BUCKET=${STORAGE_BUCKET} STORAGE_ACCESS_KEY=${STORAGE_ACCESS_KEY} STORAGE_SECRET_KEY=${STORAGE_SECRET_KEY};\
 	fi
 
 elasticsearch-stop:
 	@echo docker-compose down matchID elasticsearch
 	@if [ -f "${DC_FILE}-elasticsearch-huge.yml" ]; then ${DC} -f ${DC_FILE}-elasticsearch-huge.yml down;fi
 
-elasticsearch-restore: elasticsearch-stop elasticsearch-s3-pull
+elasticsearch-restore: elasticsearch-stop elasticsearch-storage-pull
 	@if [ -d "$(ES_DATA)" ] ; then (echo purging ${ES_DATA} && sudo rm -rf ${ES_DATA} && echo purge done) ; fi
 	@\
 	DATAPREP_VERSION=$$(cat ${DATAPREP_VERSION_FILE});\
@@ -192,7 +198,7 @@ elasticsearch-clean: elasticsearch-stop
 
 # deploy
 
-deploy-local: config elasticsearch-s3-pull elasticsearch-restore elasticsearch docker-check up backup-dir-clean backend-test
+deploy-local: config elasticsearch-storage-pull elasticsearch-restore elasticsearch docker-check up backup-dir-clean backend-test
 
 # DOCKER
 

@@ -22,9 +22,9 @@ jobs:
       - name: Make deploy local
         run: make deploy-local
         env:
-          FILES_TO_PROCESS: deces-1970.txt.gz
-          aws_access_key_id: ${{ secrets.aws_access_key_id }}
-          aws_secret_access_key: ${{ secrets.aws_secret_access_key }}
+          FILES_TO_PROCESS: deces-2020-m01.txt.gz
+          STORAGE_ACCESS_KEY: ${{ secrets.aws_access_key_id }}
+          STORAGE_SECRET_KEY: ${{ secrets.aws_secret_access_key }}
       - name: Push the docker image
         if: steps.extract_branch.outputs.branch == 'master' || steps.extract_branch.outputs.branch == 'dev'
         run: make docker-push GIT_BRANCH="$GIT_BRANCH"
