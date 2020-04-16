@@ -63,8 +63,8 @@ export GIT_TOOLS = tools
 export GIT_DATAPREP = deces-dataprep
 export DOCKER_USERNAME=matchid
 export DOCKER_PASSWORD
-export aws_access_key_id
-export aws_secret_access_key
+export STORAGE_ACCESS_KEY
+export STORAGE_SECRET_KEY
 export DATASET=fichier-des-personnes-decedees
 export STORAGE_BUCKET=${DATASET}
 export AWS=${APP_PATH}/aws
