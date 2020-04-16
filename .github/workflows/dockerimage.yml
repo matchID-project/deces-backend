@@ -22,7 +22,7 @@ jobs:
       - name: Make deploy local
         run: make deploy-local
         env:
-          FILES_TO_PROCESS: deces-1970.txt.gz
+          FILES_TO_PROCESS: deces-2020-m01.txt.gz
           aws_access_key_id: ${{ secrets.aws_access_key_id }}
           aws_secret_access_key: ${{ secrets.aws_secret_access_key }}
       - name: Push the docker image
