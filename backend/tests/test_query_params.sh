@@ -35,6 +35,12 @@ else
     echo -e "\e[31mdeathDate: KO!\e[0m"
     exit 1
 fi
+if curl -s -XGET http://localhost:${BACKEND_PORT}/deces/api/v1/search?deathDate=22/01/2020-30/01/2020 | grep -q 'persons":\[{'; then
+    echo "dateRangeDate: OK"
+else
+    echo -e "\e[31mdateRangeDate: KO!\e[0m"
+    exit 1
+fi
 if curl -s -XGET http://localhost:${BACKEND_PORT}/deces/api/v1/search?deathDate=2020\&birthCity=Metz | grep -q '"city":"Metz"'; then
     echo "birthCity: OK"
 else
@@ -154,6 +160,12 @@ if curl -s -X POST -H "Content-Type: application/json" -d '{"deathDate":"2020","
     echo "deathDepartment: OK"
 else
     echo -e "\e[31mdeathDepartement: KO!\e[0m"
+    exit 1
+fi
+if curl -s -X POST -H "Content-Type: application/json" -d '{"deathDate":"20/01/2020-31/01/2020"}' http://localhost:${BACKEND_PORT}/deces/api/v1/search | grep -q 'persons":\[{'; then
+    echo "deathRangeDate: OK"
+else
+    echo -e "\e[31mdeathRangeDate: KO!\e[0m"
     exit 1
 fi
 if curl -s -X POST -H "Content-Type: application/json" -d '{"deathDate":"2020","firstName": "Ana", "fuzzy": "false"}' http://localhost:${BACKEND_PORT}/deces/api/v1/search | grep -q '"response":{"total":10' ; then
