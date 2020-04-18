@@ -36,20 +36,22 @@ export class RequestInputPost extends RequestBodyInterface {
   constructor(requestBody: RequestBody) {
     super()
     if (requestBody.birthDate) {
-      const validRange = /^\d{4}-\d{4}$/.test(requestBody.birthDate);
+      const validRangeYear = /^\d{4}-\d{4}$/.test(requestBody.birthDate);
+      const validRangeDate = /^\d{2}\/\d{2}\/\d{4}-\d{2}\/\d{2}\/\d{4}$/.test(requestBody.birthDate);
       const validYear = /^\d{4}$/.test(requestBody.birthDate);
       const validDate = /^\d{2}\/\d{2}\/\d{4}$/.test(requestBody.birthDate);
-      if (validRange || validYear || validDate) {
+      if (validRangeYear || validRangeDate || validYear || validDate) {
         this.error = false;
       } else {
         this.error = true;
       }
     }
     if (requestBody.deathDate) {
-      const validRange = /^\d{4}-\d{4}$/.test(requestBody.deathDate);
+      const validRangeYear = /^\d{4}-\d{4}$/.test(requestBody.deathDate);
+      const validRangeDate = /^\d{2}\/\d{2}\/\d{4}-\d{2}\/\d{2}\/\d{4}$/.test(requestBody.deathDate);
       const validYear = /^\d{4}$/.test(requestBody.deathDate);
       const validDate = /^\d{2}\/\d{2}\/\d{4}$/.test(requestBody.deathDate);
-      if (validRange || validYear || validDate) {
+      if (validRangeYear || validRangeDate || validYear || validDate) {
         this.error = false;
       } else {
         this.error = true;
