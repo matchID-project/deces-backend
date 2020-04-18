@@ -71,7 +71,7 @@ export function buildResult (result: any, page: any, size: any, searchKeys: any)
       source: item._source.SOURCE,
       id: item._id,
       name: {
-        first: item._source.PRENOMS.split(' '),
+        first: item._source.PRENOMS ? item._source.PRENOMS.split(' ') : "",
         last: item._source.NOM
       },
       sex: item._source.SEXE,
@@ -125,7 +125,7 @@ export function buildResultPost (result: any, requestInput: any): Result {
       source: item._source.SOURCE,
       id: item._id,
       name: {
-        first: item._source.PRENOMS.split(' '),
+        first: item._source.PRENOMS ? item._source.PRENOMS.split(' ') : "",
         last: item._source.NOM
       },
       sex: item._source.SEXE,
