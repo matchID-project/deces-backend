@@ -109,6 +109,23 @@ export const dateRangeStringQuery = (field: string, value: string, fuzzy: boolea
     }
 };
 
+export const ageRangeStringQuery = (field: string, value: string, fuzzy: boolean) => {
+    if (Array.isArray(value) && (value.length === 2)) {
+        const min = (value[0] <= value[1]) ? value[0] : value[1];
+        const max = (value[0] <= value[1]) ? value[1] : value[0];
+        return {
+            range: {
+                [field]: {
+                    gte: min,
+                    lte: max
+                }
+            }
+        };
+    } else {
+        return matchQuery(field, value, fuzzy)
+    }
+};
+
 export const geoPointQuery = (field: string, value: any, fuzzy: boolean) =>  {
     if (value.latitude && value.longitude) {
         let distance;
@@ -124,7 +141,7 @@ export const geoPointQuery = (field: string, value: any, fuzzy: boolean) =>  {
                 },
                 filter : {
                     geo_distance: {
-                        distance: distance,
+                        distance,
                         [field] : {
                             lat: value.latitude,
                             lon: value.longitude

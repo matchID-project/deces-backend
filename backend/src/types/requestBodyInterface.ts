@@ -179,4 +179,24 @@ export class RequestBodyInterface {
     size: number;
     active: boolean;
   }
+  deathAge: {
+    path: string;
+    url: string;
+    before: string;
+    section: string;
+    value: string;
+    field: string;
+    query: any;
+    fuzzy: string|boolean;
+    multiQuery: string;
+    mask: {
+      typing: any;
+      validation: any;
+      transform: any;
+    };
+    placeholder: string;
+    title: string;
+    size: number;
+    active: boolean;
+  }
 }

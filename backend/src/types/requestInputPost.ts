@@ -1,14 +1,16 @@
 import {
-    dateRangeTypingMask,
-    dateRangeValidationMask,
-    dateRangeTransformMask
+  dateRangeTypingMask,
+  dateRangeValidationMask,
+  dateRangeTransformMask,
+  ageRangeTransformMask
 } from '../masks';
 import {
-    dateRangeStringQuery,
-    firstNameQuery,
-    fuzzyTermQuery,
-    matchQuery,
-    geoPointQuery
+  dateRangeStringQuery,
+  firstNameQuery,
+  fuzzyTermQuery,
+  matchQuery,
+  geoPointQuery,
+  ageRangeStringQuery
 } from '../queries'
 import { RequestBodyInterface } from './requestBodyInterface';
 
@@ -189,6 +191,27 @@ export class RequestInputPost extends RequestBodyInterface {
         typing: dateRangeTypingMask,
         validation: dateRangeValidationMask,
         transform: dateRangeTransformMask
+      },
+      size: 2,
+      active: true,
+    }
+
+    this.deathAge = {
+      path: "death.age",
+      url: "dd",
+      before: "à",
+      section:"décès",
+      value: requestBody.deathAge ? requestBody.deathAge : null,
+      field: "AGE_DECES",
+      query: ageRangeStringQuery,
+      fuzzy: false,
+      placeholder: "70-74 ou 52",
+      multiQuery: "range",
+      title:"saisissez l'age de décès: 52 ou un intervalle : 70-74",
+      mask: {
+        typing: null, // TODO
+        validation: null, // TODO
+        transform: ageRangeTransformMask
       },
       size: 2,
       active: true,
