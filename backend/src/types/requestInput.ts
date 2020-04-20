@@ -18,7 +18,7 @@ import { RequestBodyInterface } from './requestBodyInterface';
 
 export class RequestInput extends RequestBodyInterface {
   error: boolean = false;
-  constructor(q: string, firstName: string, lastName: string, birthDate: string, birthCity: string, birthDepartment: string, birthCountry: string, deathDate: string, deathCity: string, deathDepartment: string, deathCountry: string, deathAge: string, size: number, page: number, fuzzy: string, sort: string) {
+  constructor(q: string, firstName: string, lastName: string, birthDate: string, birthCity: string, birthDepartment: string, birthCountry: string, deathDate: string, deathCity: string, deathDepartment: string, deathCountry: string, deathAge: string|number, size: number, page: number, fuzzy: string, sort: string) {
     super()
     if (birthDate) {
       const validRangeYear = /^\d{4}-\d{4}$/.test(birthDate);

@@ -73,7 +73,7 @@ export class IndexController extends Controller {
     @Query() deathCity?: string,
     @Query() deathDepartment?: string,
     @Query() deathCountry?: string,
-    @Query() deathAge?: string,
+    @Query() deathAge?: StrAndNumber,
     @Query() size?: number,
     @Query() page?: number,
     @Query() fuzzy?: string,
@@ -190,3 +190,5 @@ export class IndexController extends Controller {
     return process.env.APP_VERSION;
   }
 }
+
+type StrAndNumber = string | number;

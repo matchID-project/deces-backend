@@ -184,7 +184,7 @@ export class RequestBodyInterface {
     url: string;
     before: string;
     section: string;
-    value: string;
+    value: string|number;
     field: string;
     query: any;
     fuzzy: string|boolean;

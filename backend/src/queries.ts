@@ -6,7 +6,7 @@ export const prefixQuery = (field: string, value: string, fuzzy: boolean) => {
     };
 };
 
-export const matchQuery = (field: string, value: string, fuzzy: boolean) => {
+export const matchQuery = (field: string, value: string|number, fuzzy: boolean) => {
     return {
         match: {
             [field]: value
@@ -109,7 +109,7 @@ export const dateRangeStringQuery = (field: string, value: string, fuzzy: boolea
     }
 };
 
-export const ageRangeStringQuery = (field: string, value: string, fuzzy: boolean) => {
+export const ageRangeStringQuery = (field: string, value: string|number, fuzzy: boolean) => {
     if (Array.isArray(value) && (value.length === 2)) {
         const min = (value[0] <= value[1]) ? value[0] : value[1];
         const max = (value[0] <= value[1]) ? value[1] : value[0];

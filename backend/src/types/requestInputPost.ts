@@ -29,6 +29,7 @@ export interface RequestBody {
   deathDepartment?: string;
   deathCountry?: string;
   deathGeoPoint?: any;
+  deathAge?: number|string;
   size?: number;
   page?: number;
   fuzzy?: string;
