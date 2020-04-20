@@ -14,6 +14,12 @@ import {
 } from '../queries'
 import { RequestBodyInterface } from './requestBodyInterface';
 
+export interface GeoPoint {
+  latitude: number;
+  longitude: number;
+  distance: string;
+}
+
 export interface RequestBody {
   [key: string]: any; // Index signature
   q?: string;
@@ -23,12 +29,12 @@ export interface RequestBody {
   birthCity?: string;
   birthDepartment?: string;
   birthCountry?: string;
-  birthGeoPoint?: any;
+  birthGeoPoint?: GeoPoint;
   deathDate?: string;
   deathCity?: string;
   deathDepartment?: string;
   deathCountry?: string;
-  deathGeoPoint?: any;
+  deathGeoPoint?: GeoPoint;
   deathAge?: number|string;
   size?: number;
   page?: number;
