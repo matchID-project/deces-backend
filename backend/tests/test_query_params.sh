@@ -101,6 +101,12 @@ else
     echo -e "\e[31msimple and complex request error: KO!\e[0m"
     exit 1
 fi
+if curl -s -XGET http://localhost:${BACKEND_PORT}/deces/api/v1/search?deathDate=2020\&deathAge=20 | grep -q 'persons":\[{'; then
+    echo "DeathAge: OK"
+else
+    echo -e "\e[31mDeathAge: KO!\e[0m"
+    exit 1
+fi
 echo "POST--->"
 if curl -s -X POST -H "Content-Type: application/json" -d '{"deathDate":"2020","firstName": "Harry"}' http://localhost:${BACKEND_PORT}/deces/api/v1/search | grep -q 'name":{"first":\["Harry'; then
     echo "firstName: OK"
@@ -178,6 +184,12 @@ if curl -s -X POST -H "Content-Type: application/json" -d '{"deathDate":"20/01/2
     echo "deathRangeDate: OK"
 else
     echo -e "\e[31mdeathRangeDate: KO!\e[0m"
+    exit 1
+fi
+if curl -s -X POST -H "Content-Type: application/json" -d '{"deathDate":"2020", "deathAge": "20-22"}' http://localhost:${BACKEND_PORT}/deces/api/v1/search | grep -q 'persons":\[{'; then
+    echo "DeathAge: OK"
+else
+    echo -e "\e[31mDeathAge: KO!\e[0m"
     exit 1
 fi
 if curl -s -X POST -H "Content-Type: application/json" -d '{"deathDate":"2020","firstName": "Ana", "fuzzy": "false"}' http://localhost:${BACKEND_PORT}/deces/api/v1/search | grep -q '"response":{"total":10' ; then
