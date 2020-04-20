@@ -26,7 +26,7 @@ export class IndexController extends Controller {
       delay: 2,
       persons: [{
         score:10.542101,
-        source:"1970",
+        source:"2020-m01",
         id:"ba7582a6344757e67351bf42096c952a12108e06",
         name:{"first":["Jean","Pierre"],"last":"Dupont"},
         sex: "M",
@@ -37,18 +37,23 @@ export class IndexController extends Controller {
             cityCode:"63113",
             departmentCode:"63",
             country:"France",
-            countryCode:"FRA"
+            countryCode:"FRA",
+            latitude: 45.7833,
+            longitude: 3.0833
           }
         },
         death:{
-          date:"19700604",
+          date:"20200604",
           certificateId: "69 N",
+          age: 50,
           location:{
             "city":"Clermont-Ferrand",
             "cityCode":"63113",
             "departmentCode":"63",
             "country":"France",
-            "countryCode":"FRA"
+            "countryCode":"FRA",
+            latitude: 45.7833,
+            longitude: 3.0833
           }
         }
       }]
@@ -111,7 +116,7 @@ export class IndexController extends Controller {
       delay: 2,
       persons: [{
         score:10.542101,
-        source:"1970",
+        source:"2020-m01",
         id:"ba7582a6344757e67351bf42096c952a12108e06",
         name:{"first":["Jean","Pierre"],"last":"Dupont"},
         sex: "M",
@@ -122,18 +127,23 @@ export class IndexController extends Controller {
             cityCode:"63113",
             departmentCode:"63",
             country:"France",
-            countryCode:"FRA"
+            countryCode:"FRA",
+            latitude: 45.7833,
+            longitude: 3.0833
           }
         },
         death:{
-          date:"19700604",
+          date:"20200604",
           certificateId: "69 N",
+          age: 50,
           location:{
             "city":"Clermont-Ferrand",
             "cityCode":"63113",
             "departmentCode":"63",
             "country":"France",
-            "countryCode":"FRA"
+            "countryCode":"FRA",
+            latitude: 45.7833,
+            longitude: 3.0833
           }
         }
       }]
