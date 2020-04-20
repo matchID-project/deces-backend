@@ -153,13 +153,13 @@ export class IndexController extends Controller {
   @Post('/search')
   public async searchpost(@Body() requestBody: RequestBody) {
     if (Object.keys(requestBody).length > 0) {
-      const validFields = ['q', 'firstName', 'lastName', 'birthDate', 'birthCity', 'birthDepartment', 'birthCountry', 'deathDate', 'deathCity', 'deathDepartment', 'deathCountry', 'size', 'page', 'fuzzy', 'sort']
+      const validFields = ['q', 'firstName', 'lastName', 'birthDate', 'birthCity', 'birthDepartment', 'birthCountry', 'birthGeoPoint', 'deathDate', 'deathCity', 'deathDepartment', 'deathCountry', 'deathGeoPoint', 'size', 'page', 'fuzzy', 'sort']
       const notValidFields = Object.keys(requestBody).filter((item: string) => !validFields.includes(item) )
       if (notValidFields.length > 0) {
         this.setStatus(400);
         return  { msg: "error - unknown field" };
       }
-      if ((requestBody.firstName || requestBody.lastName || requestBody.birthDate || requestBody.birthCity || requestBody.birthDepartment || requestBody.birthCountry || requestBody.deathDate || requestBody.deathCity || requestBody.deathDepartment || requestBody.deathCountry) && requestBody.q) {
+      if ((requestBody.firstName || requestBody.lastName || requestBody.birthDate || requestBody.birthCity || requestBody.birthDepartment || requestBody.birthCountry || requestBody.birthGeoPoint || requestBody.deathDate || requestBody.deathCity || requestBody.deathDepartment || requestBody.deathCountry || requestBody.deathGeoPoint ) && requestBody.q) {
         this.setStatus(400);
         return  { msg: "error - simple and complex request at the same time" };
       }

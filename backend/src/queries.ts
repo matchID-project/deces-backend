@@ -108,3 +108,32 @@ export const dateRangeStringQuery = (field: string, value: string, fuzzy: boolea
         return fuzzyTermQuery(field, value, fuzzy)
     }
 };
+
+export const geoPointQuery = (field: string, value: any, fuzzy: boolean) =>  {
+    if (value.latitude && value.longitude) {
+        let distance;
+        if (value.distance && value.distance.match(/[1-9]\d*\s*(mi|miles|yd|yards|ft|feet|in|inch|km|kilometers|m|meters|cm|centimeters|mm|millimeters|NM|nminauticalmiles)$/)) {
+            distance = value.distance;
+        } else {
+            distance = '1km';
+        }
+        return {
+            bool: {
+                must: {
+                    match_all: {}
+                },
+                filter : {
+                    geo_distance: {
+                        distance: distance,
+                        [field] : {
+                            lat: value.latitude,
+                            lon: value.longitude
+                        }
+                    }
+                }
+            }
+        }
+    } else {
+        return undefined
+    }
+}

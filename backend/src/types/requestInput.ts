@@ -3,14 +3,15 @@ import {
     dateRangeValidationMask,
     dateRangeTransformMask
 } from '../masks';
+
 import {
     dateRangeStringQuery,
     firstNameQuery,
     fuzzyTermQuery,
     matchQuery
 } from '../queries'
-import { RequestBodyInterface } from './requestBodyInterface';
 
+import { RequestBodyInterface } from './requestBodyInterface';
 
 
 export class RequestInput extends RequestBodyInterface {

@@ -7,7 +7,8 @@ import {
     dateRangeStringQuery,
     firstNameQuery,
     fuzzyTermQuery,
-    matchQuery
+    matchQuery,
+    geoPointQuery
 } from '../queries'
 import { RequestBodyInterface } from './requestBodyInterface';
 
@@ -20,10 +21,12 @@ export interface RequestBody {
   birthCity?: string;
   birthDepartment?: string;
   birthCountry?: string;
+  birthGeoPoint?: any;
   deathDate?: string;
   deathCity?: string;
   deathDepartment?: string;
   deathCountry?: string;
+  deathGeoPoint?: any;
   size?: number;
   page?: number;
   fuzzy?: string;
@@ -157,6 +160,19 @@ export class RequestInputPost extends RequestBodyInterface {
       active: true,
     }
 
+    this.birthGeoPoint = {
+      path: "birth.location",
+      url: "bgp",
+      value: requestBody.birthGeoPoint ? requestBody.birthGeoPoint : {},
+      field: "GEOPOINT_NAISSANCE",
+      query: geoPointQuery,
+      fuzzy: false,
+      title:"saisissez les coordonnées de naissance",
+      placeholder: "latitude/longitude: [45.7833, 3.0833]",
+      size: 5,
+      active: false,
+    }
+
     this.deathDate = {
       path: "death.date",
       url: "dd",
@@ -218,6 +234,18 @@ export class RequestInputPost extends RequestBodyInterface {
       title:"saisissez le pays de décès",
       size: 3,
       active: true,
+    }
+    this.deathGeoPoint = {
+      path: "death.location",
+      url: "dgp",
+      value: requestBody.deathGeoPoint ? requestBody.deathGeoPoint : {},
+      field: "GEOPOINT_DECES",
+      query: geoPointQuery,
+      fuzzy: false,
+      title:"saisissez les coordonnées de naissance",
+      placeholder: "latitude/longitude distance: [45.7833, 3.0833] 1km",
+      size: 5,
+      active: false,
     }
 
   }

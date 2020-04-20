@@ -95,6 +95,18 @@ export class RequestBodyInterface {
     size: number;
     active: boolean;
   }
+  birthGeoPoint: {
+    path: string;
+    url: string;
+    value: any;
+    field: string;
+    query: any;
+    fuzzy: string|boolean;
+    title: string;
+    placeholder: string;
+    size: number;
+    active: boolean;
+  }
   deathDate: {
     path: string;
     url: string;
@@ -152,6 +164,18 @@ export class RequestBodyInterface {
     fuzzy: string|boolean;
     placeholder: string;
     title: string;
+    size: number;
+    active: boolean;
+  }
+  deathGeoPoint: {
+    path: string;
+    url: string;
+    value: any;
+    field: string;
+    query: any;
+    fuzzy: string|boolean;
+    title: string;
+    placeholder: string;
     size: number;
     active: boolean;
   }
