@@ -35,3 +35,11 @@ export const dateRangeTransformMask = (dateRangeString: string) => {
         return dateTransformMask(dateRangeString);
     }
 }
+
+export const ageRangeTransformMask = (ageRangeString: string|number) => {
+  if ((typeof(ageRangeString) === 'string') && (ageRangeString.match(/[0-9\/]+\-[0-9\/]+/))) {
+      return ageRangeString.split('-').map(d => d);
+  } else {
+    return ageRangeString;
+  }
+}

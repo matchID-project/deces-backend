@@ -26,7 +26,7 @@ export class IndexController extends Controller {
       delay: 2,
       persons: [{
         score:10.542101,
-        source:"1970",
+        source:"2020-m01",
         id:"ba7582a6344757e67351bf42096c952a12108e06",
         name:{"first":["Jean","Pierre"],"last":"Dupont"},
         sex: "M",
@@ -37,18 +37,23 @@ export class IndexController extends Controller {
             cityCode:"63113",
             departmentCode:"63",
             country:"France",
-            countryCode:"FRA"
+            countryCode:"FRA",
+            latitude: 45.7833,
+            longitude: 3.0833
           }
         },
         death:{
-          date:"19700604",
+          date:"20200604",
           certificateId: "69 N",
+          age: 50,
           location:{
             "city":"Clermont-Ferrand",
             "cityCode":"63113",
             "departmentCode":"63",
             "country":"France",
-            "countryCode":"FRA"
+            "countryCode":"FRA",
+            latitude: 45.7833,
+            longitude: 3.0833
           }
         }
       }]
@@ -68,22 +73,23 @@ export class IndexController extends Controller {
     @Query() deathCity?: string,
     @Query() deathDepartment?: string,
     @Query() deathCountry?: string,
+    @Query() deathAge?: StrAndNumber,
     @Query() size?: number,
     @Query() page?: number,
     @Query() fuzzy?: string,
     @Query() sort?: string
   ) {
-    if (q || firstName || lastName || birthDate || birthCity || birthDepartment || birthCountry || deathDate || deathCity || deathDepartment || deathCountry) {
-      const requestInput = new RequestInput(q, firstName, lastName, birthDate, birthCity, birthDepartment, birthCountry, deathDate, deathCity, deathDepartment, deathCountry, size, page, fuzzy, sort);
+    if (q || firstName || lastName || birthDate || birthCity || birthDepartment || birthCountry || deathDate || deathCity || deathDepartment || deathCountry || deathAge) {
+      const requestInput = new RequestInput(q, firstName, lastName, birthDate, birthCity, birthDepartment, birthCountry, deathDate, deathCity, deathDepartment, deathCountry, deathAge, size, page, fuzzy, sort);
       if (requestInput.error) {
         this.setStatus(400);
         return  { msg: "error - field content error" };
       }
-      if ((firstName || lastName || birthDate || birthCity || birthDepartment || birthCountry || deathDate || deathCity || deathDepartment || deathCountry) && q) {
+      if ((firstName || lastName || birthDate || birthCity || birthDepartment || birthCountry || deathDate || deathCity || deathDepartment || deathCountry || deathAge) && q) {
         this.setStatus(400);
         return  { msg: "error - simple and complex request at the same time" };
       }
-      const searchKeys = {q, firstName, lastName, birthDate, birthCity, birthDepartment, birthCountry, deathDate, deathCity, deathDepartment, deathCountry, size, page, fuzzy, sort}
+      const searchKeys = {q, firstName, lastName, birthDate, birthCity, birthDepartment, birthCountry, deathDate, deathCity, deathDepartment, deathCountry, deathAge, size, page, fuzzy, sort}
 
       const requestBuild = buildRequest(requestInput);
       const result = await runRequest(requestBuild);
@@ -111,7 +117,7 @@ export class IndexController extends Controller {
       delay: 2,
       persons: [{
         score:10.542101,
-        source:"1970",
+        source:"2020-m01",
         id:"ba7582a6344757e67351bf42096c952a12108e06",
         name:{"first":["Jean","Pierre"],"last":"Dupont"},
         sex: "M",
@@ -122,18 +128,23 @@ export class IndexController extends Controller {
             cityCode:"63113",
             departmentCode:"63",
             country:"France",
-            countryCode:"FRA"
+            countryCode:"FRA",
+            latitude: 45.7833,
+            longitude: 3.0833
           }
         },
         death:{
-          date:"19700604",
+          date:"20200604",
           certificateId: "69 N",
+          age: 50,
           location:{
             "city":"Clermont-Ferrand",
             "cityCode":"63113",
             "departmentCode":"63",
             "country":"France",
-            "countryCode":"FRA"
+            "countryCode":"FRA",
+            latitude: 45.7833,
+            longitude: 3.0833
           }
         }
       }]
@@ -143,13 +154,13 @@ export class IndexController extends Controller {
   @Post('/search')
   public async searchpost(@Body() requestBody: RequestBody) {
     if (Object.keys(requestBody).length > 0) {
-      const validFields = ['q', 'firstName', 'lastName', 'birthDate', 'birthCity', 'birthDepartment', 'birthCountry', 'deathDate', 'deathCity', 'deathDepartment', 'deathCountry', 'size', 'page', 'fuzzy', 'sort']
-      const notValidFields = Object.keys(requestBody).filter((item: string) => !validFields.includes(item) )
+      const validFields = ['q', 'firstName', 'lastName', 'birthDate', 'birthCity', 'birthDepartment', 'birthCountry', 'birthGeoPoint', 'deathDate', 'deathCity', 'deathDepartment', 'deathCountry', 'deathGeoPoint', 'deathAge', 'size', 'page', 'fuzzy', 'sort']
+      const notValidFields = Object.keys(requestBody).filter((item: string) => validFields.indexOf(item) === -1)
       if (notValidFields.length > 0) {
         this.setStatus(400);
         return  { msg: "error - unknown field" };
       }
-      if ((requestBody.firstName || requestBody.lastName || requestBody.birthDate || requestBody.birthCity || requestBody.birthDepartment || requestBody.birthCountry || requestBody.deathDate || requestBody.deathCity || requestBody.deathDepartment || requestBody.deathCountry) && requestBody.q) {
+      if ((requestBody.firstName || requestBody.lastName || requestBody.birthDate || requestBody.birthCity || requestBody.birthDepartment || requestBody.birthCountry || requestBody.birthGeoPoint || requestBody.deathDate || requestBody.deathCity || requestBody.deathDepartment || requestBody.deathCountry || requestBody.deathAge || requestBody.deathGeoPoint ) && requestBody.q) {
         this.setStatus(400);
         return  { msg: "error - simple and complex request at the same time" };
       }
@@ -179,3 +190,5 @@ export class IndexController extends Controller {
     return process.env.APP_VERSION;
   }
 }
+
+type StrAndNumber = string | number;
