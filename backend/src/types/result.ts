@@ -70,9 +70,9 @@ interface RequestType {
 export function getFromGeoPoint (geoPoint: string, latOrLon: string): number {
   try {
     if (latOrLon === 'latitude') {
-      return Number(geoPoint.replace(/^POINT\s*\(([0-9]+\.?[0-9]*)\s+([0-9]+\.?[0-9]*)\)\s*$/,'$2'));
+      return Number(geoPoint.replace(/^POINT\s*\((-?[0-9]+\.?[0-9]*)\s+(-?[0-9]+\.?[0-9]*)\)\s*$/,'$2'));
     } else if (latOrLon === 'longitude') {
-      return Number(geoPoint.replace(/^POINT\s*\(([0-9]+\.?[0-9]*)\s+([0-9]+\.?[0-9]*)\)\s*$/,'$1'));
+      return Number(geoPoint.replace(/^POINT\s*\((-?[0-9]+\.?[0-9]*)\s+(-?[0-9]+\.?[0-9]*)\)\s*$/,'$1'));
     } else {
       return undefined
     }
