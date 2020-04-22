@@ -101,6 +101,12 @@ else
     echo -e "\e[31msimple and complex request error: KO!\e[0m"
     exit 1
 fi
+if curl -s -XGET http://localhost:${BACKEND_PORT}/deces/api/v1/search?deathDate=2020\&deathAge=20 | grep -q 'persons":\[{'; then
+    echo "DeathAge: OK"
+else
+    echo -e "\e[31mDeathAge: KO!\e[0m"
+    exit 1
+fi
 echo "POST--->"
 if curl -s -X POST -H "Content-Type: application/json" -d '{"deathDate":"2020","firstName": "Harry"}' http://localhost:${BACKEND_PORT}/deces/api/v1/search | grep -q 'name":{"first":\["Harry'; then
     echo "firstName: OK"
@@ -120,10 +126,22 @@ else
     echo -e "\e[31mbirthCountry: KO!\e[0m"
     exit 1
 fi
+if curl -s -X POST -H "Content-Type: application/json" -d '{"deathDate":"2019", "birthGeoPoint":{"latitude":49.6,"longitude":2.98,"distance":"10km"}}' http://localhost:${BACKEND_PORT}/deces/api/v1/search | grep -q '"city":"Dijon"'; then
+    echo "birthGeoPoint: OK"
+else
+    echo -e "\e[31mbirthGeoPoint: KO!\e[0m"
+    exit 1
+fi
 if curl -s -X POST -H "Content-Type: application/json" -d '{"deathDate":"2020","deathCountry": "Argentine"}' http://localhost:${BACKEND_PORT}/deces/api/v1/search | grep -q 'country":"Argentine"'; then
     echo "deathCountry: OK"
 else
     echo -e "\e[31mdeathCountry: KO!\e[0m"
+    exit 1
+fi
+if curl -s -X POST -H "Content-Type: application/json" -d '{"deathDate":"2020","deathGeoPoint":{"latitude":48.5,"longitude":3.4,"distance":"10km"}}' http://localhost:${BACKEND_PORT}/deces/api/v1/search | grep -q 'cityCode":"10268"'; then
+    echo "deathGeoPoint: OK"
+else
+    echo -e "\e[31mdeathGeoPoint: KO!\e[0m"
     exit 1
 fi
 if curl -s -X POST -H "Content-Type: application/json" -d '{"deathDate":"2020","birthDate": "23/01/1930"}' http://localhost:${BACKEND_PORT}/deces/api/v1/search | grep -q '20200128'; then
@@ -166,6 +184,12 @@ if curl -s -X POST -H "Content-Type: application/json" -d '{"deathDate":"20/01/2
     echo "deathRangeDate: OK"
 else
     echo -e "\e[31mdeathRangeDate: KO!\e[0m"
+    exit 1
+fi
+if curl -s -X POST -H "Content-Type: application/json" -d '{"deathDate":"2020", "deathAge": "20-22"}' http://localhost:${BACKEND_PORT}/deces/api/v1/search | grep -q 'persons":\[{'; then
+    echo "DeathAge: OK"
+else
+    echo -e "\e[31mDeathAge: KO!\e[0m"
     exit 1
 fi
 if curl -s -X POST -H "Content-Type: application/json" -d '{"deathDate":"2020","firstName": "Ana", "fuzzy": "false"}' http://localhost:${BACKEND_PORT}/deces/api/v1/search | grep -q '"response":{"total":10' ; then

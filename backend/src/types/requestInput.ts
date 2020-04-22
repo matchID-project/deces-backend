@@ -1,21 +1,24 @@
 import {
-    dateRangeTypingMask,
-    dateRangeValidationMask,
-    dateRangeTransformMask
+  dateRangeTypingMask,
+  dateRangeValidationMask,
+  dateRangeTransformMask,
+  ageRangeTransformMask
 } from '../masks';
-import {
-    dateRangeStringQuery,
-    firstNameQuery,
-    fuzzyTermQuery,
-    matchQuery
-} from '../queries'
-import { RequestBodyInterface } from './requestBodyInterface';
 
+import {
+  dateRangeStringQuery,
+  ageRangeStringQuery,
+  firstNameQuery,
+  fuzzyTermQuery,
+  matchQuery
+} from '../queries'
+
+import { RequestBodyInterface } from './requestBodyInterface';
 
 
 export class RequestInput extends RequestBodyInterface {
   error: boolean = false;
-  constructor(q: string, firstName: string, lastName: string, birthDate: string, birthCity: string, birthDepartment: string, birthCountry: string, deathDate: string, deathCity: string, deathDepartment: string, deathCountry: string, size: number, page: number, fuzzy: string, sort: string) {
+  constructor(q: string, firstName: string, lastName: string, birthDate: string, birthCity: string, birthDepartment: string, birthCountry: string, deathDate: string, deathCity: string, deathDepartment: string, deathCountry: string, deathAge: string|number, size: number, page: number, fuzzy: string, sort: string) {
     super()
     if (birthDate) {
       const validRangeYear = /^\d{4}-\d{4}$/.test(birthDate);
@@ -199,6 +202,27 @@ export class RequestInput extends RequestBodyInterface {
       placeholder: "pays: France",
       title:"saisissez le pays de décès",
       size: 3,
+      active: true,
+    }
+
+    this.deathAge = {
+      path: "death.age",
+      url: "dage",
+      before: "à",
+      section:"décès",
+      value: deathAge ? deathAge : null,
+      field: "AGE_DECES",
+      query: ageRangeStringQuery,
+      fuzzy: false,
+      placeholder: "70-74 ou 52",
+      multiQuery: "range",
+      title:"saisissez l'age de décès: 52 ou un intervalle : 70-74",
+      mask: {
+        typing: null, // TODO
+        validation: null, // TODO
+        transform: ageRangeTransformMask
+      },
+      size: 2,
       active: true,
     }
 

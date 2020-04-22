@@ -14,19 +14,24 @@ interface Person {
       city: string;
       cityCode: string;
       departmentCode: string;
-      country: string
+      country: string;
       countryCode: string
+      latitude: number;
+      longitude: number;
     }
   };
   death: {
     date: string;
     certificateId: string;
+    age: number;
     location: {
       city: string;
       cityCode: string;
       departmentCode: string;
       country: string;
       countryCode: string;
+      latitude: number;
+      longitude: number;
     }
   };
 }
@@ -62,6 +67,20 @@ interface RequestType {
   sort?: string;
 }
 
+export function getFromGeoPoint (geoPoint: string, latOrLon: string): number {
+  try {
+    if (latOrLon === 'latitude') {
+      return Number(geoPoint.replace(/^POINT\s*\((-?[0-9]+\.?[0-9]*)\s+(-?[0-9]+\.?[0-9]*)\)\s*$/,'$2'));
+    } else if (latOrLon === 'longitude') {
+      return Number(geoPoint.replace(/^POINT\s*\((-?[0-9]+\.?[0-9]*)\s+(-?[0-9]+\.?[0-9]*)\)\s*$/,'$1'));
+    } else {
+      return undefined
+    }
+  } catch {
+    return undefined;
+  }
+}
+
 export function buildResult (result: any, page: any, size: any, searchKeys: any): Result {
   // const dataCatalog = await getDataGouvCatalog()
   const filteredResults = result.hits.hits.map((item: any) => {
@@ -82,18 +101,23 @@ export function buildResult (result: any, page: any, size: any, searchKeys: any)
           cityCode: item._source.CODE_INSEE_NAISSANCE,
           departmentCode: item._source.DEPARTEMENT_NAISSANCE,
           country: item._source.PAYS_NAISSANCE,
-          countryCode: item._source.PAYS_NAISSANCE_CODEISO3
+          countryCode: item._source.PAYS_NAISSANCE_CODEISO3,
+          latitude: getFromGeoPoint(item._source.GEOPOINT_NAISSANCE, 'latitude'),
+          longitude: getFromGeoPoint(item._source.GEOPOINT_NAISSANCE, 'longitude')
         }
       },
       death: {
         date: item._source.DATE_DECES,
         certificateId: item._source.NUM_DECES,
+        age: item._source.AGE_DECES,
         location: {
           city: item._source.COMMUNE_DECES, // str|str[]
           cityCode: item._source.CODE_INSEE_DECES,
           departmentCode: item._source.DEPARTEMENT_DECES,
           country: item._source.PAYS_DECES,
-          countryCode: item._source.PAYS_DECES_CODEISO3
+          countryCode: item._source.PAYS_DECES_CODEISO3,
+          latitude: getFromGeoPoint(item._source.GEOPOINT_DECES, 'latitude'),
+          longitude: getFromGeoPoint(item._source.GEOPOINT_DECES, 'longitude')
         }
       }
     }
@@ -136,18 +160,23 @@ export function buildResultPost (result: any, requestInput: any): Result {
           cityCode: item._source.CODE_INSEE_NAISSANCE,
           departmentCode: item._source.DEPARTEMENT_NAISSANCE,
           country: item._source.PAYS_NAISSANCE,
-          countryCode: item._source.PAYS_NAISSANCE_CODEISO3
+          countryCode: item._source.PAYS_NAISSANCE_CODEISO3,
+          latitude: getFromGeoPoint(item._source.GEOPOINT_NAISSANCE, 'latitude'),
+          longitude: getFromGeoPoint(item._source.GEOPOINT_NAISSANCE, 'longitude')
         }
       },
       death: {
         date: item._source.DATE_DECES,
         certificateId: item._source.NUM_DECES,
+        age: item._source.AGE_DECES,
         location: {
           city: item._source.COMMUNE_DECES, // str|str[]
           cityCode: item._source.CODE_INSEE_DECES,
           departmentCode: item._source.DEPARTEMENT_DECES,
           country: item._source.PAYS_DECES,
-          countryCode: item._source.PAYS_DECES_CODEISO3
+          countryCode: item._source.PAYS_DECES_CODEISO3,
+          latitude: getFromGeoPoint(item._source.GEOPOINT_DECES, 'latitude'),
+          longitude: getFromGeoPoint(item._source.GEOPOINT_DECES, 'longitude')
         }
       }
     }

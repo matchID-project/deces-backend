@@ -268,12 +268,13 @@ export default function buildRequest(requestInput: RequestBodyInterface): BodyRe
     _source: [
       "CODE_INSEE_DECES","CODE_INSEE_NAISSANCE",
       "COMMUNE_DECES","COMMUNE_NAISSANCE",
-      "DATE_DECES","DATE_NAISSANCE",
+      "DATE_DECES","DATE_NAISSANCE","AGE_DECES",
       "DEPARTEMENT_DECES","DEPARTEMENT_NAISSANCE",
       "NOM","PRENOM","PRENOMS",
       "NUM_DECES",
       "PAYS_DECES","PAYS_DECES_CODEISO3",
       "PAYS_NAISSANCE","PAYS_NAISSANCE_CODEISO3",
+      "GEOPOINT_NAISSANCE","GEOPOINT_DECES",
       "SEXE","UID",
       "SOURCE"],
     // aggs: {

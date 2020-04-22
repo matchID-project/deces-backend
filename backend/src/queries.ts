@@ -1,3 +1,5 @@
+import { GeoPoint } from './types/requestInputPost';
+
 export const prefixQuery = (field: string, value: string, fuzzy: boolean) => {
     return {
         prefix: {
@@ -6,7 +8,7 @@ export const prefixQuery = (field: string, value: string, fuzzy: boolean) => {
     };
 };
 
-export const matchQuery = (field: string, value: string, fuzzy: boolean) => {
+export const matchQuery = (field: string, value: string|number, fuzzy: boolean) => {
     return {
         match: {
             [field]: value
@@ -108,3 +110,49 @@ export const dateRangeStringQuery = (field: string, value: string, fuzzy: boolea
         return fuzzyTermQuery(field, value, fuzzy)
     }
 };
+
+export const ageRangeStringQuery = (field: string, value: string|number, fuzzy: boolean) => {
+    if (Array.isArray(value) && (value.length === 2)) {
+        const min = (value[0] <= value[1]) ? value[0] : value[1];
+        const max = (value[0] <= value[1]) ? value[1] : value[0];
+        return {
+            range: {
+                [field]: {
+                    gte: min,
+                    lte: max
+                }
+            }
+        };
+    } else {
+        return matchQuery(field, value, fuzzy)
+    }
+};
+
+export const geoPointQuery = (field: string, value: GeoPoint, fuzzy: boolean) =>  {
+    if (value.latitude && value.longitude) {
+        let distance;
+        if (value.distance && value.distance.match(/[1-9]\d*\s*(mi|miles|yd|yards|ft|feet|in|inch|km|kilometers|m|meters|cm|centimeters|mm|millimeters|NM|nminauticalmiles)$/)) {
+            distance = value.distance;
+        } else {
+            distance = '1km';
+        }
+        return {
+            bool: {
+                must: {
+                    match_all: {}
+                },
+                filter : {
+                    geo_distance: {
+                        distance,
+                        [field] : {
+                            lat: value.latitude,
+                            lon: value.longitude
+                        }
+                    }
+                }
+            }
+        }
+    } else {
+        return undefined
+    }
+}
