@@ -1,5 +1,5 @@
 import { RequestBodyInterface } from './types/requestBodyInterface';
-import { BodyResponse } from './types/body';
+import { BodyResponse, ScrolledResponse } from './types/body';
 import NameQuery from './types/queries';
 import buildRequestFilter from "./buildRequestFilter";
 
@@ -244,59 +244,68 @@ export function buildSort (inputs?: any) {
   }).filter((x:any) => x.order).map((x: any) => { return { [x.field]: x.order } })
 }
 
-export default function buildRequest(requestInput: RequestBodyInterface): BodyResponse {
+export default function buildRequest(requestInput: RequestBodyInterface): BodyResponse|ScrolledResponse {
   const sort = buildSort(requestInput.sort);
   const match = buildMatch(requestInput);
   // const filter = buildRequestFilter(myFilters); // TODO
   const size = requestInput.size;
   const from = buildFrom(requestInput.page, size);
-  const body = {
-    // Static query Configuration
-    // --------------------------
-    // https://www.elastic.co/guide/en/elasticsearch/reference/7.x/search-request-highlighting.html
-    min_score: (requestInput.fullText.value ? 5: 0),
-    track_total_hits: true,
-    // highlight: {
-    //   fragment_size: 200,
-    //   number_of_fragments: 1,
-    //   fields: {
-    //     title: {},
-    //     description: {}
-    //   }
-    // },
-    // https://www.elastic.co/guide/en/elasticsearch/reference/7.x/search-request-source-filtering.html#search-request-source-filtering
-    _source: [
-      "CODE_INSEE_DECES","CODE_INSEE_NAISSANCE",
-      "COMMUNE_DECES","COMMUNE_NAISSANCE",
-      "DATE_DECES","DATE_NAISSANCE","AGE_DECES",
-      "DEPARTEMENT_DECES","DEPARTEMENT_NAISSANCE",
-      "NOM","PRENOM","PRENOMS",
-      "NUM_DECES",
-      "PAYS_DECES","PAYS_DECES_CODEISO3",
-      "PAYS_NAISSANCE","PAYS_NAISSANCE_CODEISO3",
-      "GEOPOINT_NAISSANCE","GEOPOINT_DECES",
-      "SEXE","UID",
-      "SOURCE"],
-    // aggs: {
-    //   COMMUNE_NAISSANCE: { terms: { field: "COMMUNE_NAISSANCE.keyword", size: 30 } },
-    //   PAYS_NAISSANCE: {
-    //     terms: { field: "PAYS_NAISSANCE.keyword" }
-    //   }
-    // },
 
-    // Dynamic values based on current Search UI state
-    // --------------------------
-    // https://www.elastic.co/guide/en/elasticsearch/reference/7.x/full-text-queries.html
-    query: {
-      bool: {
-        must: [match]
-      }
-    },
-    sort,
-    // https://www.elastic.co/guide/en/elasticsearch/reference/7.x/search-request-sort.html
-    size,
-    from
-  };
+  let body
+  if (requestInput.scrollId && requestInput.scroll) {
+    body = {
+      scroll: requestInput.scroll,
+      scroll_id: requestInput.scrollId
+    }
+  } else {
+    body = {
+      // Static query Configuration
+      // --------------------------
+      // https://www.elastic.co/guide/en/elasticsearch/reference/7.x/search-request-highlighting.html
+      min_score: (requestInput.fullText.value ? 5: 0),
+      track_total_hits: true,
+      // highlight: {
+      //   fragment_size: 200,
+      //   number_of_fragments: 1,
+      //   fields: {
+      //     title: {},
+      //     description: {}
+      //   }
+      // },
+      // https://www.elastic.co/guide/en/elasticsearch/reference/7.x/search-request-source-filtering.html#search-request-source-filtering
+      _source: [
+        "CODE_INSEE_DECES","CODE_INSEE_NAISSANCE",
+        "COMMUNE_DECES","COMMUNE_NAISSANCE",
+        "DATE_DECES","DATE_NAISSANCE","AGE_DECES",
+        "DEPARTEMENT_DECES","DEPARTEMENT_NAISSANCE",
+        "NOM","PRENOM","PRENOMS",
+        "NUM_DECES",
+        "PAYS_DECES","PAYS_DECES_CODEISO3",
+        "PAYS_NAISSANCE","PAYS_NAISSANCE_CODEISO3",
+        "GEOPOINT_NAISSANCE","GEOPOINT_DECES",
+        "SEXE","UID",
+        "SOURCE"],
+      // aggs: {
+      //   COMMUNE_NAISSANCE: { terms: { field: "COMMUNE_NAISSANCE.keyword", size: 30 } },
+      //   PAYS_NAISSANCE: {
+      //     terms: { field: "PAYS_NAISSANCE.keyword" }
+      //   }
+      // },
+
+      // Dynamic values based on current Search UI state
+      // --------------------------
+      // https://www.elastic.co/guide/en/elasticsearch/reference/7.x/full-text-queries.html
+      query: {
+        bool: {
+          must: [match]
+        }
+      },
+      sort,
+      // https://www.elastic.co/guide/en/elasticsearch/reference/7.x/search-request-sort.html
+      size,
+      from
+    };
+  }
 
   return body;
 }

@@ -74,13 +74,15 @@ export class IndexController extends Controller {
     @Query() deathDepartment?: string,
     @Query() deathCountry?: string,
     @Query() deathAge?: StrAndNumber,
+    @Query() scroll?: string,
+    @Query() scrollId?: string,
     @Query() size?: number,
     @Query() page?: number,
     @Query() fuzzy?: string,
     @Query() sort?: string
   ) {
-    if (q || firstName || lastName || birthDate || birthCity || birthDepartment || birthCountry || deathDate || deathCity || deathDepartment || deathCountry || deathAge) {
-      const requestInput = new RequestInput(q, firstName, lastName, birthDate, birthCity, birthDepartment, birthCountry, deathDate, deathCity, deathDepartment, deathCountry, deathAge, size, page, fuzzy, sort);
+    if (q || firstName || lastName || birthDate || birthCity || birthDepartment || birthCountry || deathDate || deathCity || deathDepartment || deathCountry || deathAge || scroll) {
+      const requestInput = new RequestInput(q, firstName, lastName, birthDate, birthCity, birthDepartment, birthCountry, deathDate, deathCity, deathDepartment, deathCountry, deathAge, scroll, scrollId, size, page, fuzzy, sort);
       if (requestInput.error) {
         this.setStatus(400);
         return  { msg: "error - field content error" };
@@ -92,7 +94,7 @@ export class IndexController extends Controller {
       const searchKeys = {q, firstName, lastName, birthDate, birthCity, birthDepartment, birthCountry, deathDate, deathCity, deathDepartment, deathCountry, deathAge, size, page, fuzzy, sort}
 
       const requestBuild = buildRequest(requestInput);
-      const result = await runRequest(requestBuild);
+      const result = await runRequest(requestBuild, scroll);
       const builtResult = buildResult(result.data, requestInput.page, requestInput.size, searchKeys)
       this.setStatus(200);
       return  builtResult;
@@ -154,7 +156,7 @@ export class IndexController extends Controller {
   @Post('/search')
   public async searchpost(@Body() requestBody: RequestBody) {
     if (Object.keys(requestBody).length > 0) {
-      const validFields = ['q', 'firstName', 'lastName', 'birthDate', 'birthCity', 'birthDepartment', 'birthCountry', 'birthGeoPoint', 'deathDate', 'deathCity', 'deathDepartment', 'deathCountry', 'deathGeoPoint', 'deathAge', 'size', 'page', 'fuzzy', 'sort']
+      const validFields = ['q', 'firstName', 'lastName', 'birthDate', 'birthCity', 'birthDepartment', 'birthCountry', 'birthGeoPoint', 'deathDate', 'deathCity', 'deathDepartment', 'deathCountry', 'deathGeoPoint', 'deathAge', 'scroll', 'scrollId', 'size', 'page', 'fuzzy', 'sort']
       const notValidFields = Object.keys(requestBody).filter((item: string) => validFields.indexOf(item) === -1)
       if (notValidFields.length > 0) {
         this.setStatus(400);
@@ -170,7 +172,7 @@ export class IndexController extends Controller {
         return  { msg: "error - field content error" };
       }
       const requestBuild = buildRequest(requestInput);
-      const result = await runRequest(requestBuild);
+      const result = await runRequest(requestBuild, requestInput.scroll);
       const builtResult = buildResultPost(result.data, requestInput)
       this.setStatus(200);
       return  builtResult;
