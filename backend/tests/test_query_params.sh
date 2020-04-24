@@ -1,3 +1,4 @@
+#!/bin/bash
 echo "GET--->"
 if curl -s -XGET http://localhost:${BACKEND_PORT}/deces/api/v1/search?deathDate=2020\&firstName=Harry | grep -q 'name":{"first":\["Harry'; then
     echo "firstName: OK"
@@ -106,6 +107,18 @@ if curl -s -XGET http://localhost:${BACKEND_PORT}/deces/api/v1/search?deathDate=
 else
     echo -e "\e[31mDeathAge: KO!\e[0m"
     exit 1
+fi
+scrollId=$(curl -s -XGET http://localhost:${BACKEND_PORT}/deces/api/v1/search?firstName=Jean\&scroll=1m | grep -Po 'scrollId":"\K.*?(?=")')
+echo First scrollId is $scrollId
+curl -s -XGET http://localhost:${BACKEND_PORT}/deces/api/v1/search?scrollId=$scrollId\&scroll=1m | grep -Po 'scrollId":"\K.*?(?=")'
+if [ ! -z "$scrollId" ]; then \
+    #while [ -n "$scrollId" ]; do
+    #    scrollId=$(curl -s -XGET http://localhost:${BACKEND_PORT}/deces/api/v1/search?scrollId=$scrollId\&scroll=1m | grep -Po 'scrollId":"\K.*?(?=")')
+    #    echo Token $scrollId
+    #done
+    echo "scroll: OK"
+else
+    echo -e "\e[31mscroll: KO!\e[0m"
 fi
 echo "POST--->"
 if curl -s -X POST -H "Content-Type: application/json" -d '{"deathDate":"2020","firstName": "Harry"}' http://localhost:${BACKEND_PORT}/deces/api/v1/search | grep -q 'name":{"first":\["Harry'; then
@@ -257,4 +270,14 @@ if curl -s -X POST -H "Content-Type: application/json" -d '{"firstName": "Inconn
 else
     echo -e "\e[31minconnu: KO!\e[0m"
     exit 1
+fi
+scrollId=$(curl -s -X POST -H "Content-Type: application/json" -d '{"firstName": "Jean", "scroll": "1m"}' http://localhost:${BACKEND_PORT}/deces/api/v1/search | grep -Po 'scrollId":"\K.*?(?=")')
+if [ ! -z "$scrollId" ]; then \
+    #    while [ -n "$scrollId" ]; do
+    #        scrollId=$(curl -s -X POST -H "Content-Type: application/json" -d '{"scroll": "1m", "scrollId": "$scrollId"}' http://localhost:${BACKEND_PORT}/deces/api/v1/search | grep -Po 'scrollId":"\K.*?(?=")')
+    #        echo Token $scrollId
+    #done
+    echo "scroll: OK"
+else
+    echo -e "\e[31mscroll: KO!\e[0m"
 fi

@@ -37,6 +37,8 @@ export interface RequestBody {
   deathGeoPoint?: GeoPoint;
   deathAge?: number|string;
   size?: number;
+  scroll?: string;
+  scrollId?: string;
   page?: number;
   fuzzy?: string;
   sort?: any;
@@ -70,7 +72,9 @@ export class RequestInputPost extends RequestBodyInterface {
       }
     }
     this.size = requestBody.size ? requestBody.size : 20;
-    this.page = requestBody.page ? requestBody.page: 1;
+    this.page = requestBody.page ? requestBody.page : 1;
+    this.scroll = requestBody.scroll ? requestBody.scroll : '';
+    this.scrollId = requestBody.scrollId ? requestBody.scrollId : '';
     this.sort = requestBody.sort ? requestBody.sort: [{score: 'desc'}];
     this.fullText = {
       path: "fullText",

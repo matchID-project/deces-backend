@@ -39,6 +39,7 @@ interface Person {
 export interface Result {
   request: any;
   response: {
+    scrollId?: string;
     total: number;
     maxScore: number;
     size: number;
@@ -122,7 +123,7 @@ export function buildResult (result: any, page: any, size: any, searchKeys: any)
       }
     }
   });
-  return {
+  const composedResult: Result = {
     request: searchKeys,
     response: {
       total: result.hits.total.value,
@@ -133,6 +134,10 @@ export function buildResult (result: any, page: any, size: any, searchKeys: any)
       persons: filteredResults
     }
   }
+  if (result._scroll_id) {
+    composedResult.response.scrollId = result._scroll_id
+  }
+  return composedResult
 }
 
 export function buildResultPost (result: any, requestInput: any): Result {
@@ -181,7 +186,7 @@ export function buildResultPost (result: any, requestInput: any): Result {
       }
     }
   });
-  return {
+  const composedResult: Result =  {
     request: filteredRequest,
     response: {
       total: result.hits.total.value,
@@ -192,4 +197,9 @@ export function buildResultPost (result: any, requestInput: any): Result {
       persons: filteredResults
     }
   }
+  if (result._scroll_id) {
+    composedResult.response.scrollId = result._scroll_id
+  }
+  return composedResult
+
 }

@@ -18,7 +18,7 @@ import { RequestBodyInterface } from './requestBodyInterface';
 
 export class RequestInput extends RequestBodyInterface {
   error: boolean = false;
-  constructor(q: string, firstName: string, lastName: string, birthDate: string, birthCity: string, birthDepartment: string, birthCountry: string, deathDate: string, deathCity: string, deathDepartment: string, deathCountry: string, deathAge: string|number, size: number, page: number, fuzzy: string, sort: string) {
+  constructor(q: string, firstName: string, lastName: string, birthDate: string, birthCity: string, birthDepartment: string, birthCountry: string, deathDate: string, deathCity: string, deathDepartment: string, deathCountry: string, deathAge: string|number, scroll: string, scrollId: string, size: number, page: number, fuzzy: string, sort: string) {
     super()
     if (birthDate) {
       const validRangeYear = /^\d{4}-\d{4}$/.test(birthDate);
@@ -44,6 +44,8 @@ export class RequestInput extends RequestBodyInterface {
     }
     this.size = size ? size : 20;
     this.page = page ? page : 1;
+    this.scroll = scroll ? scroll : "";
+    this.scrollId = scrollId ? scrollId : "";
     this.sort = sort ? sort: [{score: 'desc'}];
     this.fullText = {
       path: "fullText",
