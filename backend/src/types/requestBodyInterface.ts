@@ -1,5 +1,7 @@
 export class RequestBodyInterface {
   [key: string]: any; // Index signature
+  scroll: string;
+  scrollId: string;
   size: number;
   page: number;
   fullText: {
