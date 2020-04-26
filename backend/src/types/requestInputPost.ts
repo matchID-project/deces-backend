@@ -236,7 +236,6 @@ export class RequestInputPost extends RequestBodyInterface {
       path: "death.age",
       url: "dd",
       before: "à",
-      section:"décès",
       value: requestBody.deathAge ? requestBody.deathAge : null,
       field: "AGE_DECES",
       query: ageRangeStringQuery,

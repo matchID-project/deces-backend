@@ -202,7 +202,6 @@ export class RequestBodyInterface {
     path: string;
     url: string;
     before: string;
-    section: string;
     value: string|number;
     field: string;
     query: any;

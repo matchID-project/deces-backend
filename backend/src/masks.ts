@@ -19,7 +19,7 @@ export const ageValidationMask = (ageString: string) => {
 export const ageRangeValidationMask = (ageRangeString: string) => {
     if (ageRangeString.match(/[0-9\/]+\-[0-9\/]+/)) {
         const ages = ageRangeString.split('-');
-        return ages.every(d => ageValidationMask(d)) && (parseInt(ages[0])<parseInt(ages[1]));
+        return ages.every(d => ageValidationMask(d)) && (Number(ages[0])<Number(ages[1]));
     } else {
         return ageValidationMask(ageRangeString);
     }
