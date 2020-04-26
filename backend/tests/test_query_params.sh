@@ -108,6 +108,12 @@ else
     echo -e "\e[31mDeathAge: KO!\e[0m"
     exit 1
 fi
+if curl -s -XGET http://localhost:${BACKEND_PORT}/deces/api/v1/search?deathDate=2020\&sex=M | grep -q --invert-match 'sex":"F"'; then
+    echo "sex: OK"
+else
+    echo -e "\e[31msex: KO!\e[0m"
+    exit 1
+fi
 scrollId=$(curl -s -XGET http://localhost:${BACKEND_PORT}/deces/api/v1/search?firstName=Jean\&scroll=1m | grep -Po 'scrollId":"\K.*?(?=")')
 echo First scrollId is $scrollId
 curl -s -XGET http://localhost:${BACKEND_PORT}/deces/api/v1/search?scrollId=$scrollId\&scroll=1m | grep -Po 'scrollId":"\K.*?(?=")'
@@ -203,6 +209,12 @@ if curl -s -X POST -H "Content-Type: application/json" -d '{"deathDate":"2020", 
     echo "DeathAge: OK"
 else
     echo -e "\e[31mDeathAge: KO!\e[0m"
+    exit 1
+fi
+if curl -s -X POST -H "Content-Type: text/plain" -d '{"deathDate": "2020", "sex": "M"}' http://localhost:${BACKEND_PORT}/deces/api/v1/search | grep -q --invert-match 'sex":"F"'; then
+    echo "sex: OK"
+else
+    echo -e "\e[31msex: KO!\e[0m"
     exit 1
 fi
 if curl -s -X POST -H "Content-Type: application/json" -d '{"deathDate":"2020","firstName": "Ana", "fuzzy": "false"}' http://localhost:${BACKEND_PORT}/deces/api/v1/search | grep -q '"response":{"total":10' ; then
