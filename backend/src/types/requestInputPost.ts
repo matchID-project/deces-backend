@@ -245,8 +245,8 @@ export class RequestInputPost extends RequestBodyInterface {
       multiQuery: "range",
       title:"saisissez l'age de décès: 52 ou un intervalle : 70-74",
       mask: {
-        typing: null, // TODO
-        validation: null, // TODO
+        typing: ageRangeTypingMask,
+        validation: ageRangeValidationMask,
         transform: ageRangeTransformMask
       },
       size: 2,
