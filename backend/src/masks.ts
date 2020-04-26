@@ -36,10 +36,14 @@ export const dateRangeTransformMask = (dateRangeString: string) => {
     }
 }
 
-export const ageRangeTransformMask = (ageRangeString: string|number) => {
-  if ((typeof(ageRangeString) === 'string') && (ageRangeString.match(/[0-9\/]+\-[0-9\/]+/))) {
-      return ageRangeString.split('-').map(d => d);
-  } else {
-    return ageRangeString;
-  }
+export const sexTypingMask = (sex: string) => {
+    return sex.match(/^(F|M)?$/);
+}
+
+export const sexValidationMask = (sex: string) => {
+    return sex.match(/^(F|M)?$/);
+}
+
+export const sexTransformMask = (sex: string) => {
+    return sex.replace(/^(F|M).*$/,'$1');
 }

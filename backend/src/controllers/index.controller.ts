@@ -65,6 +65,7 @@ export class IndexController extends Controller {
     @Query() q?: string,
     @Query() firstName?: string,
     @Query() lastName?: string,
+    @Query() sex?: string,
     @Query() birthDate?: string,
     @Query() birthCity?: string,
     @Query() birthDepartment?: string,
@@ -81,17 +82,17 @@ export class IndexController extends Controller {
     @Query() fuzzy?: string,
     @Query() sort?: string
   ) {
-    if (q || firstName || lastName || birthDate || birthCity || birthDepartment || birthCountry || deathDate || deathCity || deathDepartment || deathCountry || deathAge || scroll) {
-      const requestInput = new RequestInput(q, firstName, lastName, birthDate, birthCity, birthDepartment, birthCountry, deathDate, deathCity, deathDepartment, deathCountry, deathAge, scroll, scrollId, size, page, fuzzy, sort);
+    if (q || firstName || lastName || sex || birthDate || birthCity || birthDepartment || birthCountry || deathDate || deathCity || deathDepartment || deathCountry || deathAge || scroll) {
+      const requestInput = new RequestInput(q, firstName, lastName, sex, birthDate, birthCity, birthDepartment, birthCountry, deathDate, deathCity, deathDepartment, deathCountry, deathAge, scroll, scrollId, size, page, fuzzy, sort);
       if (requestInput.error) {
         this.setStatus(400);
         return  { msg: "error - field content error" };
       }
-      if ((firstName || lastName || birthDate || birthCity || birthDepartment || birthCountry || deathDate || deathCity || deathDepartment || deathCountry || deathAge) && q) {
+      if ((firstName || lastName || sex || birthDate || birthCity || birthDepartment || birthCountry || deathDate || deathCity || deathDepartment || deathCountry || deathAge) && q) {
         this.setStatus(400);
         return  { msg: "error - simple and complex request at the same time" };
       }
-      const searchKeys = {q, firstName, lastName, birthDate, birthCity, birthDepartment, birthCountry, deathDate, deathCity, deathDepartment, deathCountry, deathAge, size, page, fuzzy, sort}
+      const searchKeys = {q, firstName, lastName, sex, birthDate, birthCity, birthDepartment, birthCountry, deathDate, deathCity, deathDepartment, deathCountry, deathAge, size, page, fuzzy, sort}
 
       const requestBuild = buildRequest(requestInput);
       const result = await runRequest(requestBuild, scroll);
@@ -156,7 +157,7 @@ export class IndexController extends Controller {
   @Post('/search')
   public async searchpost(@Body() requestBody: RequestBody) {
     if (Object.keys(requestBody).length > 0) {
-      const validFields = ['q', 'firstName', 'lastName', 'birthDate', 'birthCity', 'birthDepartment', 'birthCountry', 'birthGeoPoint', 'deathDate', 'deathCity', 'deathDepartment', 'deathCountry', 'deathGeoPoint', 'deathAge', 'scroll', 'scrollId', 'size', 'page', 'fuzzy', 'sort']
+      const validFields = ['q', 'firstName', 'lastName', 'sex', 'birthDate', 'birthCity', 'birthDepartment', 'birthCountry', 'birthGeoPoint', 'deathDate', 'deathCity', 'deathDepartment', 'deathCountry', 'deathGeoPoint', 'deathAge', 'scroll', 'scrollId', 'size', 'page', 'fuzzy', 'sort']
       const notValidFields = Object.keys(requestBody).filter((item: string) => validFields.indexOf(item) === -1)
       if (notValidFields.length > 0) {
         this.setStatus(400);

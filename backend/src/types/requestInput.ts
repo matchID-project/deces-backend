@@ -2,7 +2,12 @@ import {
   dateRangeTypingMask,
   dateRangeValidationMask,
   dateRangeTransformMask,
-  ageRangeTransformMask
+  ageRangeTransformMask,
+  ageRangeValidationMask,
+  ageRangeTypingMask,
+  sexTransformMask,
+  sexValidationMask,
+  sexTypingMask
 } from '../masks';
 
 import {
@@ -18,7 +23,7 @@ import { RequestBodyInterface } from './requestBodyInterface';
 
 export class RequestInput extends RequestBodyInterface {
   error: boolean = false;
-  constructor(q: string, firstName: string, lastName: string, birthDate: string, birthCity: string, birthDepartment: string, birthCountry: string, deathDate: string, deathCity: string, deathDepartment: string, deathCountry: string, deathAge: string|number, scroll: string, scrollId: string, size: number, page: number, fuzzy: string, sort: string) {
+  constructor(q: string, firstName: string, lastName: string, sex: string, birthDate: string, birthCity: string, birthDepartment: string, birthCountry: string, deathDate: string, deathCity: string, deathDepartment: string, deathCountry: string, deathAge: string|number, scroll: string, scrollId: string, size: number, page: number, fuzzy: string, sort: string) {
     super()
     if (birthDate) {
       const validRangeYear = /^\d{4}-\d{4}$/.test(birthDate);
@@ -225,6 +230,24 @@ export class RequestInput extends RequestBodyInterface {
         transform: ageRangeTransformMask
       },
       size: 2,
+      active: true,
+    }
+
+    this.sex = {
+      path: "birth.location",
+      url: "sex",
+      value: sex ? sex : "",
+      field: "SEXE",
+      query: matchQuery,
+      fuzzy: false,
+      placeholder: "F/M",
+      title:"saisissez le sexe",
+      mask: {
+          typing: sexTypingMask,
+          validation: sexValidationMask,
+          transform: sexTransformMask
+      },
+      size: 1,
       active: true,
     }
 

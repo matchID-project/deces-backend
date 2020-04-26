@@ -39,6 +39,23 @@ export class RequestBodyInterface {
     size: number;
     active: boolean;
   };
+  sex: {
+    path: string;
+    url: string;
+    value: string;
+    field: string;
+    query: any;
+    fuzzy: string|boolean;
+    placeholder: string;
+    title: string;
+    mask: {
+      typing: any;
+      validation: any;
+      transform: any;
+    };
+    size: number;
+    active: boolean;
+  };
   birthDate:  {
     path: string;
     url: string;
