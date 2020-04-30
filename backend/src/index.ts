@@ -50,6 +50,7 @@ app.use((req, res, next) => {
     });
 });
 
+app.use(bodyParser.urlencoded({ extended: false }));
 RegisterRoutes(app);
 
 app.use(`${process.env.BACKEND_PROXY_PATH}/docs`, swaggerUi.serve, swaggerUi.setup(swaggerDocument));

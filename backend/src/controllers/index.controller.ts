@@ -1,4 +1,6 @@
-import { Controller, Get, Post, Body, Route, Query, SuccessResponse, Response, Example } from 'tsoa';
+import { Controller, Get, Post, Body, Request, Route, Query, SuccessResponse, Response, Example } from 'tsoa';
+import multer from 'multer';
+import * as express from 'express';
 import runRequest from '../runRequest';
 import buildRequest from '../buildRequest';
 import { RequestInput } from '../types/requestInput';
@@ -181,6 +183,42 @@ export class IndexController extends Controller {
       this.setStatus(400);
       return  { msg: "error - empty request" };
     }
+  }
+
+
+  @Post('/bulk')
+  public async uploadFile(@Request() request: express.Request): Promise<any> {
+    await this.handleFile(request);
+    if (request.file) {
+      const rows = request.file.buffer.toString().split('\n').map(str => str.split(','))
+      const headers = rows.shift();
+      const json = rows
+        .filter((row: string[]) => row.length === headers.length)
+        .map((row: string[]) => {
+          const readRow: any = {} // TODO
+          headers.forEach((key: string, idx: number) => readRow[key] = row[idx])
+          return {
+            firstName: readRow.firstName,
+            lastName: readRow.lastName,
+            birthDate: readRow.birthDate
+          }
+        })
+      return {msg: json};
+    } else {
+      return {msg: 'no file'};
+    }
+  }
+
+  private handleFile(request: express.Request): Promise<any> {
+    const multerSingle = multer().single('randomFileIsHere');
+    return new Promise((resolve, reject) => {
+      multerSingle(request, undefined, async (error: any) => {
+        if (error) {
+          reject(error);
+        }
+        resolve();
+      });
+    });
   }
 
   @Get('/healthcheck')
