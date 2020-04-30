@@ -190,7 +190,7 @@ export class IndexController extends Controller {
   public async uploadFile(@Request() request: express.Request): Promise<any> {
     await this.handleFile(request);
     if (request.file) {
-      const rows = request.file.buffer.toString().split('\n').map(str => str.split(','))
+      const rows = request.file.buffer.toString().split('\n').map((str: any) => str.split(','))
       const headers = rows.shift();
       const json = rows
         .filter((row: string[]) => row.length === headers.length)
@@ -203,7 +203,14 @@ export class IndexController extends Controller {
             birthDate: readRow.birthDate
           }
         })
-      return {msg: json};
+      const results = await Promise.all(json.map(async (row: any) => {
+        const requestInput = new RequestInputPost(row);
+        const requestBuild = buildRequest(requestInput);
+        const result = await runRequest(requestBuild, null);
+        const builtResult = buildResultPost(result.data, requestInput)
+        return builtResult
+      }))
+      return {msg: results};
     } else {
       return {msg: 'no file'};
     }

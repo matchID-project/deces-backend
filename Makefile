@@ -198,7 +198,7 @@ elasticsearch-clean: elasticsearch-stop
 
 # deploy
 
-deploy-local: config elasticsearch-storage-pull elasticsearch-restore elasticsearch docker-check up backup-dir-clean backend-test
+deploy-local: config elasticsearch-storage-pull elasticsearch-restore elasticsearch docker-check up backup-dir-clean backend-test backend-bulk
 
 # DOCKER
 
