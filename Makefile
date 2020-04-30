@@ -244,7 +244,7 @@ backend-stop:
 
 backend-bulk:
 	@echo Testing bulk request
-	@docker exec -i ${USE_TTY} ${APP}-development curl -s -X POST -H "Content-Type: multipart/form-data" -F "randomFileIsHere=@tests/bulk.csv" http://localhost:${BACKEND_PORT}/deces/api/v1/bulk
+	@docker exec -i ${USE_TTY} ${APP} curl -s -X POST -H "Content-Type: multipart/form-data" -F "randomFileIsHere=@tests/bulk.csv" http://localhost:${BACKEND_PORT}/deces/api/v1/bulk
 	
 backend-test:
 	@echo Testing API parameters

@@ -147,45 +147,7 @@ export function buildResultPost (result: any, requestInput: any): Result {
       return filteredRequest[item] = requestInput[item].value
     }
   })
-  const filteredResults = result.hits.hits.map((item: any) => {
-    return {
-      score: item._score,
-      // source: dataCatalog[item._source.SOURCE],
-      source: item._source.SOURCE,
-      id: item._id,
-      name: {
-        first: item._source.PRENOMS ? item._source.PRENOMS.split(' ') : "",
-        last: item._source.NOM
-      },
-      sex: item._source.SEXE,
-      birth: {
-        date: item._source.DATE_NAISSANCE,
-        location: {
-          city: item._source.COMMUNE_NAISSANCE,
-          cityCode: item._source.CODE_INSEE_NAISSANCE,
-          departmentCode: item._source.DEPARTEMENT_NAISSANCE,
-          country: item._source.PAYS_NAISSANCE,
-          countryCode: item._source.PAYS_NAISSANCE_CODEISO3,
-          latitude: getFromGeoPoint(item._source.GEOPOINT_NAISSANCE, 'latitude'),
-          longitude: getFromGeoPoint(item._source.GEOPOINT_NAISSANCE, 'longitude')
-        }
-      },
-      death: {
-        date: item._source.DATE_DECES,
-        certificateId: item._source.NUM_DECES,
-        age: item._source.AGE_DECES,
-        location: {
-          city: item._source.COMMUNE_DECES, // str|str[]
-          cityCode: item._source.CODE_INSEE_DECES,
-          departmentCode: item._source.DEPARTEMENT_DECES,
-          country: item._source.PAYS_DECES,
-          countryCode: item._source.PAYS_DECES_CODEISO3,
-          latitude: getFromGeoPoint(item._source.GEOPOINT_DECES, 'latitude'),
-          longitude: getFromGeoPoint(item._source.GEOPOINT_DECES, 'longitude')
-        }
-      }
-    }
-  });
+  const filteredResults = result.hits.hits.map(buildResultSingle)
   const composedResult: Result =  {
     request: filteredRequest,
     response: {
@@ -202,4 +164,44 @@ export function buildResultPost (result: any, requestInput: any): Result {
   }
   return composedResult
 
+}
+
+export function buildResultSingle (item: any): any { //TODO
+  return {
+    score: item._score,
+    // source: dataCatalog[item._source.SOURCE],
+    source: item._source.SOURCE,
+    id: item._id,
+    name: {
+      first: item._source.PRENOMS ? item._source.PRENOMS.split(' ') : "",
+      last: item._source.NOM
+    },
+    sex: item._source.SEXE,
+    birth: {
+      date: item._source.DATE_NAISSANCE,
+      location: {
+        city: item._source.COMMUNE_NAISSANCE,
+        cityCode: item._source.CODE_INSEE_NAISSANCE,
+        departmentCode: item._source.DEPARTEMENT_NAISSANCE,
+        country: item._source.PAYS_NAISSANCE,
+        countryCode: item._source.PAYS_NAISSANCE_CODEISO3,
+        latitude: getFromGeoPoint(item._source.GEOPOINT_NAISSANCE, 'latitude'),
+        longitude: getFromGeoPoint(item._source.GEOPOINT_NAISSANCE, 'longitude')
+      }
+    },
+    death: {
+      date: item._source.DATE_DECES,
+      certificateId: item._source.NUM_DECES,
+      age: item._source.AGE_DECES,
+      location: {
+        city: item._source.COMMUNE_DECES, // str|str[]
+        cityCode: item._source.CODE_INSEE_DECES,
+        departmentCode: item._source.DEPARTEMENT_DECES,
+        country: item._source.PAYS_DECES,
+        countryCode: item._source.PAYS_DECES_CODEISO3,
+        latitude: getFromGeoPoint(item._source.GEOPOINT_DECES, 'latitude'),
+        longitude: getFromGeoPoint(item._source.GEOPOINT_DECES, 'longitude')
+      }
+    }
+  }
 }

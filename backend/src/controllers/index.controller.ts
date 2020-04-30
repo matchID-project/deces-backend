@@ -5,7 +5,7 @@ import runRequest from '../runRequest';
 import buildRequest from '../buildRequest';
 import { RequestInput } from '../types/requestInput';
 import { RequestInputPost, RequestBody } from '../types/requestInputPost';
-import { buildResult, buildResultPost } from '../types/result';
+import { buildResult, buildResultPost, buildResultSingle } from '../types/result';
 import { Result } from '../types/result';
 // import getDataGouvCatalog from '../getDataGouvCatalog';
 
@@ -207,10 +207,13 @@ export class IndexController extends Controller {
         const requestInput = new RequestInputPost(row);
         const requestBuild = buildRequest(requestInput);
         const result = await runRequest(requestBuild, null);
-        const builtResult = buildResultPost(result.data, requestInput)
-        return builtResult
+        if (result.data && result.data.hits.hits.length > 0) {
+          return buildResultSingle(result.data.hits.hits[0])
+        } else {
+          return {}
+        }
       }))
-      return {msg: results};
+      return results;
     } else {
       return {msg: 'no file'};
     }
