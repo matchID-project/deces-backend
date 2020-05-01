@@ -166,7 +166,7 @@ export function buildResultPost (result: any, requestInput: any): Result {
 
 }
 
-export function buildResultSingle (item: any): any { //TODO
+export function buildResultSingle (item: any): any { // TODO
   return {
     score: item._score,
     // source: dataCatalog[item._source.SOURCE],

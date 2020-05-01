@@ -187,7 +187,7 @@ export class IndexController extends Controller {
 
 
   @Post('/bulk')
-  public async uploadFile(@Request() request: express.Request): Promise<any> {
+  public async uploadFile(@Request() request: express.Request, @Query() csv?: string): Promise<any> {
     await this.handleFile(request);
     if (request.file) {
       const rows = request.file.buffer.toString().split('\n').map((str: any) => str.split(','))
@@ -213,7 +213,23 @@ export class IndexController extends Controller {
           return {}
         }
       }))
-      return results;
+      if (csv) {
+        this.setStatus(200);
+        this.setHeader('Content-Type', 'text/csv');
+        return nameHeader + results.map(result => {
+          return Object.values(result)
+            .map(item => {
+              if (typeof(item) === 'object') {
+                return Object.values(item).map(flatJson).join(',')
+              } else {
+                return item
+              }
+            })
+            .join(',')
+        }).join('\r\n')
+      } else {
+        return results;
+      }
     } else {
       return {msg: 'no file'};
     }
@@ -243,3 +259,13 @@ export class IndexController extends Controller {
 }
 
 type StrAndNumber = string | number;
+
+const flatJson = (item: object|string) => {
+  if (typeof(item) === 'object') {
+    return Object.values(item).join(',')
+  } else {
+    return item
+  }
+}
+
+const nameHeader = 'score,source,id,name,firstName,lastName,sex,birthDate,birthCity,cityCode,departmentCode,country,countryCode,latitude,longitude,deathDate,certificateId,age,deathCity,cityCode,departmentCode,country,countryCode,latitude,longitude\r\n'
