@@ -1,7 +1,13 @@
 import express from 'express';
+import multer from 'multer';
 import morgan from 'morgan';
 import swaggerUi from 'swagger-ui-express';
 import bodyParser from 'body-parser';
+import { RequestInputPost } from './types/requestInputPost';
+import buildRequest from './buildRequest';
+import { flatJson, nameHeader } from './controllers/index.controller';
+import runRequest from './runRequest';
+import { buildResultSingle } from './types/result';
 import * as swaggerDocument from './api/swagger.json';
 import { RegisterRoutes } from './routes/routes';
 import { loggerStream } from './logger';
@@ -52,6 +58,52 @@ app.use((req, res, next) => {
 
 app.use(bodyParser.urlencoded({ extended: false }));
 RegisterRoutes(app);
+
+const multerSingle = multer().any();
+app.post(`${process.env.BACKEND_PROXY_PATH}/bulk-stream`, multerSingle, async (req: any, res: express.Response) => {
+  if (req.files && req.files.length > 0) {
+    const rows = req.files[0].buffer.toString().split('\n').map((str: any) => str.split(',')) // TODO: parse all the attachements
+    const headers = rows.shift();
+    const json = rows
+      .filter((row: string[]) => row.length === headers.length)
+      .map((row: string[]) => {
+        const readRow: any = {} // TODO
+        headers.forEach((key: string, idx: number) => readRow[key] = row[idx])
+        return {
+          firstName: readRow.firstName,
+          lastName: readRow.lastName,
+          birthDate: readRow.birthDate
+        }
+      })
+    const results = await Promise.all(json.map(async (row: any) => {
+      const requestInput = new RequestInputPost(row);
+      const requestBuild = buildRequest(requestInput);
+      const result = await runRequest(requestBuild, null);
+      if (result.data && result.data.hits.hits.length > 0) {
+        return buildResultSingle(result.data.hits.hits[0])
+      } else {
+        return {}
+      }
+    }))
+    res.statusCode = 200;
+    res.setHeader('Content-Type', 'text/csv');
+    res.write(nameHeader)
+    results.forEach(result => {
+      res.write(Object.values(result)
+        .map((item: any) => {
+          if (typeof(item) === 'object') {
+            return Object.values(item).map(flatJson).join(',')
+          } else {
+            return `"${item}"`
+          }
+        })
+        .join(',') + '\r\n'
+      )})
+    res.end();
+  } else {
+    res.send("Empty")
+  }
+});
 
 app.use(`${process.env.BACKEND_PROXY_PATH}/docs`, swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
