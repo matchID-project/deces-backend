@@ -227,11 +227,13 @@ const referenceSort: any = {
   score: "_score",
   firstName: "PRENOM.raw",
   lastName: "NOM.raw",
+  sex: "SEXE",
   birthDate: "DATE_NAISSANCE.raw",
   birthCity: "COMMUNE_NAISSANCE.raw",
   birthDepartment: "DEPARTEMENT_NAISSANCE",
   birthCountry: "PAYS_NAISSANCE.raw",
   deathDate: "DATE_DECES.raw",
+  deathAge: "AGE_DECES",
   deathCity: "COMMUNE_DECES.raw",
   deathDepartment: "DEPARTEMENT_DECES",
   deathCountry: "PAYS_DECES.raw"
