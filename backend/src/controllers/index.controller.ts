@@ -187,10 +187,10 @@ export class IndexController extends Controller {
 
 
   @Post('/bulk')
-  public async uploadFile(@Request() request: express.Request, @Query() csv?: string): Promise<any> {
+  public async uploadFile(@Request() request: any, @Query() csv?: string): Promise<any> {
     await this.handleFile(request);
-    if (request.file) {
-      const rows = request.file.buffer.toString().split('\n').map((str: any) => str.split(','))
+    if (request.files && request.files.length > 0) {
+      const rows = request.files[0].buffer.toString().split('\n').map((str: any) => str.split(',')) // TODO: parse all the attachements
       const headers = rows.shift();
       const json = rows
         .filter((row: string[]) => row.length === headers.length)
@@ -236,7 +236,7 @@ export class IndexController extends Controller {
   }
 
   private handleFile(request: express.Request): Promise<any> {
-    const multerSingle = multer().single('randomFileIsHere');
+    const multerSingle = multer().any();
     return new Promise((resolve, reject) => {
       multerSingle(request, undefined, async (error: any) => {
         if (error) {

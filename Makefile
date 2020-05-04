@@ -198,7 +198,7 @@ elasticsearch-clean: elasticsearch-stop
 
 # deploy
 
-deploy-local: config elasticsearch-storage-pull elasticsearch-restore elasticsearch docker-check up backup-dir-clean backend-test backend-bulk
+deploy-local: config elasticsearch-storage-pull elasticsearch-restore elasticsearch docker-check up backup-dir-clean backend-test
 
 # DOCKER
 
@@ -242,14 +242,12 @@ backend-stop:
 	@echo docker-compose down backend for production ${VERSION}
 	@export EXEC_ENV=production; ${DC} -f ${DC_FILE}.yml down  --remove-orphan
 
-backend-bulk:
-	@echo Testing bulk request
-	@docker exec -i ${USE_TTY} ${APP} curl -s -X POST -H "Content-Type: multipart/form-data" -F "randomFileIsHere=@tests/bulk.csv" http://localhost:${BACKEND_PORT}/deces/api/v1/bulk-stream
-	@docker exec -i ${USE_TTY} ${APP} curl -s -X POST -H "Content-Type: multipart/form-data" -F "randomFileIsHere=@tests/bulk.csv" http://localhost:${BACKEND_PORT}/deces/api/v1/bulk?csv=1
-	
 backend-test:
 	@echo Testing API parameters
 	@docker exec -i ${USE_TTY} ${APP} bash /deces-backend/tests/test_query_params.sh
+	@echo Testing bulk request
+	@docker exec -i ${USE_TTY} ${APP} curl -s -X POST -H "Content-Type: multipart/form-data" -F "csv=@tests/bulk.csv" http://localhost:${BACKEND_PORT}/deces/api/v1/bulk-stream
+	@docker exec -i ${USE_TTY} ${APP} curl -s -X POST -H "Content-Type: multipart/form-data" -F "othername=@tests/bulk.csv" http://localhost:${BACKEND_PORT}/deces/api/v1/bulk
 
 # development mode
 backend-dev:
@@ -263,6 +261,9 @@ backend-dev-stop:
 backend-dev-test:
 	@echo Testing API parameters
 	@docker exec -i ${USE_TTY} ${APP}-development bash /deces-backend/tests/test_query_params.sh
+	@echo Testing bulk request
+	@docker exec -i ${USE_TTY} ${APP}-development curl -s -X POST -H "Content-Type: multipart/form-data" -F "csv=@tests/bulk.csv" http://localhost:${BACKEND_PORT}/deces/api/v1/bulk-stream
+	@docker exec -i ${USE_TTY} ${APP}-development curl -s -X POST -H "Content-Type: multipart/form-data" -F "othername=@tests/bulk.csv" http://localhost:${BACKEND_PORT}/deces/api/v1/bulk
 
 dev: network backend-dev-stop backend-dev
 
