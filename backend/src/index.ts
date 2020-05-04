@@ -59,36 +59,41 @@ app.use((req, res, next) => {
 app.use(bodyParser.urlencoded({ extended: false }));
 RegisterRoutes(app);
 
-const multerSingle = multer().any();
-app.post(`${process.env.BACKEND_PROXY_PATH}/bulk-stream`, multerSingle, async (req: any, res: express.Response) => {
-  if (req.files && req.files.length > 0) {
-    const rows = req.files[0].buffer.toString().split('\n').map((str: any) => str.split(',')) // TODO: parse all the attachements
-    const headers = rows.shift();
-    const json = rows
-      .filter((row: string[]) => row.length === headers.length)
-      .map((row: string[]) => {
-        const readRow: any = {} // TODO
-        headers.forEach((key: string, idx: number) => readRow[key] = row[idx])
-        return {
-          firstName: readRow.firstName,
-          lastName: readRow.lastName,
-          birthDate: readRow.birthDate
-        }
-      })
-    const results = await Promise.all(json.map(async (row: any) => {
-      const requestInput = new RequestInputPost(row);
-      const requestBuild = buildRequest(requestInput);
-      const result = await runRequest(requestBuild, null);
-      if (result.data && result.data.hits.hits.length > 0) {
-        return buildResultSingle(result.data.hits.hits[0])
-      } else {
-        return {}
+const multiRowProcess = async (file: any) => { // TODO
+  const rows = file.buffer.toString().split('\n').map((str: any) => str.split(',')) // TODO: parse all the attachements
+  const headers = rows.shift();
+  const json = rows
+    .filter((row: string[]) => row.length === headers.length)
+    .map((row: string[]) => {
+      const readRow: any = {} // TODO
+      headers.forEach((key: string, idx: number) => readRow[key] = row[idx])
+      return {
+        firstName: readRow.firstName,
+        lastName: readRow.lastName,
+        birthDate: readRow.birthDate
       }
-    }))
+    })
+  return Promise.all(json.map(async (row: any) => {
+    const requestInput = new RequestInputPost(row);
+    const requestBuild = buildRequest(requestInput);
+    const result = await runRequest(requestBuild, null);
+    if (result.data && result.data.hits.hits.length > 0) {
+      return buildResultSingle(result.data.hits.hits[0])
+    } else {
+      return {}
+    }
+  }))
+}
+
+const multerSingle = multer().any();
+
+app.post(`${process.env.BACKEND_PROXY_PATH}/search/csv`, multerSingle, async (req: any, res: express.Response) => {
+  if (req.files && req.files.length > 0) {
+    const results = await multiRowProcess(req.files[0])
     res.statusCode = 200;
     res.setHeader('Content-Type', 'text/csv');
     res.write(nameHeader)
-    results.forEach(result => {
+    results.forEach((result: any) => {
       res.write(Object.values(result)
         .map((item: any) => {
           if (typeof(item) === 'object') {
@@ -102,6 +107,15 @@ app.post(`${process.env.BACKEND_PROXY_PATH}/bulk-stream`, multerSingle, async (r
     res.end();
   } else {
     res.send("Empty")
+  }
+});
+
+app.post(`${process.env.BACKEND_PROXY_PATH}/search/json`, multerSingle, async (req: any, res: express.Response) => {
+  if (req.files && req.files.length > 0) {
+    const results = await multiRowProcess(req.files[0])
+    res.send(results); // TODO stream a json
+  } else {
+    res.send("Empty");
   }
 });
 
