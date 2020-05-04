@@ -17,7 +17,7 @@ import {
 import { RequestBodyInterface } from './requestBodyInterface';
 
 export class RequestInput extends RequestBodyInterface {
-  error: boolean = false;
+  errors: string[] = [];
   constructor(q: string, firstName: string, lastName: string, sex: string, birthDate: string, birthCity: string, birthDepartment: string, birthCountry: string, deathDate: string, deathCity: string, deathDepartment: string, deathCountry: string, deathAge: string|number, scroll: string, scrollId: string, size: number, page: number, fuzzy: string, sort: string) {
     super()
     this.size = size ? size : 20;
@@ -43,7 +43,7 @@ export class RequestInput extends RequestBodyInterface {
     Object.keys(this).map(field => {
       if (this[field] && this[field].mask && this[field].mask.validation) {
         if (!this[field].mask.validation(this[field].value)) {
-          this.error = true;
+          this.errors.push(`invalid ${field} value: ${this[field].value}`);
         }
       }
     });

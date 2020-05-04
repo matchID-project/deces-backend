@@ -90,7 +90,7 @@ else
     echo -e "\e[31mwrong field: KO!\e[0m"
     exit 1
 fi
-if curl -s -XGET http://localhost:${BACKEND_PORT}/deces/api/v1/search?birthDate=19 | grep -q 'field content error' ; then
+if curl -s -XGET http://localhost:${BACKEND_PORT}/deces/api/v1/search?birthDate=19 | grep -q 'invalid birthDate' ; then
     echo "field content error: OK"
 else
     echo -e "\e[31mfield content error: KO!\e[0m"

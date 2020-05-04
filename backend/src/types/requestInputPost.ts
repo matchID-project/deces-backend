@@ -45,7 +45,7 @@ export interface RequestBody {
 
 
 export class RequestInputPost extends RequestBodyInterface {
-  error: boolean = false;
+  errors: string[] = [];
   constructor(requestBody: RequestBody) {
     super()
     this.size = requestBody.size ? requestBody.size : 20;
@@ -73,7 +73,7 @@ export class RequestInputPost extends RequestBodyInterface {
     Object.keys(this).map(field => {
       if (this[field] && this[field].mask && this[field].mask.validation) {
         if (!this[field].mask.validation(this[field].value)) {
-          this.error = true;
+          this.errors.push(`invalid ${field} value: ${this[field].value}`);
         }
       }
     });

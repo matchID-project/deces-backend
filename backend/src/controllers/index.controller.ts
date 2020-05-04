@@ -84,9 +84,9 @@ export class IndexController extends Controller {
   ) {
     if (q || firstName || lastName || sex || birthDate || birthCity || birthDepartment || birthCountry || deathDate || deathCity || deathDepartment || deathCountry || deathAge || scroll) {
       const requestInput = new RequestInput(q, firstName, lastName, sex, birthDate, birthCity, birthDepartment, birthCountry, deathDate, deathCity, deathDepartment, deathCountry, deathAge, scroll, scrollId, size, page, fuzzy, sort);
-      if (requestInput.error) {
+      if (requestInput.errors.length) {
         this.setStatus(400);
-        return  { msg: "error - field content error" };
+        return  { msg: requestInput.errors };
       }
       if ((firstName || lastName || sex || birthDate || birthCity || birthDepartment || birthCountry || deathDate || deathCity || deathDepartment || deathCountry || deathAge) && q) {
         this.setStatus(400);
@@ -168,9 +168,9 @@ export class IndexController extends Controller {
         return  { msg: "error - simple and complex request at the same time" };
       }
       const requestInput = new RequestInputPost(requestBody);
-      if (requestInput.error) {
+      if (requestInput.errors.length) {
         this.setStatus(400);
-        return  { msg: "error - field content error" };
+        return  { msg: requestInput.errors };
       }
       const requestBuild = buildRequest(requestInput);
       const result = await runRequest(requestBuild, requestInput.scroll);
