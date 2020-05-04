@@ -1,15 +1,15 @@
-export class Name {
+export interface Name {
   first: string|string[];
   name: string|string[];
 };
 
-export class GeoPoint {
+export interface GeoPoint {
   latitude: number;
   longitude: number;
   distance: string;
 };
 
-export class NameFields {
+export interface NameFields {
   first?: {
     first?: string;
     all?: string;
@@ -17,7 +17,7 @@ export class NameFields {
   last: string|string[];
 };
 
-export class RequestField {
+export interface RequestField {
   value: string|Name|number|GeoPoint;
   field?: string|string[]|NameFields;
   query?: any;
