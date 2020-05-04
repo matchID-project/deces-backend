@@ -1,11 +1,12 @@
-import { RequestBodyInterface } from './types/requestBodyInterface';
+import { Name, GeoPoint, RequestBodyInterface } from './types/requestBodyInterface';
 import { BodyResponse, ScrolledResponse } from './types/body';
 import NameQuery from './types/queries';
 import buildRequestFilter from "./buildRequestFilter";
+import { request } from 'http';
 
 function buildMatch(requestInput: RequestBodyInterface) {
-  if (requestInput.fullText.value) {
-    return buildSimpleMatch(requestInput.fullText.value)
+  if (requestInput.fullText && requestInput.fullText.value) {
+    return buildSimpleMatch(requestInput.fullText.value as string)
   } else {
     return buildAvancedMatch(requestInput)
   }
@@ -205,9 +206,9 @@ function buildAvancedMatch(searchInput: RequestBodyInterface) {
       query: {
         bool: {
           must: Object.keys(searchInput).map(key => {
-            const value = searchInput[key].mask && searchInput[key].mask.transform && searchInput[key].value
+            const value = searchInput[key] && ( searchInput[key].mask && searchInput[key].mask.transform && searchInput[key].value
                         ? searchInput[key].mask.transform(searchInput[key].value)
-                        : searchInput[key].value;
+                        : searchInput[key].value );
             if (value) {
               return searchInput[key].query(searchInput[key].field, value, searchInput[key].fuzzy)
             }
@@ -264,7 +265,7 @@ export default function buildRequest(requestInput: RequestBodyInterface): BodyRe
       // Static query Configuration
       // --------------------------
       // https://www.elastic.co/guide/en/elasticsearch/reference/7.x/search-request-highlighting.html
-      min_score: (requestInput.fullText.value ? 5: 0),
+      min_score: ((requestInput.fullText && requestInput.fullText.value) ? 5: 0),
       track_total_hits: true,
       // highlight: {
       //   fragment_size: 200,
