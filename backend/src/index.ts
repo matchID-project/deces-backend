@@ -1,6 +1,7 @@
 import express from 'express';
 import multer from 'multer';
 import morgan from 'morgan';
+import Queue from 'bee-queue';
 import swaggerUi from 'swagger-ui-express';
 import bodyParser from 'body-parser';
 import { RequestInput } from './models/requestInput';
@@ -18,6 +19,38 @@ const port = 8080;
 morgan.token('fwd-addr', (req: any) => {
   return req.headers['x-forwarded-for']
 })
+
+const resultsArray: any[]= []
+const queue = new Queue('example',  {
+  redis: {
+    host: 'redis'
+  }
+});
+queue.process(async (job: any, done: any) => {
+  const rows = job.data.file.split('\n').map((str: any) => str.split(',')) // TODO: parse all the attachements
+  const headers = rows.shift();
+  const json = rows
+    .filter((row: string[]) => row.length === headers.length)
+    .map((row: string[]) => {
+      const readRow: any = {} // TODO
+      headers.forEach((key: string, idx: number) => readRow[key] = row[idx])
+      return {
+        firstName: readRow.firstName,
+        lastName: readRow.lastName,
+        birthDate: readRow.birthDate
+      }
+    })
+  return Promise.all(json.map(async (row: any) => {
+    const requestInput = new RequestInput(null, row.firstName, row.lastName, null, row.birthDate);
+    const requestBuild = buildRequest(requestInput);
+    const result = await runRequest(requestBuild, null);
+    if (result.data && result.data.hits.hits.length > 0) {
+      return buildResultSingle(result.data.hits.hits[0])
+    } else {
+      return {}
+    }
+  }))
+});
 
 function formatAsJson (tokens: any, req: any, res: any) {
   return JSON.stringify({
@@ -86,36 +119,47 @@ const multiRowProcess = async (file: any) => { // TODO
 }
 
 const multerSingle = multer().any();
-
-app.post(`${process.env.BACKEND_PROXY_PATH}/search/csv`, multerSingle, async (req: any, res: express.Response) => {
+app.post(`${process.env.BACKEND_PROXY_PATH}/search/:format`, multerSingle, async (req: any, res: express.Response) => {
   if (req.files && req.files.length > 0) {
-    const results = await multiRowProcess(req.files[0])
-    res.statusCode = 200;
-    res.setHeader('Content-Type', 'text/csv');
-    res.write(nameHeader)
-    results.forEach((result: any) => {
-      res.write(Object.values(result)
-        .map((item: any) => {
-          if (typeof(item) === 'object') {
-            return Object.values(item).map(flatJson).join(',')
-          } else {
-            return `"${item}"`
-          }
-        })
-        .join(',') + '\r\n'
-      )})
-    res.end();
+    const job = await queue.createJob({file: req.files[0].buffer.toString()}).save()
+    job.on('succeeded', (result) => {
+      resultsArray.push({id: job.id, result})
+    });
+    res.send({msg: 'started', id: job.id});
   } else {
-    res.send("Empty")
+    res.send({msg: 'no files attached'});
   }
 });
 
-app.post(`${process.env.BACKEND_PROXY_PATH}/search/json`, multerSingle, async (req: any, res: express.Response) => {
-  if (req.files && req.files.length > 0) {
-    const results = await multiRowProcess(req.files[0])
-    res.send(results); // TODO stream a json
+app.get(`${process.env.BACKEND_PROXY_PATH}/search/:format/:id`, async (req: any, res: express.Response) => {
+  const job: Queue.Job|any = await queue.getJob(req.params.id)
+  if (job.status === 'succeeded') {
+    const jobResult  = resultsArray.find(x => x.id === req.params.id)
+    if (jobResult == null) {
+      res.send('No results')
+    } else if (req.params.format === 'json') {
+      res.send(jobResult);
+    } else if (req.params.format === 'csv') {
+      res.statusCode = 200;
+      res.setHeader('Content-Type', 'text/csv');
+      res.write(nameHeader)
+      jobResult.result.forEach((result: any) => {
+        res.write(Object.values(result)
+          .map((item: any) => {
+            if (typeof(item) === 'object') {
+              return Object.values(item).map(flatJson).join(',')
+            } else {
+              return `"${item}"`
+            }
+          })
+          .join(',') + '\r\n'
+        )})
+      res.end();
+    } else {
+      res.send('Not available format')
+    }
   } else {
-    res.send("Empty");
+    res.send({status: job.status, id: req.params.id});
   }
 });
 

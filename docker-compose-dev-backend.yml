@@ -37,6 +37,11 @@ services:
       - ${BACKEND}/dist:/${APP}/dist/
       - ${BACKEND}/tests:/${APP}/tests/
       - /${APP}/node_modules
+  redis:
+    image: redis:alpine
+    container_name: ${APP}-redis
+    volumes:
+      - ${REDIS_DATA}:/data
 
 networks:
   default:

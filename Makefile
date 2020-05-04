@@ -238,8 +238,12 @@ backend-test:
 	@echo Testing API parameters
 	@docker exec -i ${USE_TTY} ${APP} bash /deces-backend/tests/test_query_params.sh
 	@echo Testing bulk request
+	@docker exec -i ${USE_TTY} ${APP} curl -s -X POST -H "Content-Type: multipart/form-data" -F "csv=@tests/bulk.csv" http://localhost:${BACKEND_PORT}/deces/api/v1/search/json
+	sleep 2
+	@docker exec -i ${USE_TTY} ${APP} curl -s -X GET http://localhost:${BACKEND_PORT}/deces/api/v1/search/json/1
 	@docker exec -i ${USE_TTY} ${APP} curl -s -X POST -H "Content-Type: multipart/form-data" -F "csv=@tests/bulk.csv" http://localhost:${BACKEND_PORT}/deces/api/v1/search/csv
-	@docker exec -i ${USE_TTY} ${APP} curl -s -X POST -H "Content-Type: multipart/form-data" -F "othername=@tests/bulk.csv" http://localhost:${BACKEND_PORT}/deces/api/v1/search/json
+	sleep 2
+	@docker exec -i ${USE_TTY} ${APP} curl -s -X GET http://localhost:${BACKEND_PORT}/deces/api/v1/search/csv/2
 
 # development mode
 backend-dev:
@@ -254,8 +258,12 @@ backend-dev-test:
 	@echo Testing API parameters
 	@docker exec -i ${USE_TTY} ${APP}-development bash /deces-backend/tests/test_query_params.sh
 	@echo Testing bulk request
-	@docker exec -i ${USE_TTY} ${APP}-development curl -s -X POST -H "Content-Type: multipart/form-data" -F "csv=@tests/bulk.csv" http://localhost:${BACKEND_PORT}/deces/api/v1/search/csv
 	@docker exec -i ${USE_TTY} ${APP}-development curl -s -X POST -H "Content-Type: multipart/form-data" -F "csv=@tests/bulk.csv" http://localhost:${BACKEND_PORT}/deces/api/v1/search/json
+	sleep 2
+	@docker exec -i ${USE_TTY} ${APP}-development curl -s -X GET http://localhost:${BACKEND_PORT}/deces/api/v1/search/json/1
+	@docker exec -i ${USE_TTY} ${APP}-development curl -s -X POST -H "Content-Type: multipart/form-data" -F "csv=@tests/bulk.csv" http://localhost:${BACKEND_PORT}/deces/api/v1/search/csv
+	sleep 2
+	@docker exec -i ${USE_TTY} ${APP}-development curl -s -X GET http://localhost:${BACKEND_PORT}/deces/api/v1/search/csv/2
 
 dev: network backend-dev-stop backend-dev
 
