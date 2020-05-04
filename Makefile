@@ -39,6 +39,7 @@ export BACKEND_PROXY_PATH=/${API_PATH}/api/v1
 export FILE_BACKEND_DIST_APP_VERSION = $(APP)-$(APP_VERSION)-backend-dist.tar.gz
 export NPM_REGISTRY = $(shell echo $$NPM_REGISTRY )
 export NPM_VERBOSE = 1
+export REDIS_DATA=${APP_PATH}/redisdata
 
 # Backupdir
 export BACKUP_DIR = ${APP_PATH}/backup
@@ -237,8 +238,8 @@ backend-test:
 	@echo Testing API parameters
 	@docker exec -i ${USE_TTY} ${APP} bash /deces-backend/tests/test_query_params.sh
 	@echo Testing bulk request
-	@docker exec -i ${USE_TTY} ${APP} curl -s -X POST -H "Content-Type: multipart/form-data" -F "csv=@tests/bulk.csv" http://localhost:${BACKEND_PORT}/deces/api/v1/bulk-stream
-	@docker exec -i ${USE_TTY} ${APP} curl -s -X POST -H "Content-Type: multipart/form-data" -F "othername=@tests/bulk.csv" http://localhost:${BACKEND_PORT}/deces/api/v1/bulk
+	@docker exec -i ${USE_TTY} ${APP} curl -s -X POST -H "Content-Type: multipart/form-data" -F "csv=@tests/bulk.csv" http://localhost:${BACKEND_PORT}/deces/api/v1/search/csv
+	@docker exec -i ${USE_TTY} ${APP} curl -s -X POST -H "Content-Type: multipart/form-data" -F "othername=@tests/bulk.csv" http://localhost:${BACKEND_PORT}/deces/api/v1/search/json
 
 # development mode
 backend-dev:

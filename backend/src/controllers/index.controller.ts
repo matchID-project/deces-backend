@@ -1,11 +1,9 @@
-import { Controller, Get, Post, Body, Request, Route, Query, SuccessResponse, Response, Example } from 'tsoa';
-import multer from 'multer';
-import * as express from 'express';
+import { Controller, Get, Post, Body, Route, Query, SuccessResponse, Response, Example } from 'tsoa';
 import runRequest from '../runRequest';
 import buildRequest from '../buildRequest';
 import { RequestInput } from '../types/requestInput';
 import { RequestInputPost, RequestBody } from '../types/requestInputPost';
-import { buildResult, buildResultPost, buildResultSingle } from '../types/result';
+import { buildResult, buildResultPost } from '../types/result';
 import { Result } from '../types/result';
 // import getDataGouvCatalog from '../getDataGouvCatalog';
 
@@ -183,68 +181,6 @@ export class IndexController extends Controller {
       this.setStatus(400);
       return  { msg: "error - empty request" };
     }
-  }
-
-
-  @Post('/bulk')
-  public async uploadFile(@Request() request: any, @Query() csv?: string): Promise<any> {
-    await this.handleFile(request);
-    if (request.files && request.files.length > 0) {
-      const rows = request.files[0].buffer.toString().split('\n').map((str: any) => str.split(',')) // TODO: parse all the attachements
-      const headers = rows.shift();
-      const json = rows
-        .filter((row: string[]) => row.length === headers.length)
-        .map((row: string[]) => {
-          const readRow: any = {} // TODO
-          headers.forEach((key: string, idx: number) => readRow[key] = row[idx])
-          return {
-            firstName: readRow.firstName,
-            lastName: readRow.lastName,
-            birthDate: readRow.birthDate
-          }
-        })
-      const results = await Promise.all(json.map(async (row: any) => {
-        const requestInput = new RequestInputPost(row);
-        const requestBuild = buildRequest(requestInput);
-        const result = await runRequest(requestBuild, null);
-        if (result.data && result.data.hits.hits.length > 0) {
-          return buildResultSingle(result.data.hits.hits[0])
-        } else {
-          return {}
-        }
-      }))
-      if (csv) {
-        this.setStatus(200);
-        this.setHeader('Content-Type', 'text/csv');
-        return nameHeader + results.map(result => {
-          return Object.values(result)
-            .map((item: any) => {
-              if (typeof(item) === 'object') {
-                return Object.values(item).map(flatJson).join(',')
-              } else {
-                return `"${item}"`
-              }
-            })
-            .join(',') + '\r\n'
-        })
-      } else {
-        return results;
-      }
-    } else {
-      return {msg: 'no file'};
-    }
-  }
-
-  private handleFile(request: express.Request): Promise<any> {
-    const multerSingle = multer().any();
-    return new Promise((resolve, reject) => {
-      multerSingle(request, undefined, async (error: any) => {
-        if (error) {
-          reject(error);
-        }
-        resolve();
-      });
-    });
   }
 
   @Get('/healthcheck')
