@@ -48,28 +48,6 @@ export class RequestInputPost extends RequestBodyInterface {
   error: boolean = false;
   constructor(requestBody: RequestBody) {
     super()
-    if (requestBody.birthDate) {
-      const validRangeYear = /^\d{4}-\d{4}$/.test(requestBody.birthDate);
-      const validRangeDate = /^\d{2}\/\d{2}\/\d{4}-\d{2}\/\d{2}\/\d{4}$/.test(requestBody.birthDate);
-      const validYear = /^\d{4}$/.test(requestBody.birthDate);
-      const validDate = /^\d{2}\/\d{2}\/\d{4}$/.test(requestBody.birthDate);
-      if (validRangeYear || validRangeDate || validYear || validDate) {
-        this.error = false;
-      } else {
-        this.error = true;
-      }
-    }
-    if (requestBody.deathDate) {
-      const validRangeYear = /^\d{4}-\d{4}$/.test(requestBody.deathDate);
-      const validRangeDate = /^\d{2}\/\d{2}\/\d{4}-\d{2}\/\d{2}\/\d{4}$/.test(requestBody.deathDate);
-      const validYear = /^\d{4}$/.test(requestBody.deathDate);
-      const validDate = /^\d{2}\/\d{2}\/\d{4}$/.test(requestBody.deathDate);
-      if (validRangeYear || validRangeDate || validYear || validDate) {
-        this.error = false;
-      } else {
-        this.error = true;
-      }
-    }
     this.size = requestBody.size ? requestBody.size : 20;
     this.page = requestBody.page ? requestBody.page : 1;
     this.scroll = requestBody.scroll ? requestBody.scroll : '';
@@ -91,5 +69,14 @@ export class RequestInputPost extends RequestBodyInterface {
     this.deathDepartment = deathDepartmentWithQuery(requestBody.deathDepartment, requestBody.fuzzy);
     this.deathCountry = deathCountryWithQuery(requestBody.deathCountry, requestBody.fuzzy);
     this.deathGeoPoint = deathGeoPointWithQuery(requestBody.deathGeoPoint, requestBody.fuzzy);
+
+    Object.keys(this).map(field => {
+      if (this[field] && this[field].mask && this[field].mask.validation) {
+        if (!this[field].mask.validation(this[field].value)) {
+          this.error = true;
+        }
+      }
+    });
+
   }
 }

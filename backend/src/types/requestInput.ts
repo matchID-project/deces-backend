@@ -20,28 +20,6 @@ export class RequestInput extends RequestBodyInterface {
   error: boolean = false;
   constructor(q: string, firstName: string, lastName: string, sex: string, birthDate: string, birthCity: string, birthDepartment: string, birthCountry: string, deathDate: string, deathCity: string, deathDepartment: string, deathCountry: string, deathAge: string|number, scroll: string, scrollId: string, size: number, page: number, fuzzy: string, sort: string) {
     super()
-    if (birthDate) {
-      const validRangeYear = /^\d{4}-\d{4}$/.test(birthDate);
-      const validRangeDate = /^\d{2}\/\d{2}\/\d{4}-\d{2}\/\d{2}\/\d{4}$/.test(birthDate);
-      const validYear = /^\d{4}$/.test(birthDate);
-      const validDate = /^\d{2}\/\d{2}\/\d{4}$/.test(birthDate);
-      if (validRangeYear || validRangeDate || validYear || validDate) {
-        this.error = false;
-      } else {
-        this.error = true;
-      }
-    }
-    if (deathDate) {
-      const validRangeYear = /^\d{4}-\d{4}$/.test(deathDate);
-      const validRangeDate = /^\d{2}\/\d{2}\/\d{4}-\d{2}\/\d{2}\/\d{4}$/.test(deathDate);
-      const validYear = /^\d{4}$/.test(deathDate);
-      const validDate = /^\d{2}\/\d{2}\/\d{4}$/.test(deathDate);
-      if (validRangeYear || validRangeDate || validYear || validDate) {
-        this.error = false;
-      } else {
-        this.error = true;
-      }
-    }
     this.size = size ? size : 20;
     this.page = page ? page : 1;
     this.scroll = scroll ? scroll : "";
@@ -61,6 +39,14 @@ export class RequestInput extends RequestBodyInterface {
     this.deathDepartment = deathDepartmentWithQuery(deathDepartment, fuzzy);
     this.deathCountry = deathCountryWithQuery(deathCountry, fuzzy);
     this.deathAge = deathAgeWithQuery(deathAge, fuzzy);
+
+    Object.keys(this).map(field => {
+      if (this[field] && this[field].mask && this[field].mask.validation) {
+        if (!this[field].mask.validation(this[field].value)) {
+          this.error = true;
+        }
+      }
+    });
 
   }
 }
