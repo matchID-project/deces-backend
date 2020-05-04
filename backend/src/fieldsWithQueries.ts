@@ -1,15 +1,12 @@
 import { GeoPoint } from './types/requestBodyInterface';
 
 import {
-    dateRangeTypingMask,
     dateRangeValidationMask,
     dateRangeTransformMask,
     ageRangeTransformMask,
     ageRangeValidationMask,
-    ageRangeTypingMask,
     sexTransformMask,
-    sexValidationMask,
-    sexTypingMask
+    sexValidationMask
 } from './masks';
 
 import {
@@ -46,7 +43,6 @@ export const sexWithQuery = (value: string, fuzzy: string|boolean) => value && {
     query: matchQuery,
     fuzzy: false,
     mask: {
-        typing: sexTypingMask,
         validation: sexValidationMask,
         transform: sexTransformMask
     }
@@ -58,7 +54,6 @@ export const birthDateWithQuery = (value: string, fuzzy: string|boolean) => valu
     query: dateRangeStringQuery,
     fuzzy: (fuzzy && fuzzy === 'false') ? false : "auto",
     mask: {
-        typing: dateRangeTypingMask,
         validation: dateRangeValidationMask,
         transform: dateRangeTransformMask
     }
@@ -98,7 +93,6 @@ export const deathDateWithQuery = (value: string, fuzzy: string|boolean) => valu
     query: dateRangeStringQuery,
     fuzzy: (fuzzy && fuzzy === 'false') ? false : "auto",
     mask: {
-        typing: dateRangeTypingMask,
         validation: dateRangeValidationMask,
         transform: dateRangeTransformMask
     }
@@ -110,7 +104,6 @@ export const deathAgeWithQuery = (value: string|number, fuzzy: string|boolean) =
     query: ageRangeStringQuery,
     fuzzy: false,
     mask: {
-      typing: ageRangeTypingMask,
       validation: ageRangeValidationMask,
       transform: ageRangeTransformMask
     }

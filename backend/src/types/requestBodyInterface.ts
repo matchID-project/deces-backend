@@ -23,7 +23,6 @@ export class RequestField {
   query?: any;
   fuzzy?: string|boolean;
   mask?: {
-    typing?: any;
     validation?: any;
     transform?: any;
   };
