@@ -195,3 +195,23 @@ export class IndexController extends Controller {
 }
 
 type StrAndNumber = string | number;
+
+export const flatJson = (item: object|string) => {
+  if (Array.isArray(item)) {
+    return `"${item.join(' ')}"`
+  } else if (typeof(item) === 'object') {
+    return Object.values(item)
+      .map(x => {
+        if (x == null) {
+          return ""
+        } else {
+          return `"${x}"`
+        }
+      })
+      .join(',')
+  } else {
+    return `"${item}"`
+  }
+}
+
+export const nameHeader = 'score,source,id,name,firstName,lastName,sex,birthDate,birthCity,cityCode,departmentCode,country,countryCode,latitude,longitude,deathDate,certificateId,age,deathCity,cityCode,departmentCode,country,countryCode,latitude,longitude\r\n'

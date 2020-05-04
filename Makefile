@@ -39,15 +39,7 @@ export BACKEND_PROXY_PATH=/${API_PATH}/api/v1
 export FILE_BACKEND_DIST_APP_VERSION = $(APP)-$(APP_VERSION)-backend-dist.tar.gz
 export NPM_REGISTRY = $(shell echo $$NPM_REGISTRY )
 export NPM_VERBOSE = 1
-
-# nginx
-export NGINX = ${APP_PATH}/nginx
-export NGINX_TIMEOUT = 30
-export API_USER_LIMIT_RATE=1r/s
-export API_USER_BURST=20 nodelay
-export API_USER_SCOPE=http_x_forwarded_for
-export API_GLOBAL_LIMIT_RATE=20r/s
-export API_GLOBAL_BURST=200 nodelay
+export REDIS_DATA=${APP_PATH}/redisdata
 
 # Backupdir
 export BACKUP_DIR = ${APP_PATH}/backup
@@ -236,7 +228,7 @@ backend-build-all: network backend-dist backend-build-image
 # production mode
 backend-start:
 	@echo docker-compose up backend for production ${VERSION}
-	@export EXEC_ENV=production; ${DC} -f ${DC_FILE}.yml up -d backend 2>&1 | grep -v orphan
+	@export EXEC_ENV=production; ${DC} -f ${DC_FILE}.yml up -d 2>&1 | grep -v orphan
 
 backend-stop:
 	@echo docker-compose down backend for production ${VERSION}
@@ -245,12 +237,15 @@ backend-stop:
 backend-test:
 	@echo Testing API parameters
 	@docker exec -i ${USE_TTY} ${APP} bash /deces-backend/tests/test_query_params.sh
+	@echo Testing bulk request
+	@docker exec -i ${USE_TTY} ${APP} curl -s -X POST -H "Content-Type: multipart/form-data" -F "csv=@tests/bulk.csv" http://localhost:${BACKEND_PORT}/deces/api/v1/search/csv
+	@docker exec -i ${USE_TTY} ${APP} curl -s -X POST -H "Content-Type: multipart/form-data" -F "othername=@tests/bulk.csv" http://localhost:${BACKEND_PORT}/deces/api/v1/search/json
 
 # development mode
 backend-dev:
 	@echo docker-compose up backend for dev
 	@export EXEC_ENV=development;\
-		${DC} -f ${DC_FILE}-dev-backend.yml up --build -d --force-recreate backend 2>&1 | grep -v orphan
+		${DC} -f ${DC_FILE}-dev-backend.yml up --build -d --force-recreate 2>&1 | grep -v orphan
 
 backend-dev-stop:
 	@export EXEC_ENV=development; ${DC} -f ${DC_FILE}-dev-backend.yml down
@@ -258,6 +253,9 @@ backend-dev-stop:
 backend-dev-test:
 	@echo Testing API parameters
 	@docker exec -i ${USE_TTY} ${APP}-development bash /deces-backend/tests/test_query_params.sh
+	@echo Testing bulk request
+	@docker exec -i ${USE_TTY} ${APP}-development curl -s -X POST -H "Content-Type: multipart/form-data" -F "csv=@tests/bulk.csv" http://localhost:${BACKEND_PORT}/deces/api/v1/search/csv
+	@docker exec -i ${USE_TTY} ${APP}-development curl -s -X POST -H "Content-Type: multipart/form-data" -F "csv=@tests/bulk.csv" http://localhost:${BACKEND_PORT}/deces/api/v1/search/json
 
 dev: network backend-dev-stop backend-dev
 
