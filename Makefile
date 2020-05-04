@@ -40,15 +40,6 @@ export FILE_BACKEND_DIST_APP_VERSION = $(APP)-$(APP_VERSION)-backend-dist.tar.gz
 export NPM_REGISTRY = $(shell echo $$NPM_REGISTRY )
 export NPM_VERBOSE = 1
 
-# nginx
-export NGINX = ${APP_PATH}/nginx
-export NGINX_TIMEOUT = 30
-export API_USER_LIMIT_RATE=1r/s
-export API_USER_BURST=20 nodelay
-export API_USER_SCOPE=http_x_forwarded_for
-export API_GLOBAL_LIMIT_RATE=20r/s
-export API_GLOBAL_BURST=200 nodelay
-
 # Backupdir
 export BACKUP_DIR = ${APP_PATH}/backup
 export DATAPREP_VERSION_FILE = ${APP_PATH}/.dataprep.sha1
