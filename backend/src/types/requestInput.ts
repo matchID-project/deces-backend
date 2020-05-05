@@ -18,7 +18,7 @@ import { RequestBodyInterface } from './requestBodyInterface';
 
 export class RequestInput extends RequestBodyInterface {
   errors: string[] = [];
-  constructor(q: string, firstName: string, lastName: string, sex: string, birthDate: string, birthCity: string, birthDepartment: string, birthCountry: string, deathDate: string, deathCity: string, deathDepartment: string, deathCountry: string, deathAge: string|number, scroll: string, scrollId: string, size: number, page: number, fuzzy: string, sort: string) {
+  constructor(q: string, firstName: string, lastName: string, sex: string, birthDate: string|number, birthCity: string, birthDepartment: string, birthCountry: string, deathDate: string|number, deathCity: string, deathDepartment: string, deathCountry: string, deathAge: string|number, scroll: string, scrollId: string, size: number, page: number, fuzzy: string, sort: string) {
     super()
     this.size = size ? size : 20;
     this.page = page ? page : 1;

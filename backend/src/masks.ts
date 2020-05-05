@@ -28,12 +28,16 @@ export const dateRangeValidationMask = (dateRangeString: string) => {
     if (/[0-9\/]+\-[0-9\/]+/.test(dateRangeString)) {
         return dateRangeString.toString().split('-').every(d => dateValidationMask(d));
     } else {
-        return dateValidationMask(dateRangeString);
+        return dateValidationMask(dateRangeString.toString());
     }
 }
 
-export const dateTransformMask = (dateString: string) => {
+export const dateTransformMask = (dateString: string|number) => {
+  if (typeof(dateString) === 'string') {
     return dateString.replace(/(\d{2})\/(\d{2})\/(\d{4})/,'$3$2$1');
+  } else {
+    return dateString.toString()
+  }
 }
 
 export const dateRangeTransformMask = (dateRangeString: string) => {

@@ -24,12 +24,12 @@ export interface RequestBody {
   firstName?: string;
   lastName?: string;
   sex?: string;
-  birthDate?: string;
+  birthDate?: string|number;
   birthCity?: string;
   birthDepartment?: string;
   birthCountry?: string;
   birthGeoPoint?: GeoPoint;
-  deathDate?: string;
+  deathDate?: string|number;
   deathCity?: string;
   deathDepartment?: string;
   deathCountry?: string;
