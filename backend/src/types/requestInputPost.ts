@@ -18,6 +18,18 @@ import {
 
 import { GeoPoint, RequestBodyInterface } from './requestBodyInterface';
 
+/**
+ * This is an example of advanced request, there is no q parameter.
+ * @tsoaModel
+ * @example
+ * {
+ *   "firstName": "Georges",
+ *   "lastName": "Pompidou",
+ *   "sex": "M",
+ *   "birthDate": "15/02/1920",
+ *   "birthCity": "Paris"
+ * }
+ */
 export interface RequestBody {
   [key: string]: any; // Index signature
   q?: string;

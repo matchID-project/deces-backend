@@ -1,4 +1,3 @@
-
 interface Person {
   score: number;
   source: string;
@@ -36,19 +35,6 @@ interface Person {
   };
 }
 
-export interface Result {
-  request: any;
-  response: {
-    scrollId?: string;
-    total: number;
-    maxScore: number;
-    size: number;
-    page: number;
-    delay: number;
-    persons: Person[];
-  }
-}
-
 interface RequestType {
   [key: string]: any; // Index signature
   q?: string;
@@ -66,6 +52,71 @@ interface RequestType {
   page?: number;
   fuzzy?: string;
   sort?: string;
+}
+
+/**
+ * This is a description of a model
+ * @tsoaModel
+ * @example
+ * {
+ *   "request": {
+ *    "q": "Georges Pompidou"
+ *   },
+ *   "response": {
+ *     "scrollId": "123XXX",
+ *     "total": 2,
+ *     "maxScore": 10.54,
+ *     "size": 20,
+ *     "page": 1,
+ *     "delay": 2,
+ *     "persons": [{
+ *        "score":10.542101,
+ *        "source":"2020-m01",
+ *        "id":"ba7582a6344757e67351bf42096c952a12108e06",
+ *        "name":{"first":["Jean","Pierre"],"last":"Dupont"},
+ *        "sex": "M",
+ *        "birth":{
+ *          "date":"19691111",
+ *          "location":{
+ *            "city":"Clermont-Ferrand",
+ *            "cityCode":"63113",
+ *            "departmentCode":"63",
+ *            "country":"France",
+ *            "countryCode":"FRA",
+ *            "latitude": 45.7833,
+ *            "longitude": 3.0833
+ *          }
+ *        },
+ *        "death":{
+ *          "date":"20200604",
+ *          "certificateId": "69 N",
+ *          "age": 50,
+ *          "location":{
+ *            "city":"Clermont-Ferrand",
+ *            "cityCode":"63113",
+ *            "departmentCode":"63",
+ *            "country":"France",
+ *            "countryCode":"FRA",
+ *            "latitude": 45.7833,
+ *            "longitude": 3.0833
+ *          }
+ *        }
+ *      }]
+ *   }
+ * }
+ */
+export interface Result {
+  msg?: string|string[];
+  request?: RequestType;
+  response?: {
+    scrollId?: string;
+    total: number;
+    maxScore: number;
+    size: number;
+    page: number;
+    delay: number;
+    persons: Person[];
+  }
 }
 
 export function getFromGeoPoint (geoPoint: string, latOrLon: string): number {
@@ -204,4 +255,28 @@ export function buildResultSingle (item: any): any { // TODO
       }
     }
   }
+}
+
+/**
+ * The message shows information to solve the error
+ * @tsoaModel
+ * @example
+ * {
+ *   "msg": "Error"
+ * }
+ */
+export interface ErrorResponse {
+  msg: string|string[]
+}
+
+/**
+ * The message shows OK when the backend is running successfully
+ * @tsoaModel
+ * @example
+ * {
+ *   "msg": "Ok"
+ * }
+ */
+export interface HealthcheckResponse {
+  msg: string;
 }
