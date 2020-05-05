@@ -1,6 +1,6 @@
 export interface Name {
   first: string|string[];
-  name: string|string[];
+  last: string|string[];
 };
 
 export interface GeoPoint {
@@ -35,8 +35,7 @@ export class RequestBodyInterface {
   size: number;
   page: number;
   fullText?: RequestField;
-  firstName?: RequestField;
-  lastName?: RequestField;
+  name?: RequestField;
   sex?: RequestField;
   birthDate?: RequestField;
   birthCity?: RequestField;
