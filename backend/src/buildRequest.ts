@@ -1,8 +1,7 @@
-import { Name, GeoPoint, RequestBodyInterface } from './types/requestBodyInterface';
+import {  RequestBodyInterface } from './types/requestBodyInterface';
 import { BodyResponse, ScrolledResponse } from './types/body';
 import NameQuery from './types/queries';
 import buildRequestFilter from "./buildRequestFilter";
-import { request } from 'http';
 
 function buildMatch(requestInput: RequestBodyInterface) {
   if (requestInput.fullText && requestInput.fullText.value) {
