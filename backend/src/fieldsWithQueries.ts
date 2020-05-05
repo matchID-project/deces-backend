@@ -1,4 +1,4 @@
-import { GeoPoint } from './types/requestBodyInterface';
+import { GeoPoint, Name } from './types/requestBodyInterface';
 
 import {
     dateRangeValidationMask,
@@ -12,7 +12,7 @@ import {
 import {
     dateRangeStringQuery,
     ageRangeStringQuery,
-    firstNameQuery,
+    nameQuery,
     fuzzyTermQuery,
     geoPointQuery,
     matchQuery
@@ -23,17 +23,16 @@ export const fullTextWithQuery = (value: string, fuzzy: string|boolean) => value
     field: "fullText"
 };
 
-export const firstNameWithQuery = (value: string, fuzzy: string|boolean) => value && {
+export const nameWithQuery = (value: Name, fuzzy: string|boolean) => value && (value.first || value.last) && {
     value,
-    field: ["PRENOM","PRENOMS"],
-    query: firstNameQuery,
-    fuzzy: (fuzzy && fuzzy === 'false') ? false : "auto"
-};
-
-export const lastNameWithQuery = (value: string, fuzzy: string|boolean) => value && {
-    value,
-    field: "NOM",
-    query: fuzzyTermQuery,
+    field: {
+        first: {
+            first: "PRENOM",
+            all: "PRENOMS"
+        },
+        last: "NOM"
+    },
+    query: nameQuery,
     fuzzy: (fuzzy && fuzzy === 'false') ? false : "auto"
 };
 

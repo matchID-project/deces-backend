@@ -1,7 +1,6 @@
 import {
   fullTextWithQuery,
-  firstNameWithQuery,
-  lastNameWithQuery,
+  nameWithQuery,
   sexWithQuery,
   birthDateWithQuery,
   birthCityWithQuery,
@@ -67,8 +66,10 @@ export class RequestInputPost extends RequestBodyInterface {
     this.sort = requestBody.sort ? requestBody.sort: [{score: 'desc'}];
 
     this.fullText = fullTextWithQuery(requestBody.q, requestBody.fuzzy);
-    this.firstName = firstNameWithQuery(requestBody.firstName, requestBody.fuzzy);
-    this.lastName = lastNameWithQuery(requestBody.lastName, requestBody.fuzzy);
+    this.name = nameWithQuery({
+      first: requestBody.firstName,
+      last: requestBody.lastName
+    }, requestBody.fuzzy);
     this.sex = sexWithQuery(requestBody.sex, requestBody.fuzzy);
     this.birthDate = birthDateWithQuery(requestBody.birthDate, requestBody.fuzzy);
     this.birthCity = birthCityWithQuery(requestBody.birthCity, requestBody.fuzzy);
