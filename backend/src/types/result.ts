@@ -143,7 +143,7 @@ export function buildResult (result: any, page: any, size: any, searchKeys: any)
 export function buildResultPost (result: any, requestInput: any): Result {
   const filteredRequest: RequestType = {}
   Object.keys(requestInput).forEach((item: any) => {
-    if (requestInput[item].value) {
+    if (requestInput[item] && requestInput[item].value) {
       return filteredRequest[item] = requestInput[item].value
     }
   })
