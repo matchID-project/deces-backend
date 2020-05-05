@@ -1,6 +1,5 @@
 import {  RequestBodyInterface } from './types/requestBodyInterface';
 import { BodyResponse, ScrolledResponse } from './types/body';
-import NameQuery from './types/queries';
 import buildRequestFilter from "./buildRequestFilter";
 
 function buildMatch(requestInput: RequestBodyInterface) {
@@ -19,11 +18,40 @@ function buildSimpleMatch(searchInput: string) {
 
   const defaultQuery = { match_all: {} }
 
-  let namesQuery
+  let namesQuery:any
   let dateQuery
 
   if (names.length > 0) {
-    namesQuery = new NameQuery(names);
+    namesQuery = {
+      bool: {
+        must: [
+          {
+            match: {
+              PRENOMS_NOM: {
+                query: names.join(" "),
+                fuzziness: "auto"
+              }
+            }
+          }
+        ],
+        should: [
+          {
+            match: {
+              PRENOM_NOM: names.join(" "),
+            }
+          },
+          {
+            match: {
+              PRENOM_NOM: {
+                query: names.join(" "),
+                fuzziness: "auto"
+              }
+            }
+          }
+        ]
+      }
+    }
+
 
     if (names.length === 2) {
       namesQuery.bool.must.push(
