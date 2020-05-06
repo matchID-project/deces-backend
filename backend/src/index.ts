@@ -3,11 +3,11 @@ import multer from 'multer';
 import morgan from 'morgan';
 import swaggerUi from 'swagger-ui-express';
 import bodyParser from 'body-parser';
-import { RequestInputPost } from './types/requestInputPost';
+import { RequestInput } from './models/requestInput';
 import buildRequest from './buildRequest';
 import { flatJson, nameHeader } from './controllers/index.controller';
 import runRequest from './runRequest';
-import { buildResultSingle } from './types/result';
+import { buildResultSingle } from './models/result';
 import * as swaggerDocument from './api/swagger.json';
 import { RegisterRoutes } from './routes/routes';
 import { loggerStream } from './logger';
@@ -74,7 +74,7 @@ const multiRowProcess = async (file: any) => { // TODO
       }
     })
   return Promise.all(json.map(async (row: any) => {
-    const requestInput = new RequestInputPost(row);
+    const requestInput = new RequestInput(null, row.firstName, row.lastName, null, row.birthDate);
     const requestBuild = buildRequest(requestInput);
     const result = await runRequest(requestBuild, null);
     if (result.data && result.data.hits.hits.length > 0) {
