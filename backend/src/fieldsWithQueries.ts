@@ -1,4 +1,4 @@
-import { GeoPoint, Name } from './types/requestBodyInterface';
+import { GeoPoint, Name } from './models/requestInput';
 
 import {
     dateRangeValidationMask,

@@ -6,23 +6,108 @@ import {
   birthCityWithQuery,
   birthDepartmentWithQuery,
   birthCountryWithQuery,
+  birthGeoPointWithQuery,
   deathDateWithQuery,
+  deathAgeWithQuery,
   deathCityWithQuery,
   deathDepartmentWithQuery,
   deathCountryWithQuery,
-  deathAgeWithQuery
+  deathGeoPointWithQuery
 } from '../fieldsWithQueries';
 
-import { RequestBodyInterface } from './requestBodyInterface';
+export interface Name {
+  first: string|string[];
+  last: string|string[];
+};
 
-export class RequestInput extends RequestBodyInterface {
+export interface GeoPoint {
+  latitude: number;
+  longitude: number;
+  distance: string;
+};
+
+export interface NameFields {
+  first?: {
+    first?: string;
+    all?: string;
+  };
+  last: string|string[];
+};
+
+export interface RequestField {
+  value: string|Name|number|GeoPoint;
+  field?: string|string[]|NameFields;
+  query?: any;
+  fuzzy?: string|boolean;
+  mask?: {
+    validation?: any;
+    transform?: any;
+  };
+};
+
+/**
+ * This is an example of advanced request, there is no q parameter.
+ * @tsoaModel
+ * @example
+ * {
+ *   "firstName": "Georges",
+ *   "lastName": "Pompidou",
+ *   "sex": "M",
+ *   "deathCity": "Paris"
+ * }
+ */
+export interface RequestBody {
+ [key: string]: any; // Index signature
+ scroll?: string;
+ scrollId?: string;
+ size?: number;
+ page?: number;
+ fullText?: string;
+ firstName?: string;
+ lastName?: string;
+ sex?: string;
+ birthDate?: string|number;
+ birthCity?: string;
+ birthDepartment?: string;
+ birthCountry?: string;
+ birthGeoPoint?: GeoPoint;
+ deathDate?: string|number;
+ deathCity?: string;
+ deathDepartment?: string;
+ deathCountry?: string;
+ deathGeoPoint?: GeoPoint;
+ deathAge?: string|number;
+};
+
+export class RequestInput {
+  [key: string]: any; // Index signature
+  fullText?: RequestField;
+  firstName?: RequestField;
+  lastName?: RequestField;
+  sex?: RequestField;
+  birthDate?: RequestField;
+  birthCity?: RequestField;
+  birthDepartment?: RequestField;
+  birthCountry?: RequestField;
+  birthGeoPoint?: RequestField;
+  deathDate?: RequestField;
+  deathCity?: RequestField;
+  deathDepartment?: RequestField;
+  deathCountry?: RequestField;
+  deathGeoPoint?: RequestField;
+  deathAge?: RequestField;
+  size?: number;
+  scroll?: string;
+  scrollId?: string;
+  page?: number;
+  fuzzy?: string;
+  sort?: any;
   errors: string[] = [];
-  constructor(q: string, firstName: string, lastName: string, sex: string, birthDate: string|number, birthCity: string, birthDepartment: string, birthCountry: string, deathDate: string|number, deathCity: string, deathDepartment: string, deathCountry: string, deathAge: string|number, scroll: string, scrollId: string, size: number, page: number, fuzzy: string, sort: string) {
-    super()
+  constructor(q?: string, firstName?: string, lastName?: string, sex?: string, birthDate?: string|number, birthCity?: string, birthDepartment?: string, birthCountry?: string, birthGeoPoint?: GeoPoint, deathDate?: string|number, deathCity?: string, deathDepartment?: string, deathCountry?: string, deathGeoPoint?: GeoPoint, deathAge?: string|number, scroll?: string, scrollId?: string, size?: number, page?: number, fuzzy?: string, sort?: string) {
     this.size = size ? size : 20;
     this.page = page ? page : 1;
-    this.scroll = scroll ? scroll : "";
-    this.scrollId = scrollId ? scrollId : "";
+    this.scroll = scroll ? scroll : '';
+    this.scrollId = scrollId ? scrollId : '';
     this.sort = sort ? sort: [{score: 'desc'}];
 
     this.fullText = fullTextWithQuery(q, fuzzy);
@@ -35,11 +120,13 @@ export class RequestInput extends RequestBodyInterface {
     this.birthCity = birthCityWithQuery(birthCity, fuzzy);
     this.birthDepartment = birthDepartmentWithQuery(birthDepartment, fuzzy);
     this.birthCountry = birthCountryWithQuery(birthCountry, fuzzy);
+    this.birthGeoPoint = birthGeoPointWithQuery(birthGeoPoint, fuzzy);
     this.deathDate = deathDateWithQuery(deathDate, fuzzy);
+    this.deathAge = deathAgeWithQuery(deathAge, fuzzy);
     this.deathCity = deathCityWithQuery(deathCity, fuzzy);
     this.deathDepartment = deathDepartmentWithQuery(deathDepartment, fuzzy);
     this.deathCountry = deathCountryWithQuery(deathCountry, fuzzy);
-    this.deathAge = deathAgeWithQuery(deathAge, fuzzy);
+    this.deathGeoPoint = deathGeoPointWithQuery(deathGeoPoint, fuzzy);
 
     Object.keys(this).map(field => {
       if (this[field] && this[field].mask && this[field].mask.validation) {

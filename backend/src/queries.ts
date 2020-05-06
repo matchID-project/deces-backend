@@ -1,4 +1,4 @@
-import { GeoPoint, NameFields, Name } from './types/requestBodyInterface';
+import { GeoPoint, NameFields, Name } from './models/requestInput';
 
 export const prefixQuery = (field: string, value: string, fuzzy: boolean) => {
     return {

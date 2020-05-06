@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { BodyResponse, ScrolledResponse } from './types/body';
+import { BodyResponse, ScrolledResponse } from './models/body';
 
 export default async function runRequest(body: BodyResponse|ScrolledResponse, scroll: string): Promise<any> { // TODO definition type
   let endpoint

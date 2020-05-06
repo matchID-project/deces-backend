@@ -1,8 +1,8 @@
-import {  RequestBodyInterface } from './types/requestBodyInterface';
-import { BodyResponse, ScrolledResponse } from './types/body';
+import { RequestInput } from './models/requestInput';
+import { BodyResponse, ScrolledResponse } from './models/body';
 import buildRequestFilter from "./buildRequestFilter";
 
-function buildMatch(requestInput: RequestBodyInterface) {
+function buildMatch(requestInput: RequestInput) {
   if (requestInput.fullText && requestInput.fullText.value) {
     return buildSimpleMatch(requestInput.fullText.value as string)
   } else {
@@ -227,7 +227,7 @@ function buildSimpleMatch(searchInput: string) {
 
 }
 
-function buildAvancedMatch(searchInput: RequestBodyInterface) {
+function buildAvancedMatch(searchInput: RequestInput) {
   return {
     function_score: {
       query: {
@@ -274,7 +274,7 @@ export function buildSort (inputs?: any) {
   }).filter((x:any) => x.order).map((x: any) => { return { [x.field]: x.order } })
 }
 
-export default function buildRequest(requestInput: RequestBodyInterface): BodyResponse|ScrolledResponse {
+export default function buildRequest(requestInput: RequestInput): BodyResponse|ScrolledResponse {
   const sort = buildSort(requestInput.sort);
   const match = buildMatch(requestInput);
   // const filter = buildRequestFilter(myFilters); // TODO
