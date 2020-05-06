@@ -40,17 +40,24 @@ queue.process(async (job: Queue.Job) => {
         birthDate: readRow.birthDate
       }
     })
-  return Promise.all(json.map(async (row: any) => {
+  return processSequential(json, job)
+});
+
+async function processSequential(rows: any, job: Queue.Job) {
+  const resultsSeq = []
+  for(const row of rows) {
     const requestInput = new RequestInput(null, row.firstName, row.lastName, null, row.birthDate);
     const requestBuild = buildRequest(requestInput);
     const result = await runRequest(requestBuild, null);
+    job.reportProgress(resultsSeq.length)
     if (result.data && result.data.hits.hits.length > 0) {
-      return buildResultSingle(result.data.hits.hits[0])
+      resultsSeq.push(buildResultSingle(result.data.hits.hits[0]))
     } else {
-      return {}
+      resultsSeq.push({})
     }
-  }))
-});
+  }
+  return resultsSeq
+};
 
 function formatAsJson (tokens: any, req: any, res: any) {
   return JSON.stringify({
@@ -91,32 +98,6 @@ app.use((req, res, next) => {
 
 app.use(bodyParser.urlencoded({ extended: false }));
 RegisterRoutes(app);
-
-const multiRowProcess = async (file: any) => { // TODO
-  const rows = file.buffer.toString().split('\n').map((str: any) => str.split(',')) // TODO: parse all the attachements
-  const headers = rows.shift();
-  const json = rows
-    .filter((row: string[]) => row.length === headers.length)
-    .map((row: string[]) => {
-      const readRow: any = {} // TODO
-      headers.forEach((key: string, idx: number) => readRow[key] = row[idx])
-      return {
-        firstName: readRow.firstName,
-        lastName: readRow.lastName,
-        birthDate: readRow.birthDate
-      }
-    })
-  return Promise.all(json.map(async (row: any) => {
-    const requestInput = new RequestInput(null, row.firstName, row.lastName, null, row.birthDate);
-    const requestBuild = buildRequest(requestInput);
-    const result = await runRequest(requestBuild, null);
-    if (result.data && result.data.hits.hits.length > 0) {
-      return buildResultSingle(result.data.hits.hits[0])
-    } else {
-      return {}
-    }
-  }))
-}
 
 const multerSingle = multer().any();
 app.post(`${process.env.BACKEND_PROXY_PATH}/search/:format`, multerSingle, async (req: any, res: express.Response) => {
@@ -160,7 +141,7 @@ app.get(`${process.env.BACKEND_PROXY_PATH}/search/:format/:id`, async (req: any,
       res.send('Not available format')
     }
   } else {
-    res.send({status: job.status, id: req.params.id});
+    res.send({status: job.status, id: req.params.id, progress: job.progress});
   }
 });
 
