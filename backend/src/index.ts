@@ -26,8 +26,8 @@ const queue = new Queue('example',  {
     host: 'redis'
   }
 });
-queue.process(async (job: any, done: any) => {
-  const rows = job.data.file.split('\n').map((str: any) => str.split(',')) // TODO: parse all the attachements
+queue.process(async (job: Queue.Job) => {
+  const rows = job.data.file.split('\n').map((str: string) => str.split(job.data.sep)) // TODO: parse all the attachements
   const headers = rows.shift();
   const json = rows
     .filter((row: string[]) => row.length === headers.length)
@@ -121,7 +121,8 @@ const multiRowProcess = async (file: any) => { // TODO
 const multerSingle = multer().any();
 app.post(`${process.env.BACKEND_PROXY_PATH}/search/:format`, multerSingle, async (req: any, res: express.Response) => {
   if (req.files && req.files.length > 0) {
-    const job = await queue.createJob({file: req.files[0].buffer.toString()}).save()
+    const sep = req.body && req.body.sep ? req.body.sep : ','
+    const job = await queue.createJob({file: req.files[0].buffer.toString(), sep}).save()
     job.on('succeeded', (result) => {
       resultsArray.push({id: job.id, result})
     });
