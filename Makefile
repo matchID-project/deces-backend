@@ -38,7 +38,7 @@ export BACKEND_HOSTNAME?=localhost:${BACKEND_PORT}
 export BACKEND_PROXY_PATH=/${API_PATH}/api/v1
 export FILE_BACKEND_DIST_APP_VERSION = $(APP)-$(APP_VERSION)-backend-dist.tar.gz
 export NPM_REGISTRY = $(shell echo $$NPM_REGISTRY )
-export NPM_VERBOSE = 1
+export NPM_VERBOSE ?= 1
 export REDIS_DATA=${APP_PATH}/redisdata
 
 # Backupdir

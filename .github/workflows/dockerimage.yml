@@ -16,9 +16,13 @@ jobs:
       - name: Build the dev docker image
         if: steps.extract_branch.outputs.branch != 'master'
         run: make backend-build-all BACKEND_HOSTNAME=dev-deces.matchid.io
+        env:
+          NPM_VERBOSE: 0
       - name: Build the master docker image
         if: steps.extract_branch.outputs.branch == 'master'
         run: make backend-build-all BACKEND_HOSTNAME=deces.matchid.io
+        env:
+          NPM_VERBOSE: 0
       - name: Make deploy local
         run: make deploy-local
         env:
