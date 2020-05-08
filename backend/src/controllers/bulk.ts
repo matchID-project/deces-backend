@@ -24,9 +24,9 @@ queue.process(async (job: Queue.Job) => {
       const readRow: any = {} // TODO
       headers.forEach((key: string, idx: number) => readRow[key] = row[idx])
       return {
-        firstName: readRow.firstName,
-        lastName: readRow.lastName,
-        birthDate: readRow.birthDate
+        firstName: readRow[job.data.firstName],
+        lastName: readRow[job.data.lastName],
+        birthDate: readRow[job.data.birthDate]
       }
     })
   return processSequential(json, job)
@@ -34,7 +34,7 @@ queue.process(async (job: Queue.Job) => {
 
 async function processSequential(rows: any, job: Queue.Job) {
   const resultsSeq = []
-  const chunk = 20;
+  const chunk = Number(job.data.chunkSize);
   let temparray;
   let i;
   let j;
@@ -66,7 +66,11 @@ const multerSingle = multer().any();
 router.post('/:format', multerSingle, async (req: any, res: express.Response) => {
   if (req.files && req.files.length > 0) {
     const sep = req.body && req.body.sep ? req.body.sep : ','
-    const job = await queue.createJob({file: req.files[0].buffer.toString(), sep}).save()
+    const firstName = req.body && req.body.firstName ? req.body.firstName : 'firstName'
+    const lastName = req.body && req.body.lastName ? req.body.lastName : 'lastName'
+    const birthDate = req.body && req.body.birthDate ? req.body.birthDate : 'birthDate'
+    const chunkSize = req.body && req.body.chunkSize ? req.body.chunkSize : 20
+    const job = await queue.createJob({file: req.files[0].buffer.toString(), sep, firstName, lastName, birthDate, chunkSize}).save()
     job.on('succeeded', (result) => {
       resultsArray.push({id: job.id, result})
     });
