@@ -261,7 +261,7 @@ backend-dev-test:
 	@docker exec -i ${USE_TTY} ${APP}-development curl -s -X POST -H "Content-Type: multipart/form-data" -F "csv=@tests/bulk.csv" http://localhost:${BACKEND_PORT}/deces/api/v1/search/json
 	sleep 2
 	@docker exec -i ${USE_TTY} ${APP}-development curl -s -X GET http://localhost:${BACKEND_PORT}/deces/api/v1/search/json/1
-	@docker exec -i ${USE_TTY} ${APP}-development curl -s -X POST -H "Content-Type: multipart/form-data" -F "csv=@tests/bulk.csv" http://localhost:${BACKEND_PORT}/deces/api/v1/search/csv
+	@docker exec -i ${USE_TTY} ${APP}-development curl -s -X POST -H "Content-Type: multipart/form-data" -F "csv=@tests/bulk.csv" -F "sep=," http://localhost:${BACKEND_PORT}/deces/api/v1/search/csv
 	sleep 2
 	@docker exec -i ${USE_TTY} ${APP}-development curl -s -X GET http://localhost:${BACKEND_PORT}/deces/api/v1/search/csv/2
 

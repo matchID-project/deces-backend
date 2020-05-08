@@ -4,7 +4,7 @@ import Queue from 'bee-queue';
 import { Router } from 'express';
 import { RequestInput } from '../models/requestInput';
 import buildRequest from '../buildRequest';
-import runRequest from '../runRequest';
+import { runBulkRequest } from '../runRequest';
 import { buildResultSingle } from '../models/result';
 
 export const router = Router();
@@ -34,16 +34,30 @@ queue.process(async (job: Queue.Job) => {
 
 async function processSequential(rows: any, job: Queue.Job) {
   const resultsSeq = []
-  for(const row of rows) {
-    const requestInput = new RequestInput(null, row.firstName, row.lastName, null, row.birthDate);
-    const requestBuild = buildRequest(requestInput);
-    const result = await runRequest(requestBuild, null);
-    job.reportProgress(resultsSeq.length)
-    if (result.data && result.data.hits.hits.length > 0) {
-      resultsSeq.push(buildResultSingle(result.data.hits.hits[0]))
+  const chunk = 20;
+  let temparray;
+  let i;
+  let j;
+  for (i=0, j=rows.length; i<j; i+=chunk) {
+    temparray = rows.slice(i,i+chunk);
+    const bulkRequest = temparray.map((row: any) => {
+      const requestInput = new RequestInput(null, row.firstName, row.lastName, null, row.birthDate);
+      return [JSON.stringify({index: "deces"}), JSON.stringify(buildRequest(requestInput))];
+    })
+    const msearchRequest = bulkRequest.map((x: any) => x.join('\n\r')).join('\n\r') + '\n';
+    const result = await runBulkRequest(msearchRequest);
+    if (result.data.responses.length > 0) {
+      result.data.responses.forEach((item: any) => {
+        if (item.hits.hits.length > 0) {
+          resultsSeq.push(buildResultSingle(item.hits.hits[0]))
+        } else {
+          resultsSeq.push({})
+        }
+      })
     } else {
-      resultsSeq.push({})
+      resultsSeq.push({}) // TODO: should return chunk times {}
     }
+    job.reportProgress(resultsSeq.length)
   }
   return resultsSeq
 };

@@ -1,5 +1,5 @@
 import { Controller, Get, Post, Body, Route, Query, Response } from 'tsoa';
-import runRequest from '../runRequest';
+import { runRequest } from '../runRequest';
 import buildRequest from '../buildRequest';
 import { RequestInput, RequestBody } from '../models/requestInput';
 import { buildResult, buildResultPost } from '../models/result';
