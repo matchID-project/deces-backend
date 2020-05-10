@@ -114,6 +114,10 @@ router.get('/:format/:id', async (req: any, res: express.Response) => {
   }
 });
 
+router.get('/:format/', async (req: any, res: express.Response) => {
+  res.send('Job ID missing')
+})
+
 const flatJson = (item: object|string) => {
   if (Array.isArray(item)) {
     return `"${item.join(' ')}"`
