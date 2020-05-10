@@ -35,3 +35,17 @@ jobs:
         env:
           GIT_BRANCH: ${{ steps.extract_branch.outputs.branch }}
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+  bulk:
+    name: Test bulk mode
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v1
+      - name: Build the dev docker image
+        run: make backend-build-all
+      - name: Make deploy local
+        run: make config elasticsearch-storage-pull elasticsearch-restore elasticsearch docker-check up backup-dir-clean backend-test-bulk
+        env:
+          FILES_TO_PROCESS: deaths.txt.gz
+          STORAGE_ACCESS_KEY: ${{ secrets.aws_access_key_id }}
+          STORAGE_SECRET_KEY: ${{ secrets.aws_secret_access_key }}
