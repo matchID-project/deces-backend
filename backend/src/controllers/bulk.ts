@@ -82,7 +82,7 @@ router.post('/:format', multerSingle, async (req: any, res: express.Response) =>
 
 router.get('/:format/:id', async (req: any, res: express.Response) => {
   const job: Queue.Job|any = await queue.getJob(req.params.id)
-  if (job.status === 'succeeded') {
+  if (job && job.status === 'succeeded') {
     const jobResult  = resultsArray.find(x => x.id === req.params.id)
     if (jobResult == null) {
       res.send('No results')
@@ -107,8 +107,10 @@ router.get('/:format/:id', async (req: any, res: express.Response) => {
     } else {
       res.send('Not available format')
     }
-  } else {
+  } else if (job) {
     res.send({status: job.status, id: req.params.id, progress: job.progress});
+  } else {
+    res.send({msg: 'job doesn\'t exists'});
   }
 });
 
