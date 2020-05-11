@@ -40,7 +40,7 @@ async function processSequential(rows: any, job: Queue.Job) {
   let j;
   for (i=0, j=rows.length; i<j; i+=chunk) {
     temparray = rows.slice(i,i+chunk);
-    const bulkRequest = temparray.map((row: any) => { //TODO: type
+    const bulkRequest = temparray.map((row: any) => { // TODO: type
       const requestInput = new RequestInput(null, row.firstName, row.lastName, null, row.birthDate);
       return [JSON.stringify({index: "deces"}), JSON.stringify(buildRequest(requestInput))];
     })
@@ -49,7 +49,7 @@ async function processSequential(rows: any, job: Queue.Job) {
     if (result.data.responses.length > 0) {
       result.data.responses.forEach((item: any, idx: number) => {
         if (item.hits.hits.length > 0) {
-          resultsSeq.push({...buildResultSingle(item.hits.hits[0]), ...temparray[idx]})
+          resultsSeq.push({...temparray[idx], ...buildResultSingle(item.hits.hits[0])})
         } else {
           resultsSeq.push(temparray[idx])
         }
@@ -91,7 +91,10 @@ router.get('/:format/:id', async (req: any, res: express.Response) => {
     } else if (req.params.format === 'csv') {
       res.statusCode = 200;
       res.setHeader('Content-Type', 'text/csv');
-      res.write(nameHeader)
+      if (job.data.birthDate) nameHeader.unshift(job.data.birthDate)
+      if (job.data.lastName) nameHeader.unshift(job.data.lastName)
+      if (job.data.firstName) nameHeader.unshift(job.data.firstName)
+      res.write(nameHeader.join(',') + '\r\n')
       jobResult.result.forEach((result: any) => {
         res.write(Object.values(result)
           .map((item: any) => {
@@ -136,4 +139,12 @@ const flatJson = (item: object|string) => {
   }
 }
 
-const nameHeader = 'score,source,id,name,firstName,lastName,sex,birthDate,birthCity,cityCode,departmentCode,country,countryCode,latitude,longitude,deathDate,certificateId,age,deathCity,cityCode,departmentCode,country,countryCode,latitude,longitude\r\n'
+const nameHeader = [
+  'score', 'source', 'id',
+  'name', 'firstName', 'lastName',
+  'sex', 'birthDate', 'birthCity',
+  'cityCode', 'departmentCode', 'country',
+  'countryCode', 'latitude', 'longitude',
+  'deathDate', 'certificateId', 'age',
+  'deathCity', 'cityCode', 'departmentCode',
+  'country', 'countryCode', 'latitude', 'longitude']

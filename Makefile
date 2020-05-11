@@ -253,7 +253,7 @@ backend-test-bulk: backend/tests/clients_test.csv
 	@docker cp backend/tests/clients_test.csv ${APP}:/deces-backend/tests/clients_test.csv
 	@docker exec -i ${USE_TTY} ${APP} ls /deces-backend/tests/clients_test.csv
 	@docker exec -i ${USE_TTY} ${APP} curl -s -X POST -H "Content-Type: multipart/form-data" -F "csv=@tests/clients_test.csv" -F "sep=;" -F "firstName=Prenom" -F "lastName=Nom" -F "birthDate=Date" -F "chunkSize=20" http://localhost:${BACKEND_PORT}/deces/api/v1/search/csv
-	@timeout=${BULK_TIMEOUT} ; ret=1 ; until [ "$$timeout" -le 0 -o "$$ret" -eq "0"  ] ; do (docker exec -i ${USE_TTY} ${APP} curl -s --fail -X GET http://localhost:${BACKEND_PORT}/deces/api/v1/search/csv/1 | tee log.log | grep --invert-match progress > /dev/null ) ; ret=$$? ; cat log.log; if [ "$$ret" -ne "0" ] ; then echo -e ", still $$timeout seconds until killing" ; fi ; timeout=$$((timeout-1)); sleep 1 ; done ; echo -e "Done in $$((BULK_TIMEOUT - timeout)) seconds"; exit $$ret
+	@timeout=${BULK_TIMEOUT} ; ret=1 ; until [ "$$timeout" -le 0 -o "$$ret" -eq "0"  ] ; do (docker exec -i ${USE_TTY} ${APP} curl -s --fail -X GET http://localhost:${BACKEND_PORT}/deces/api/v1/search/csv/1 | tee log.log | grep --invert-match progress > /dev/null ) ; ret=$$? ; cat log.log; if [ "$$ret" -ne "0" ] ; then echo -e ", still $$timeout seconds until killing" ; fi ; timeout=$$((timeout-10)); sleep 10 ; done ; echo -e "Done in $$((BULK_TIMEOUT - timeout)) seconds"; exit $$ret
 
 # development mode
 backend-dev:
@@ -270,7 +270,7 @@ backend-dev-bulk: backend/tests/clients_test.csv
 	@echo "Result $(msg)"
 	$(eval jobId = $(shell echo $(msg) | grep -Po '[0-9]+(?=)' )) 
 	@echo "JobID $(jobId)"
-	@timeout=${BULK_TIMEOUT} ; ret=1 ; until [ "$$timeout" -le 0 -o "$$ret" -eq "0"  ] ; do (docker exec -i ${USE_TTY} ${APP}-development curl -s --fail -X GET http://localhost:${BACKEND_PORT}/deces/api/v1/search/csv/$(jobId) | tee /dev/tty | grep --invert-match progress > /dev/null ) ; ret=$$? ; if [ "$$ret" -ne "0" ] ; then echo -e "\nWaiting $$timeout seconds until the end of the job" ; fi ; timeout=$$((timeout-1)); sleep 1 ; done ; echo -e "Done in $$((BULK_TIMEOUT - timeout)) seconds"; exit $$ret
+	@timeout=${BULK_TIMEOUT} ; ret=1 ; until [ "$$timeout" -le 0 -o "$$ret" -eq "0"  ] ; do (docker exec -i ${USE_TTY} ${APP}-development curl -s --fail -X GET http://localhost:${BACKEND_PORT}/deces/api/v1/search/csv/$(jobId) | tee /dev/tty | grep --invert-match progress > /dev/null ) ; ret=$$? ; if [ "$$ret" -ne "0" ] ; then echo -e "\nWaiting $$timeout seconds until the end of the job" ; fi ; timeout=$$((timeout-1)); sleep 2 ; done ; echo -e "Done in $$((BULK_TIMEOUT - timeout)) seconds"; exit $$ret
 
 backend-dev-test:
 	@echo Testing API parameters
