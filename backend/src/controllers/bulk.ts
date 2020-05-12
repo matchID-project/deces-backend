@@ -8,6 +8,7 @@ import { runBulkRequest } from '../runRequest';
 import { buildResultSingle } from '../models/result';
 
 export const router = Router();
+const multerSingle = multer().any();
 
 const resultsArray: any[]= []
 const queue = new Queue('example',  {
@@ -62,7 +63,16 @@ async function processSequential(rows: any, job: Queue.Job) {
   return resultsSeq
 };
 
-const multerSingle = multer().any();
+
+/**
+ * @swagger
+ * path:
+ *  /{format}/:
+ *    post:
+ *      summary: Bulk match
+ *      description: Launch bulk matching using csv
+ *      tags: [Bulk]
+ */
 router.post('/:format', multerSingle, async (req: any, res: express.Response) => {
   if (req.files && req.files.length > 0) {
     const sep = req.body && req.body.sep ? req.body.sep : ','
@@ -80,6 +90,21 @@ router.post('/:format', multerSingle, async (req: any, res: express.Response) =>
   }
 });
 
+/**
+ * @swagger
+ * tags:
+ *   name: Bulk
+ *   description: Matching par lot
+ */
+
+/**
+ * @swagger
+ * /{format}/{id}:
+ *    get:
+ *      description: Get job status and result
+ *      summary: Get job status and result
+ *      tags: [Bulk]
+ */
 router.get('/:format/:id', async (req: any, res: express.Response) => {
   const job: Queue.Job|any = await queue.getJob(req.params.id)
   if (job && job.status === 'succeeded') {

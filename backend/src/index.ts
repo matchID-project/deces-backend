@@ -1,11 +1,10 @@
 import express from 'express';
 import morgan from 'morgan';
-import swaggerUi from 'swagger-ui-express';
 import bodyParser from 'body-parser';
-import * as swaggerDocument from './api/swagger.json';
 import { RegisterRoutes } from './routes/routes';
 import { loggerStream } from './logger';
 import { router as bulk } from './controllers/bulk';
+import { router as documentation } from './controllers/documentation';
 
 const app = express();
 const port = 8080;
@@ -55,7 +54,7 @@ app.use(bodyParser.urlencoded({ extended: false }));
 RegisterRoutes(app);
 
 app.use(`${process.env.BACKEND_PROXY_PATH}/search`, bulk);
-app.use(`${process.env.BACKEND_PROXY_PATH}/docs`, swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+app.use(`${process.env.BACKEND_PROXY_PATH}/docs`, documentation);
 
 app.listen( port, () => {
     // tslint:disable-next-line:no-console
