@@ -37,6 +37,8 @@ services:
       - ${BACKEND}/dist:/${APP}/dist/
       - ${BACKEND}/tests:/${APP}/tests/
       - /${APP}/node_modules
+    ports:
+      - ${PORT}:8080
   redis:
     image: redis:alpine
     container_name: ${APP}-redis
