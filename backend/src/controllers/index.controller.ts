@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Route, Query, Response } from 'tsoa';
+import { Controller, Get, Post, Body, Route, Query, Response, Tags } from 'tsoa';
 import { runRequest } from '../runRequest';
 import buildRequest from '../buildRequest';
 import { RequestInput, RequestBody } from '../models/requestInput';
@@ -11,6 +11,7 @@ export class IndexController extends Controller {
 
   @Response<ErrorResponse>('400', 'Bad request')
   @Response<Result>('200', 'OK')
+  @Tags('Simple')
   @Get('/search')
   public async search(
     @Query() q?: string,
@@ -58,6 +59,7 @@ export class IndexController extends Controller {
 
   @Response<ErrorResponse>('400', 'Bad request')
   @Response<Result>('200', 'OK')
+  @Tags('Simple')
   @Post('/search')
   public async searchpost(@Body() requestBody: RequestBody): Promise<Result> {
     if (Object.keys(requestBody).length > 0) {
@@ -88,11 +90,13 @@ export class IndexController extends Controller {
   }
 
   @Response<HealthcheckResponse>('200', 'OK')
+  @Tags('Check')
   @Get('/healthcheck')
   public msg(): HealthcheckResponse {
     return { msg: 'OK' };
   }
 
+  @Tags('Check')
   @Get('/version')
   public version(): string {
     return process.env.APP_VERSION;

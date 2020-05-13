@@ -27,7 +27,7 @@ const options = {
     },
     servers: [
       {
-        url: `http://${process.env.BACKEND_HOSTNAME}/api/v1`
+        url: `http://${process.env.BACKEND_HOSTNAME}/deces/api/v1`
       }
     ]
   },
@@ -37,8 +37,11 @@ const specs:any = swaggerJsdoc(options);
 
 // publish swagger json (optional)
 router.get(`/bulk.json`, (_, res) => res.send(specs));
-router.use(`/swagger.json`, express.static(__dirname + '/api/swagger.json'));
+router.get(`/tsoa.json`, (_, res) => res.send(swaggerDocument));
 
 specs.paths = {...specs.paths, ...swaggerDocument.paths}
+specs.components = {...specs.components, ...swaggerDocument.components}
+// specs.default = swaggerDocument.default;
+
 router.use(`/`, swaggerUi.serve, swaggerUi.setup(specs));
 

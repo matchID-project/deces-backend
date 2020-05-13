@@ -67,13 +67,52 @@ async function processSequential(rows: any, job: Queue.Job) {
 /**
  * @swagger
  * path:
- *  /{format}/:
+ *  /search/csv:
  *    post:
  *      summary: Bulk match
  *      description: Launch bulk matching using csv
  *      tags: [Bulk]
+ *      requestBody:
+ *        description: Information pour réserver une place d'examen
+ *        required: false
+ *        content:
+ *          application/json:
+ *            schema:
+ *              type: object
+ *              properties:
+ *                sep:
+ *                  type: string
+ *                  description: Separator delimiter
+ *                  example: ","
+ *                firstName:
+ *                  type: string
+ *                  description: Column name for first name
+ *                  example: "Prenom"
+ *                lastName:
+ *                  type: string
+ *                  description: Column name for last name
+ *                  example: "Nom"
+ *                birthDate:
+ *                  type: string
+ *                  description: Column name for birthdate
+ *                  example: "dateColumn"
+ *                chunkSize:
+ *                  type: number
+ *                  description: Chunk size for processing
+ *                  example: 20
+ *      responses:
+ *        200:
+ *          description: Success de request
+ *          content:
+ *            application/json:
+ *              schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/HealthcheckResponse'
+ *                 - example:
+ *                     id: 'abc'
+ *                     msg: 'started'
  */
-router.post('/:format', multerSingle, async (req: any, res: express.Response) => {
+router.post('/csv', multerSingle, async (req: any, res: express.Response) => {
   if (req.files && req.files.length > 0) {
     const sep = req.body && req.body.sep ? req.body.sep : ','
     const firstName = req.body && req.body.firstName ? req.body.firstName : 'firstName'
@@ -99,13 +138,52 @@ router.post('/:format', multerSingle, async (req: any, res: express.Response) =>
 
 /**
  * @swagger
- * /{format}/{id}:
+ * /search/csv/{jobId}:
  *    get:
  *      description: Get job status and result
  *      summary: Get job status and result
  *      tags: [Bulk]
+ *      parameters:
+ *       - in: path
+ *         name: jobId
+ *         schema:
+ *           type: string
+ *           example: 'abc'
+ *         required: true
+ *         description: ID of the job
+ *      responses:
+ *        200:
+ *          description: Success de request
+ *          content:
+ *            text/csv:
+ *              schema:
+ *                type: string
+ *                description: CSV results
+ *                example: Prenom,Nom,Date,score,source,id,name,firstName,lastName,sex,birthDate,birthCity,cityCode,departmentCode,country,countryCode,latitude,longitude,deathDate,certificateId,age,deathCity,cityCode,departmentCode,country,countryCode,latitude,longitude \r\n "DENISE","GERMAN","03/02/1952","142.26564","s3://fichier-des-personnes-decedees/deaths","83ad9a6737289a3abd6f35e3a16996c8a3b21fd2","Denise Josephine","German","F","19520203","Septfontaines","25541","25","France","FRA","46.9739924","6.1738194","19760729","1782","24","Septfontaines","25541","25","France","FRA","46.9739924","6.1738194"\r\n "JEAN PIERRE YANNICK","GOUETI","15/01/1953" \r\n "JOSE","PONSARD","30/12/1952","163.79218","s3://fichier-des-personnes-decedees/deaths","99f809265af83e7ea0d98adff4dace0f5c763d0b","Jose","Ponsard","M","19521230","Saulx","70478","70","France","FRA","47.6962074","6.2758008","20050615","7761","52","Saulx","70478","70","France","FRA","47.6962074","6.2758008" \r\n
+ *
+ * /search/json/{jobId}:
+ *    get:
+ *      description: Get job status and result
+ *      summary: Get job status and result
+ *      tags: [Bulk]
+ *      parameters:
+ *       - in: path
+ *         name: jobId
+ *         schema:
+ *           type: string
+ *           example: 'abc'
+ *         required: true
+ *         description: ID of the job
+ *      responses:
+ *        200:
+ *          description: Success de request
+ *          content:
+ *            application/json:
+ *              schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/Result'
  */
-router.get('/:format/:id', async (req: any, res: express.Response) => {
+router.get('/:format(csv|json)/:id?', async (req: any, res: express.Response) => {
   const job: Queue.Job|any = await queue.getJob(req.params.id)
   if (job && job.status === 'succeeded') {
     const jobResult  = resultsArray.find(x => x.id === req.params.id)
@@ -141,10 +219,6 @@ router.get('/:format/:id', async (req: any, res: express.Response) => {
     res.send({msg: 'job doesn\'t exists'});
   }
 });
-
-router.get('/:format/', async (req: any, res: express.Response) => {
-  res.send('Job ID missing')
-})
 
 const flatJson = (item: object|string) => {
   if (Array.isArray(item)) {
