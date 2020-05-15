@@ -21,17 +21,17 @@ const options = {
       },
       contact: {
         name: "MatchID",
-        url: "https://deces.matchid.io",
-        email: "matchid-project@gmail.com"
+        url: `http${process.env.BACKEND_SSL ? 's' : ''}://${process.env.BACKEND_HOSTNAME}`,
+        email: `${process.env.BACKEND_EMAIL}`
       }
     },
     servers: [
       {
-        url: `http://${process.env.BACKEND_HOSTNAME}/deces/api/v1`
+        url: `http${process.env.BACKEND_SSL ? 's' : ''}://${process.env.BACKEND_HOSTNAME}/deces/api/v1`
       }
     ]
   },
-  apis: ["**/*.ts"]
+  apis: ["**/bulk.{ts,js}"]
 };
 const specs:any = swaggerJsdoc(options);
 
