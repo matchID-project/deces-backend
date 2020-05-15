@@ -9,6 +9,7 @@ deces-dataprep
 .data.sha1
 .data.sha1.list
 .dataprep.sha1
+redisdata
 
 # backup
 esdata

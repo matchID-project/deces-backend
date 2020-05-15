@@ -1,11 +1,10 @@
-import { RequestBodyInterface } from './types/requestBodyInterface';
-import { BodyResponse, ScrolledResponse } from './types/body';
-import NameQuery from './types/queries';
+import { RequestInput } from './models/requestInput';
+import { BodyResponse, ScrolledResponse } from './models/body';
 import buildRequestFilter from "./buildRequestFilter";
 
-function buildMatch(requestInput: RequestBodyInterface) {
-  if (requestInput.fullText.value) {
-    return buildSimpleMatch(requestInput.fullText.value)
+function buildMatch(requestInput: RequestInput) {
+  if (requestInput.fullText && requestInput.fullText.value) {
+    return buildSimpleMatch(requestInput.fullText.value as string)
   } else {
     return buildAvancedMatch(requestInput)
   }
@@ -19,11 +18,40 @@ function buildSimpleMatch(searchInput: string) {
 
   const defaultQuery = { match_all: {} }
 
-  let namesQuery
+  let namesQuery:any
   let dateQuery
 
   if (names.length > 0) {
-    namesQuery = new NameQuery(names);
+    namesQuery = {
+      bool: {
+        must: [
+          {
+            match: {
+              PRENOMS_NOM: {
+                query: names.join(" "),
+                fuzziness: "auto"
+              }
+            }
+          }
+        ],
+        should: [
+          {
+            match: {
+              PRENOM_NOM: names.join(" "),
+            }
+          },
+          {
+            match: {
+              PRENOM_NOM: {
+                query: names.join(" "),
+                fuzziness: "auto"
+              }
+            }
+          }
+        ]
+      }
+    }
+
 
     if (names.length === 2) {
       namesQuery.bool.must.push(
@@ -199,15 +227,15 @@ function buildSimpleMatch(searchInput: string) {
 
 }
 
-function buildAvancedMatch(searchInput: RequestBodyInterface) {
+function buildAvancedMatch(searchInput: RequestInput) {
   return {
     function_score: {
       query: {
         bool: {
           must: Object.keys(searchInput).map(key => {
-            const value = searchInput[key].mask && searchInput[key].mask.transform && searchInput[key].value
+            const value = searchInput[key] && ( searchInput[key].mask && searchInput[key].mask.transform && searchInput[key].value
                         ? searchInput[key].mask.transform(searchInput[key].value)
-                        : searchInput[key].value;
+                        : searchInput[key].value );
             if (value) {
               return searchInput[key].query(searchInput[key].field, value, searchInput[key].fuzzy)
             }
@@ -246,7 +274,7 @@ export function buildSort (inputs?: any) {
   }).filter((x:any) => x.order).map((x: any) => { return { [x.field]: x.order } })
 }
 
-export default function buildRequest(requestInput: RequestBodyInterface): BodyResponse|ScrolledResponse {
+export default function buildRequest(requestInput: RequestInput): BodyResponse|ScrolledResponse {
   const sort = buildSort(requestInput.sort);
   const match = buildMatch(requestInput);
   // const filter = buildRequestFilter(myFilters); // TODO
@@ -264,7 +292,7 @@ export default function buildRequest(requestInput: RequestBodyInterface): BodyRe
       // Static query Configuration
       // --------------------------
       // https://www.elastic.co/guide/en/elasticsearch/reference/7.x/search-request-highlighting.html
-      min_score: (requestInput.fullText.value ? 5: 0),
+      min_score: ((requestInput.fullText && requestInput.fullText.value) ? 5: 0),
       track_total_hits: true,
       // highlight: {
       //   fragment_size: 200,

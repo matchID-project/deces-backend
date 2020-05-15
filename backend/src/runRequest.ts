@@ -1,7 +1,7 @@
 import axios from 'axios';
-import { BodyResponse, ScrolledResponse } from './types/body';
+import { BodyResponse, ScrolledResponse } from './models/body';
 
-export default async function runRequest(body: BodyResponse|ScrolledResponse, scroll: string): Promise<any> { // TODO definition type
+export async function runRequest(body: BodyResponse|ScrolledResponse, scroll: string): Promise<any> { // TODO definition type
   let endpoint
   if (body.scroll_id) {
     endpoint = '_search/scroll'
@@ -15,6 +15,38 @@ export default async function runRequest(body: BodyResponse|ScrolledResponse, sc
     data: JSON.stringify(body),
     headers: {
       'Content-Type': 'application/json'
+    }
+  });
+  if (response.status >= 400) {
+    return {
+      hits: {
+        total: {
+          value: 1
+        },
+        hits: [
+          {
+            _id: 0,
+            _source: {
+              status: response.status,
+              statusText: response.statusText,
+              error: true
+            }
+          }
+        ]
+      }
+    };
+  } else {
+    return response;
+  }
+};
+
+export async function runBulkRequest(body: any): Promise<any> { // TODO definition type
+  const response = await axios(`http://elasticsearch:9200/_msearch`, {
+    method: 'post',
+    data: body,
+    headers: {
+      'Content-Type': 'application/x-ndjson',
+      'Cache-Control': 'no-cache'
     }
   });
   if (response.status >= 400) {

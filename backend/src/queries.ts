@@ -1,4 +1,4 @@
-import { GeoPoint } from './types/requestInputPost';
+import { GeoPoint, NameFields, Name } from './models/requestInput';
 
 export const prefixQuery = (field: string, value: string, fuzzy: boolean) => {
     return {
@@ -44,7 +44,46 @@ export const fuzzyTermQuery = (field: string, value: string, fuzzy: boolean) => 
     }
 };
 
-export const firstNameQuery = (field: string, value: string, fuzzy: boolean) => {
+export const nameQuery = (field: NameFields, value: Name, fuzzy: boolean) => {
+    if (fuzzy) {
+        return {
+            bool: {
+                minimum_should_match: 1,
+                should: [
+                    {
+                        bool: {
+                            must: [
+                                value.first && firstNameQuery([field.first.first, field.first.all], value.first as string, fuzzy),
+                                value.last && fuzzyTermQuery(field.last as string, value.last as string, fuzzy)
+                            ].filter(x => x),
+                            boost: 2
+                        },
+                    },
+                    value.first && value.last && {
+                        bool: {
+                            must: [
+                                firstNameQuery([field.first.first, field.first.all], value.last as string, fuzzy),
+                                fuzzyTermQuery(field.last as string, value.first as string, fuzzy)
+                            ],
+                            boost: 0.5
+                        }
+                    }
+                ].filter(x => x)
+            }
+        };
+    } else {
+        return {
+            bool: {
+                must: [
+                    value.first && matchQuery(field.first.first, value.first as string, false),
+                    value.last && matchQuery(field.last as string, value.last as string, false)
+                ].filter(x => x)
+            }
+        };
+    }
+}
+
+export const firstNameQuery = (field: string[], value: string, fuzzy: boolean) => {
     if (fuzzy) {
         return {
             bool: {

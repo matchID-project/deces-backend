@@ -90,7 +90,7 @@ else
     echo -e "\e[31mwrong field: KO!\e[0m"
     exit 1
 fi
-if curl -s -XGET http://localhost:${BACKEND_PORT}/deces/api/v1/search?birthDate=19 | grep -q 'field content error' ; then
+if curl -s -XGET http://localhost:${BACKEND_PORT}/deces/api/v1/search?birthDate=19 | grep -q 'invalid birthDate' ; then
     echo "field content error: OK"
 else
     echo -e "\e[31mfield content error: KO!\e[0m"
@@ -127,7 +127,7 @@ else
     echo -e "\e[31mscroll: KO!\e[0m"
 fi
 echo "POST--->"
-if curl -s -X POST -H "Content-Type: application/json" -d '{"deathDate":"2020","firstName": "Harry"}' http://localhost:${BACKEND_PORT}/deces/api/v1/search | grep -q 'name":{"first":\["Harry'; then
+if curl -s -X POST -H "Content-Type: application/json" -d '{"deathDate": 2020,"firstName": "Harry"}' http://localhost:${BACKEND_PORT}/deces/api/v1/search | grep -q 'name":{"first":\["Harry'; then
     echo "firstName: OK"
 else
     echo -e "\e[31mfirstName: KO!\e[0m"
@@ -265,7 +265,7 @@ else
     echo -e "\e[31munknown field: KO!\e[0m"
     exit 1
 fi
-if curl -s -X POST -H "Content-Type: application/json" -d '{"deathDate": "19"}' http://localhost:${BACKEND_PORT}/deces/api/v1/search | grep -qi 'field content'; then
+if curl -s -X POST -H "Content-Type: application/json" -d '{"deathDate": "19"}' http://localhost:${BACKEND_PORT}/deces/api/v1/search | grep -qi 'invalid deathDate'; then
     echo "field content error: OK"
 else
     echo -e "\e[31mfield content error: KO!\e[0m"
