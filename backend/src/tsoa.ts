@@ -3,7 +3,7 @@ import { generateRoutes, generateSwaggerSpec, RoutesConfig, SwaggerConfig } from
 (async () => {
   const swaggerOptions: SwaggerConfig = {
     basePath: '/deces/api/v1',
-    host: `${process.env.BACKEND_HOSTNAME}`,
+    host: `${process.env.API_URL}`,
     entryFile: './src/index.ts',
     specVersion: 3,
     outputDirectory: './src/api',

@@ -21,13 +21,13 @@ const options = {
       },
       contact: {
         name: "MatchID",
-        url: `http${process.env.BACKEND_SSL ? 's' : ''}://${process.env.BACKEND_HOSTNAME}`,
-        email: `${process.env.BACKEND_EMAIL}`
+        url: `http${process.env.API_SSL ? 's' : ''}://${process.env.API_URL}`,
+        email: `${process.env.API_EMAIL}`
       }
     },
     servers: [
       {
-        url: `http${process.env.BACKEND_SSL ? 's' : ''}://${process.env.BACKEND_HOSTNAME}/deces/api/v1`
+        url: `http${process.env.API_SSL ? 's' : ''}://${process.env.API_URL}/deces/api/v1`
       }
     ]
   },
