@@ -76,7 +76,7 @@ async function processSequential(rows: any, job: Queue.Job) {
  *        description: Information pour réserver une place d'examen
  *        required: false
  *        content:
- *          application/json:
+ *          multipart/form-data:
  *            schema:
  *              type: object
  *              properties:
@@ -100,6 +100,10 @@ async function processSequential(rows: any, job: Queue.Job) {
  *                  type: number
  *                  description: Chunk size for processing
  *                  example: 20
+ *                fileName:
+ *                  type: string
+ *                  description: CSV file with identities to match
+ *                  format: binary
  *      responses:
  *        200:
  *          description: Success de request
