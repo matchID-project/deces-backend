@@ -25,9 +25,9 @@ queue.process(async (job: Queue.Job) => {
       const readRow: any = {} // TODO
       headers.forEach((key: string, idx: number) => readRow[key] = row[idx])
       return {
-        firstName: readRow[job.data.firstName],
-        lastName: readRow[job.data.lastName],
-        birthDate: readRow[job.data.birthDate]
+        firstName: readRow[job.data.firstName] ? readRow[job.data.firstName] : '',
+        lastName: readRow[job.data.lastName] ? readRow[job.data.lastName] : '',
+        birthDate: readRow[job.data.birthDate] ? readRow[job.data.birthDate] : ''
       }
     })
   return processSequential(json, job)
@@ -194,10 +194,11 @@ router.get('/:format(csv|json)/:id?', async (req: any, res: express.Response) =>
     } else if (req.params.format === 'csv') {
       res.statusCode = 200;
       res.setHeader('Content-Type', 'text/csv');
-      if (job.data.birthDate) nameHeader.unshift(job.data.birthDate)
-      if (job.data.lastName) nameHeader.unshift(job.data.lastName)
-      if (job.data.firstName) nameHeader.unshift(job.data.firstName)
-      res.write(nameHeader.join(',') + '\r\n')
+      let updatedHeader = nameHeader;
+      if (job.data.birthDate) updatedHeader = [job.data.birthDate, ...updatedHeader]
+      if (job.data.lastName) updatedHeader = [job.data.lastName, ...updatedHeader]
+      if (job.data.firstName) updatedHeader = [job.data.firstName, ...updatedHeader]
+      res.write(updatedHeader.join(',') + '\r\n')
       jobResult.result.forEach((result: any) => {
         res.write(Object.values(result)
           .map((item: any) => {
