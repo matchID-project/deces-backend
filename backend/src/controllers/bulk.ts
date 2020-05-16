@@ -8,9 +8,13 @@ import { buildRequest } from '../buildRequest';
 import { runBulkRequest } from '../runRequest';
 import { buildResultSingle } from '../models/result';
 
+const encrytionKey = forge.random.getBytesSync(16);
+const encryptionIv = forge.random.getBytesSync(16);
+
 export const router = Router();
 const multerSingle = multer().any();
 
+const inputsArray: any[]= []
 const resultsArray: any[]= []
 const queue = new Queue('example',  {
   redis: {
@@ -18,7 +22,8 @@ const queue = new Queue('example',  {
   }
 });
 queue.process(async (job: Queue.Job) => {
-  const rows = job.data.file.split('\n').map((str: string) => str.split(job.data.sep)) // TODO: parse all the attachements
+  const jobFile = inputsArray.find(x => x.id === job.id)
+  const rows = decryptFile(jobFile.file).split('\n').map((str: string) => str.split(job.data.sep)) // TODO: parse all the attachements
   const headers = rows.shift();
   const json = rows
     .filter((row: string[]) => row.length === headers.length)
@@ -64,6 +69,27 @@ const processSequential = async (rows: any, job: Queue.Job) => {
   return resultsSeq
 };
 
+const encryptFile = (buffer: string) => {
+  const cipher = forge.cipher.createCipher('AES-CBC', encrytionKey);
+  cipher.start({iv: encryptionIv});
+  const mybuf = forge.util.createBuffer(buffer)
+  cipher.update(mybuf);
+  cipher.finish();
+  const encrypted = cipher.output;
+  return encrypted;
+}
+
+const decryptFile = (encryptedData: any) => { // input: BytesStringBuffer
+  const decipher = forge.cipher.createDecipher('AES-CBC', encrytionKey);
+  decipher.start({iv: encryptionIv});
+  decipher.update(encryptedData);
+  const result = decipher.finish(); // check 'result' for true/false
+  if (result) {
+    return decipher.output.toString();
+  } else {
+    return "error decrypting"
+  }
+}
 
 /**
  * @swagger
@@ -126,8 +152,9 @@ router.post('/csv', multerSingle, async (req: any, res: express.Response) => {
     const chunkSize = req.body && req.body.chunkSize ? req.body.chunkSize : 20
     const md = forge.md.sha256.create();
     md.update(`${new Date().getTime()}`);
+    inputsArray.push({id: md.digest().toHex(), file: encryptFile(req.files[0].buffer.toString())})
     const job = await queue
-      .createJob({file: req.files[0].buffer.toString(), sep, firstName, lastName, birthDate, chunkSize})
+      .createJob({sep, firstName, lastName, birthDate, chunkSize})
       .setId(md.digest().toHex())
       .save()
     job.on('succeeded', (result) => {
