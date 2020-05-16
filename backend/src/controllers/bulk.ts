@@ -1,6 +1,7 @@
 import multer from 'multer';
 import express from 'express';
 import Queue from 'bee-queue';
+import forge from 'node-forge';
 import { Router } from 'express';
 import { RequestInput } from '../models/requestInput';
 import { buildRequest } from '../buildRequest';
@@ -123,7 +124,12 @@ router.post('/csv', multerSingle, async (req: any, res: express.Response) => {
     const lastName = req.body && req.body.lastName ? req.body.lastName : 'lastName'
     const birthDate = req.body && req.body.birthDate ? req.body.birthDate : 'birthDate'
     const chunkSize = req.body && req.body.chunkSize ? req.body.chunkSize : 20
-    const job = await queue.createJob({file: req.files[0].buffer.toString(), sep, firstName, lastName, birthDate, chunkSize}).save()
+    const md = forge.md.sha256.create();
+    md.update(`${new Date().getTime()}`);
+    const job = await queue
+      .createJob({file: req.files[0].buffer.toString(), sep, firstName, lastName, birthDate, chunkSize})
+      .setId(md.digest().toHex())
+      .save()
     job.on('succeeded', (result) => {
       resultsArray.push({id: job.id, result})
     });

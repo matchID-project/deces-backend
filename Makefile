@@ -239,13 +239,6 @@ backend-stop:
 backend-test:
 	@echo Testing API parameters
 	@docker exec -i ${USE_TTY} ${APP} bash /deces-backend/tests/test_query_params.sh
-	@echo Testing bulk request
-	@docker exec -i ${USE_TTY} ${APP} curl -s -X POST -H "Content-Type: multipart/form-data" -F "csv=@tests/bulk.csv" http://localhost:${BACKEND_PORT}/deces/api/v1/search/json
-	sleep 2
-	@docker exec -i ${USE_TTY} ${APP} curl -s -X GET http://localhost:${BACKEND_PORT}/deces/api/v1/search/json/1
-	@docker exec -i ${USE_TTY} ${APP} curl -s -X POST -H "Content-Type: multipart/form-data" -F "csv=@tests/bulk.csv" http://localhost:${BACKEND_PORT}/deces/api/v1/search/csv
-	sleep 2
-	@docker exec -i ${USE_TTY} ${APP} curl -s -X GET http://localhost:${BACKEND_PORT}/deces/api/v1/search/csv/2
 
 backend/tests/clients_test.csv:
 	curl -L https://github.com/matchID-project/examples/raw/master/data/clients_test.csv -o backend/tests/clients_test.csv
@@ -253,8 +246,11 @@ backend/tests/clients_test.csv:
 backend-test-bulk: backend/tests/clients_test.csv
 	@docker cp backend/tests/clients_test.csv ${APP}:/deces-backend/tests/clients_test.csv
 	@docker exec -i ${USE_TTY} ${APP} ls /deces-backend/tests/clients_test.csv
-	@docker exec -i ${USE_TTY} ${APP} curl -s -X POST -H "Content-Type: multipart/form-data" -F "csv=@tests/clients_test.csv" -F "sep=;" -F "firstName=Prenom" -F "lastName=Nom" -F "birthDate=Date" -F "chunkSize=20" http://localhost:${BACKEND_PORT}/deces/api/v1/search/csv
-	@timeout=${BULK_TIMEOUT} ; ret=1 ; until [ "$$timeout" -le 0 -o "$$ret" -eq "0"  ] ; do (docker exec -i ${USE_TTY} ${APP} curl -s --fail -X GET http://localhost:${BACKEND_PORT}/deces/api/v1/search/csv/1 | tee log.log | grep --invert-match progress > /dev/null ) ; ret=$$? ; cat log.log; if [ "$$ret" -ne "0" ] ; then echo -e ", still $$timeout seconds until killing" ; fi ; timeout=$$((timeout-10)); sleep 10 ; done ; echo -e "Done in $$((BULK_TIMEOUT - timeout)) seconds"; exit $$ret
+	@$(eval msg = $(shell docker exec -i ${USE_TTY} ${APP} curl  -X POST -H "Content-Type: multipart/form-data" -F "csv=@tests/clients_test.csv" -F "sep=;" -F "firstName=Prenom" -F "lastName=Nom" -F "birthDate=Date" -F "chunkSize=20" http://localhost:${BACKEND_PORT}/deces/api/v1/search/csv ))
+	@echo "Result $(msg)"
+	@$(eval jobId = $(shell echo $(msg) | grep -Po '(?<=id:)[0-9a-z]+' )) 
+	@echo "JobID $(jobId)"
+	@timeout=${BULK_TIMEOUT} ; ret=1 ; until [ "$$timeout" -le 0 -o "$$ret" -eq "0"  ] ; do (docker exec -i ${USE_TTY} ${APP} curl -s --fail -X GET http://localhost:${BACKEND_PORT}/deces/api/v1/search/csv/$(jobId) | tee log.log | grep --invert-match progress > /dev/null ) ; ret=$$? ; cat log.log; if [ "$$ret" -ne "0" ] ; then echo -e ", still $$timeout seconds until killing" ; fi ; timeout=$$((timeout-10)); sleep 10 ; done ; echo -e "Done in $$((BULK_TIMEOUT - timeout)) seconds"; exit $$ret
 
 # development mode
 backend-dev:
@@ -265,24 +261,17 @@ backend-dev:
 backend-dev-stop:
 	@export EXEC_ENV=development; ${DC} -f ${DC_FILE}-dev-backend.yml down
 
-backend-dev-bulk: backend/tests/clients_test.csv
+backend-dev-bulk: #backend/tests/clients_test.csv
 	@docker exec -i ${USE_TTY} ${APP}-development ls tests/clients_test.csv
-	$(eval msg = $(shell docker exec -i ${USE_TTY} ${APP}-development curl  -X POST -H "Content-Type: multipart/form-data" -F "csv=@tests/clients_test.csv" -F "sep=;" -F "firstName=Prenom" -F "lastName=Nom" -F "birthDate=Date" -F "chunkSize=20" http://localhost:${BACKEND_PORT}/deces/api/v1/search/csv )) 
+	@$(eval msg = $(shell docker exec -i ${USE_TTY} ${APP}-development curl  -X POST -H "Content-Type: multipart/form-data" -F "csv=@tests/clients_test.csv" -F "sep=;" -F "firstName=Prenom" -F "lastName=Nom" -F "birthDate=Date" -F "chunkSize=20" http://localhost:${BACKEND_PORT}/deces/api/v1/search/csv ))
 	@echo "Result $(msg)"
-	$(eval jobId = $(shell echo $(msg) | grep -Po '[0-9]+(?=)' )) 
+	@$(eval jobId = $(shell echo $(msg) | grep -Po '(?<=id:)[0-9a-z]+' )) 
 	@echo "JobID $(jobId)"
 	@timeout=${BULK_TIMEOUT} ; ret=1 ; until [ "$$timeout" -le 0 -o "$$ret" -eq "0"  ] ; do (docker exec -i ${USE_TTY} ${APP}-development curl -s --fail -X GET http://localhost:${BACKEND_PORT}/deces/api/v1/search/csv/$(jobId) | tee /dev/tty | grep --invert-match progress > /dev/null ) ; ret=$$? ; if [ "$$ret" -ne "0" ] ; then echo -e "\nWaiting $$timeout seconds until the end of the job" ; fi ; timeout=$$((timeout-1)); sleep 2 ; done ; echo -e "Done in $$((BULK_TIMEOUT - timeout)) seconds"; exit $$ret
 
 backend-dev-test:
 	@echo Testing API parameters
 	@docker exec -i ${USE_TTY} ${APP}-development bash /deces-backend/tests/test_query_params.sh
-	@echo Testing bulk request
-	@docker exec -i ${USE_TTY} ${APP}-development curl -s -X POST -H "Content-Type: multipart/form-data" -F "csv=@tests/bulk.csv" http://localhost:${BACKEND_PORT}/deces/api/v1/search/json
-	sleep 2
-	@docker exec -i ${USE_TTY} ${APP}-development curl -s -X GET http://localhost:${BACKEND_PORT}/deces/api/v1/search/json/1
-	@docker exec -i ${USE_TTY} ${APP}-development curl -s -X POST -H "Content-Type: multipart/form-data" -F "csv=@tests/bulk.csv" -F "sep=," -F "firstName=firstName" -F "lastName=lastName" -F "birthDate=birthDate" -F "chunkSize=25" http://localhost:${BACKEND_PORT}/deces/api/v1/search/csv
-	sleep 2
-	@docker exec -i ${USE_TTY} ${APP}-development curl -s -X GET http://localhost:${BACKEND_PORT}/deces/api/v1/search/csv/2
 
 dev: network backend-dev-stop backend-dev
 
