@@ -28,8 +28,10 @@ services:
       - BACKEND_PORT=${BACKEND_PORT}
       - APP=${APP}
       - APP_VERSION=${APP_VERSION}
-      - BACKEND_HOSTNAME=${BACKEND_HOSTNAME}
       - BACKEND_PROXY_PATH=${BACKEND_PROXY_PATH}
+      - API_URL=${API_URL}
+      - API_SSL=${API_SSL}
+      - API_EMAIL=${API_EMAIL}
       - ES_URL=${ES_HOST}:${ES_PORT}
       - ES_INDEX=${ES_INDEX}
   redis:
