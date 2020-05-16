@@ -1,8 +1,8 @@
 import { RequestInput } from './models/requestInput';
 import { BodyResponse, ScrolledResponse } from './models/body';
-import buildRequestFilter from "./buildRequestFilter";
+import { buildRequestFilter } from "./buildRequestFilter";
 
-function buildMatch(requestInput: RequestInput) {
+const buildMatch = (requestInput: RequestInput) => {
   if (requestInput.fullText && requestInput.fullText.value) {
     return buildSimpleMatch(requestInput.fullText.value as string)
   } else {
@@ -10,11 +10,11 @@ function buildMatch(requestInput: RequestInput) {
   }
 }
 
-function buildSimpleMatch(searchInput: string) {
+const buildSimpleMatch = (searchInput: string) => {
   const searchTerm = searchInput.normalize('NFKD').replace(/[\u0300-\u036f]/g, "").split(/\s+/)
-  let date = searchTerm.filter( x => x.match(/^\d{2}\/\d{2}\/\d{4}$/)).map( x => x.replace(/(\d{2})\/(\d{2})\/(\d{4})/,"$3$2$1"));
+  let date = searchTerm.filter( x => /^\d{2}\/\d{2}\/\d{4}$/.exec(x)).map( x => x.replace(/(\d{2})\/(\d{2})\/(\d{4})/,"$3$2$1"));
   date = date.length ? [date[0]] : null;
-  const names = searchTerm.filter( x => x.match(/[a-z]+/)).filter( x => !x.match(/^(el|d|le|de|la|los)$/));
+  const names = searchTerm.filter( x => /[a-z]+/.exec(x)).filter( x => !/^(el|d|le|de|la|los)$/.exec(x));
 
   const defaultQuery = { match_all: {} }
 
@@ -227,7 +227,7 @@ function buildSimpleMatch(searchInput: string) {
 
 }
 
-function buildAvancedMatch(searchInput: RequestInput) {
+const buildAvancedMatch = (searchInput: RequestInput) => {
   return {
     function_score: {
       query: {
@@ -246,7 +246,7 @@ function buildAvancedMatch(searchInput: RequestInput) {
   }
 }
 
-function buildFrom(current: number, resultsPerPage: number) {
+const buildFrom = (current: number, resultsPerPage: number) => {
   if (!current || !resultsPerPage) return;
   return (current - 1) * resultsPerPage;
 }
@@ -267,14 +267,14 @@ const referenceSort: any = {
   deathCountry: "PAYS_DECES.raw"
 }
 
-export function buildSort (inputs?: any) {
+export const buildSort = (inputs?: any) => {
   return inputs.map((item: string) => {
     const _myvar = Object.keys(item)[0]
     return {field: referenceSort[_myvar], order: Object.values(item)[0]}
   }).filter((x:any) => x.order).map((x: any) => { return { [x.field]: x.order } })
 }
 
-export default function buildRequest(requestInput: RequestInput): BodyResponse|ScrolledResponse {
+export const buildRequest = (requestInput: RequestInput): BodyResponse|ScrolledResponse => {
   const sort = buildSort(requestInput.sort);
   const match = buildMatch(requestInput);
   // const filter = buildRequestFilter(myFilters); // TODO

@@ -170,7 +170,7 @@ export const ageRangeStringQuery = (field: string, value: string|number, fuzzy: 
 export const geoPointQuery = (field: string, value: GeoPoint, fuzzy: boolean) =>  {
     if (value.latitude && value.longitude) {
         let distance;
-        if (value.distance && value.distance.match(/[1-9]\d*\s*(mi|miles|yd|yards|ft|feet|in|inch|km|kilometers|m|meters|cm|centimeters|mm|millimeters|NM|nminauticalmiles)$/)) {
+        if (value.distance && /[1-9]\d*\s*(mi|miles|yd|yards|ft|feet|in|inch|km|kilometers|m|meters|cm|centimeters|mm|millimeters|NM|nminauticalmiles)$/.exec(value.distance)) {
             distance = value.distance;
         } else {
             distance = '1km';

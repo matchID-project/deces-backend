@@ -29,7 +29,8 @@ module.exports = {
         "sourceType": "module"
     },
     "plugins": [
-        "@typescript-eslint"
+        "@typescript-eslint",
+        "prefer-arrow"
     ],
     "rules": {
         "@typescript-eslint/array-type": [
@@ -64,6 +65,7 @@ module.exports = {
             }
         ],
         "@typescript-eslint/dot-notation": "error",
+        "@typescript-eslint/camelcase": "off",
         "@typescript-eslint/member-delimiter-style": "off",
         "@typescript-eslint/no-explicit-any": "off",
         "@typescript-eslint/no-parameter-properties": "off",
@@ -81,7 +83,7 @@ module.exports = {
         ],
         "@typescript-eslint/type-annotation-spacing": "off",
         "@typescript-eslint/unified-signatures": "error",
-        "camelcase": "error",
+        "camelcase": "warn",
         "complexity": "off",
         "constructor-super": "error",
         "eqeqeq": [
@@ -102,9 +104,9 @@ module.exports = {
             "undefined"
         ],
         "id-match": "error",
-        "jsdoc/check-alignment": "error",
-        "jsdoc/check-indentation": "error",
-        "jsdoc/newline-after-description": "error",
+        "jsdoc/check-alignment": "off",
+        "jsdoc/check-indentation": "off",
+        "jsdoc/newline-after-description": "off",
         "max-classes-per-file": [
             "error",
             1
@@ -129,7 +131,7 @@ module.exports = {
         "no-throw-literal": "error",
         "no-trailing-spaces": "error",
         "no-undef-init": "error",
-        "no-underscore-dangle": "error",
+        "no-underscore-dangle": "off",
         "no-unsafe-finally": "error",
         "no-unused-labels": "error",
         "object-shorthand": "error",
@@ -137,7 +139,14 @@ module.exports = {
             "error",
             "never"
         ],
-        "prefer-arrow/prefer-arrow-functions": "error",
+      "prefer-arrow/prefer-arrow-functions": [
+        "warn",
+        {
+          "disallowPrototype": true,
+          "singleReturnOnly": false,
+          "classPropertiesAllowed": false
+        }
+      ],
         "radix": "error",
         "spaced-comment": [
             "error",

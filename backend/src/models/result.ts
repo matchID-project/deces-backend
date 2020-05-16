@@ -119,7 +119,7 @@ export interface Result {
   }
 }
 
-export function getFromGeoPoint (geoPoint: string, latOrLon: string): number {
+export const getFromGeoPoint = (geoPoint: string, latOrLon: string): number  => {
   try {
     if (latOrLon === 'latitude') {
       return Number(geoPoint.replace(/^POINT\s*\((-?[0-9]+\.?[0-9]*)\s+(-?[0-9]+\.?[0-9]*)\)\s*$/,'$2'));
@@ -133,7 +133,7 @@ export function getFromGeoPoint (geoPoint: string, latOrLon: string): number {
   }
 }
 
-export function buildResult (result: any, page: any, size: any, searchKeys: any): Result {
+export const buildResult = (result: any, page: any, size: any, searchKeys: any): Result => {
   // const dataCatalog = await getDataGouvCatalog()
   const filteredResults = result.hits.hits.map((item: any) => {
     return {
@@ -191,7 +191,7 @@ export function buildResult (result: any, page: any, size: any, searchKeys: any)
   return composedResult
 }
 
-export function buildResultPost (result: any, requestInput: any): Result {
+export const buildResultPost = (result: any, requestInput: any): Result => {
   const filteredRequest: RequestType = {}
   Object.keys(requestInput).forEach((item: any) => {
     if (requestInput[item] && requestInput[item].value) {
@@ -217,7 +217,7 @@ export function buildResultPost (result: any, requestInput: any): Result {
 
 }
 
-export function buildResultSingle (item: any): any { // TODO
+export const buildResultSingle = (item: any): any => { // TODO
   return {
     score: item._score,
     // source: dataCatalog[item._source.SOURCE],

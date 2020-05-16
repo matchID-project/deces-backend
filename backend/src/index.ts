@@ -13,7 +13,7 @@ morgan.token('fwd-addr', (req: any) => {
   return req.headers['x-forwarded-for']
 })
 
-function formatAsJson (tokens: any, req: any, res: any) {
+const formatAsJson = (tokens: any, req: any, res: any) => {
   return JSON.stringify({
     backend: {
       'remote-address': tokens['remote-addr'](req, res),
@@ -34,7 +34,7 @@ function formatAsJson (tokens: any, req: any, res: any) {
 
 app.use(morgan(formatAsJson, { stream: loggerStream }))
 
-function addRawBody(req: any, res: any, buf: any, encoding: any) {
+const addRawBody = (req: any, res: any, buf: any, encoding: any) => {
     req.rawBody = buf.toString();
 }
 
@@ -57,6 +57,6 @@ app.use(`${process.env.BACKEND_PROXY_PATH}/search`, bulk);
 app.use(`${process.env.BACKEND_PROXY_PATH}/docs`, documentation);
 
 app.listen( port, () => {
-    // tslint:disable-next-line:no-console
-    console.log( `server started at http://localhost:${ port }` );
+  // eslint-disable-next-line no-console
+  console.log( `server started at http://localhost:${ port }` );
 } );
