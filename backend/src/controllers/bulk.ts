@@ -1,15 +1,20 @@
 import multer from 'multer';
 import express from 'express';
 import Queue from 'bee-queue';
+import forge from 'node-forge';
 import { Router } from 'express';
 import { RequestInput } from '../models/requestInput';
 import { buildRequest } from '../buildRequest';
 import { runBulkRequest } from '../runRequest';
 import { buildResultSingle } from '../models/result';
 
+const encryptionIv = forge.random.getBytesSync(16);
+const salt = forge.random.getBytesSync(128);
+
 export const router = Router();
 const multerSingle = multer().any();
 
+const inputsArray: any[]= []
 const resultsArray: any[]= []
 const queue = new Queue('example',  {
   redis: {
@@ -17,7 +22,8 @@ const queue = new Queue('example',  {
   }
 });
 queue.process(async (job: Queue.Job) => {
-  const rows = job.data.file.split('\n').map((str: string) => str.split(job.data.sep)) // TODO: parse all the attachements
+  const jobFile = inputsArray.find(x => x.id === job.id)
+  const rows = jobFile.file.split('\n').map((str: string) => str.split(job.data.sep)) // TODO: parse all the attachements
   const headers = rows.shift();
   const json = rows
     .filter((row: string[]) => row.length === headers.length)
@@ -63,6 +69,28 @@ const processSequential = async (rows: any, job: Queue.Job) => {
   return resultsSeq
 };
 
+const encryptFile = (buffer: string, password: string) => {
+  const encryptionKey = forge.pkcs5.pbkdf2(password, salt, 16, 16);
+  const cipher = forge.cipher.createCipher('AES-CBC', encryptionKey);
+  cipher.start({iv: encryptionIv});
+  const mybuf = forge.util.createBuffer(buffer)
+  cipher.update(mybuf);
+  cipher.finish();
+  return cipher.output;
+}
+
+const decryptFile = (encryptedData: any, password: string) => { // input: BytesStringBuffer
+  const encryptionKey = forge.pkcs5.pbkdf2(password, salt, 16, 16);
+  const decipher = forge.cipher.createDecipher('AES-CBC', encryptionKey);
+  decipher.start({iv: encryptionIv});
+  decipher.update(encryptedData);
+  const result = decipher.finish(); // check 'result' for true/false
+  if (result) {
+    return decipher.output.toString();
+  } else {
+    return "error decrypting"
+  }
+}
 
 /**
  * @swagger
@@ -118,16 +146,31 @@ const processSequential = async (rows: any, job: Queue.Job) => {
  */
 router.post('/csv', multerSingle, async (req: any, res: express.Response) => {
   if (req.files && req.files.length > 0) {
+    // Get parameters
     const sep = req.body && req.body.sep ? req.body.sep : ','
     const firstName = req.body && req.body.firstName ? req.body.firstName : 'firstName'
     const lastName = req.body && req.body.lastName ? req.body.lastName : 'lastName'
     const birthDate = req.body && req.body.birthDate ? req.body.birthDate : 'birthDate'
     const chunkSize = req.body && req.body.chunkSize ? req.body.chunkSize : 20
-    const job = await queue.createJob({file: req.files[0].buffer.toString(), sep, firstName, lastName, birthDate, chunkSize}).save()
-    job.on('succeeded', (result) => {
-      resultsArray.push({id: job.id, result})
+
+    // Use timeStamp as encryption key
+    const timeStamp = new Date().getTime().toString()
+
+    // Use hash key index
+    const md = forge.md.sha256.create();
+    md.update(timeStamp);
+    inputsArray.push({id: md.digest().toHex(), file: req.files[0].buffer.toString()})
+    const job = await queue
+      .createJob({sep, firstName, lastName, birthDate, chunkSize})
+      .setId(md.digest().toHex())
+      .save()
+    job.on('succeeded', (result: any) => {
+      // TODO: debug results encryption
+      // const encryptedResult = encryptFile(result, timeStamp)
+      const encryptedResult = result
+      resultsArray.push({id: job.id, result: encryptedResult})
     });
-    res.send({msg: 'started', id: job.id});
+    res.send({msg: 'started', id: timeStamp});
   } else {
     res.send({msg: 'no files attached'});
   }
@@ -188,13 +231,18 @@ router.post('/csv', multerSingle, async (req: any, res: express.Response) => {
  *                 - $ref: '#/components/schemas/Result'
  */
 router.get('/:format(csv|json)/:id?', async (req: any, res: express.Response) => {
-  const job: Queue.Job|any = await queue.getJob(req.params.id)
+  const md = forge.md.sha256.create();
+  md.update(req.params.id);
+  const job: Queue.Job|any = await queue.getJob(md.digest().toHex())
   if (job && job.status === 'succeeded') {
-    const jobResult  = resultsArray.find(x => x.id === req.params.id)
-    if (jobResult == null) {
+    const jobResult  = resultsArray.find(x => x.id === md.digest().toHex())
+    // TODO: debug result encryption
+    // const decryptedResult = decryptFile(jobResult.result, req.params.id)
+    const decryptedResult = jobResult.result
+    if (decryptedResult == null || decryptedResult.length === 0) {
       res.send('No results')
     } else if (req.params.format === 'json') {
-      res.send(jobResult);
+      res.send(decryptedResult);
     } else if (req.params.format === 'csv') {
       res.statusCode = 200;
       res.setHeader('Content-Type', 'text/csv');
@@ -203,7 +251,7 @@ router.get('/:format(csv|json)/:id?', async (req: any, res: express.Response) =>
       if (job.data.lastName) updatedHeader = [job.data.lastName, ...updatedHeader]
       if (job.data.firstName) updatedHeader = [job.data.firstName, ...updatedHeader]
       res.write(updatedHeader.join(',') + '\r\n')
-      jobResult.result.forEach((result: any) => {
+      decryptedResult.forEach((result: any) => {
         res.write(Object.values(result)
           .map((item: any) => {
             if (typeof(item) === 'object') {
@@ -225,7 +273,7 @@ router.get('/:format(csv|json)/:id?', async (req: any, res: express.Response) =>
   }
 });
 
-const flatJson = (item: object|string) => {
+const flatJson = (item: object|string): string => {
   if (Array.isArray(item)) {
     return `"${item.join(' ')}"`
   } else if (typeof(item) === 'object') {
