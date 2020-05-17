@@ -4,14 +4,13 @@
   "description": "",
   "main": "dist/index.js",
   "scripts": {
-    "build:lint": "tslint -c tslint.json -p tsconfig.json --fix",
-    "build:tsoa": "mkdir -p src/routes && mkdir -p src/api && ./node_modules/.bin/tsc src/tsoa.ts --outDir dist && node dist/tsoa.js",
-    "build:ts": "./node_modules/.bin/tsc --outDir dist",
-    "build": "npm run build:lint && npm run build:tsoa && npm run build:ts",
+    "lint": "eslint -c .eslintrc.js  --ext .ts src/ --fix",
+    "tsoa": "mkdir -p src/routes && mkdir -p src/api && ./node_modules/.bin/tsc src/tsoa.ts --outDir dist && node dist/tsoa.js",
+    "prebuild": "npm run lint && npm run tsoa",
+    "build": "./node_modules/.bin/tsc --outDir dist",
     "start": "node .",
-    "watch-ts": "npm run build:lint && npm run build:tsoa && ./node_modules/.bin/tsc --outDir dist -w",
-    "watch-node": "nodemon .",
-    "dev": "concurrently -k -p \"[{name}]\" -n \"TypeScript,Node\" -c \"cyan.bold,green.bold\" \"npm run watch-ts\" \"npm run watch-node\"",
+    "predev": "npm run build:lint && npm run build:tsoa",
+    "dev": "ts-node-dev --respawn -- src/index.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Cristian Brokate",
@@ -22,8 +21,8 @@
     "express": "^4.17.1",
     "morgan": "^1.10.0",
     "multer": "^1.4.2",
-    "swagger-ui-express": "^4.1.3",
     "swagger-jsdoc": "^4.0.0",
+    "swagger-ui-express": "^4.1.3",
     "tsoa": "^2.5.13",
     "winston": "^3.2.1"
   },
@@ -35,9 +34,13 @@
     "@types/redis": "^2.8.18",
     "@types/swagger-jsdoc": "^3.0.2",
     "@types/swagger-ui-express": "^4.1.1",
-    "concurrently": "^5.1.0",
-    "nodemon": "^2.0.2",
-    "tslint": "^6.0.0",
+    "@typescript-eslint/eslint-plugin": "^2.33.0",
+    "@typescript-eslint/parser": "^2.33.0",
+    "eslint": "^7.0.0",
+    "eslint-config-prettier": "^6.11.0",
+    "eslint-plugin-jsdoc": "^25.4.1",
+    "eslint-plugin-prefer-arrow": "^1.2.1",
+    "ts-node-dev": "^1.0.0-pre.44",
     "typescript": "^3.7.5"
   }
 }

@@ -3,7 +3,7 @@ import express from 'express';
 import Queue from 'bee-queue';
 import { Router } from 'express';
 import { RequestInput } from '../models/requestInput';
-import buildRequest from '../buildRequest';
+import { buildRequest } from '../buildRequest';
 import { runBulkRequest } from '../runRequest';
 import { buildResultSingle } from '../models/result';
 
@@ -33,7 +33,7 @@ queue.process(async (job: Queue.Job) => {
   return processSequential(json, job)
 });
 
-async function processSequential(rows: any, job: Queue.Job) {
+const processSequential = async (rows: any, job: Queue.Job) => {
   const resultsSeq = []
   const chunk = Number(job.data.chunkSize);
   let temparray: any;
@@ -76,7 +76,7 @@ async function processSequential(rows: any, job: Queue.Job) {
  *        description: Information pour réserver une place d'examen
  *        required: false
  *        content:
- *          application/json:
+ *          multipart/form-data:
  *            schema:
  *              type: object
  *              properties:
@@ -100,6 +100,10 @@ async function processSequential(rows: any, job: Queue.Job) {
  *                  type: number
  *                  description: Chunk size for processing
  *                  example: 20
+ *                fileName:
+ *                  type: string
+ *                  description: CSV file with identities to match
+ *                  format: binary
  *      responses:
  *        200:
  *          description: Success de request
