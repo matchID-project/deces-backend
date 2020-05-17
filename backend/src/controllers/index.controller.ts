@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Body, Route, Query, Response, Tags } from 'tsoa';
 import { runRequest } from '../runRequest';
-import buildRequest from '../buildRequest';
+import { buildRequest } from '../buildRequest';
 import { RequestInput, RequestBody } from '../models/requestInput';
 import { buildResult, buildResultPost } from '../models/result';
 import { Result, ErrorResponse, HealthcheckResponse } from '../models/result';
@@ -64,7 +64,7 @@ export class IndexController extends Controller {
   public async searchpost(@Body() requestBody: RequestBody): Promise<Result> {
     if (Object.keys(requestBody).length > 0) {
       const validFields = ['q', 'firstName', 'lastName', 'sex', 'birthDate', 'birthCity', 'birthDepartment', 'birthCountry', 'birthGeoPoint', 'deathDate', 'deathCity', 'deathDepartment', 'deathCountry', 'deathGeoPoint', 'deathAge', 'scroll', 'scrollId', 'size', 'page', 'fuzzy', 'sort']
-      const notValidFields = Object.keys(requestBody).filter((item: string) => validFields.indexOf(item) === -1)
+      const notValidFields = Object.keys(requestBody).filter((item: string) => !validFields.includes(item))
       if (notValidFields.length > 0) {
         this.setStatus(400);
         return  { msg: "error - unknown field" };

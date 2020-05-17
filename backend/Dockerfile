@@ -40,13 +40,7 @@ ARG NPM_VERBOSE
 ENV APP_VERSION ${app_ver}
 ENV NPM_CONFIG_LOGLEVEL debug
 
-VOLUME /${app_path}/src
-VOLUME /${app_path}/dist
-VOLUME /${app_path}/tests
-
 COPY package.json ./
-COPY tsconfig.json ./
-COPY tslint.json ./
 
 RUN if [ -z "${NPM_VERBOSE}" ]; then\
       npm install;  \
@@ -60,6 +54,12 @@ RUN if [ -z "${NPM_VERBOSE}" ]; then\
 #      npm audit fix --registry=https://registry.npmjs.org; \
 #    fi
 
+VOLUME /${app_path}/src
+VOLUME /${app_path}/dist
+VOLUME /${app_path}/tests
+
+COPY tsconfig.json ./
+COPY .eslintrc.js ./
 
 # Expose the listening port of your app
 EXPOSE ${port}
@@ -84,22 +84,23 @@ ARG NPM_AUDIT_DRY_RUN
 ENV NODE_ENV=production
 ENV APP_VERSION=${app_ver}
 
-COPY ${app_name}-${app_ver}-backend-dist.tar.gz .
-
-RUN  [ -f "${app_name}-${app_ver}-backend-dist.tar.gz" ] && \
-     tar -zxvf ${app_name}-${app_ver}-backend-dist.tar.gz  && \
-     rm -rf ${app_name}-${app_ver}-backend-dist.tar.gz
-
 COPY package.json ./
-ADD tests ./tests
-
-# Expose the listening port of your app
-EXPOSE ${port}
 
 # Install production dependencies and clean cache
 RUN npm install --production && \
     npm config set audit-level moderate && \
     npm audit --json --registry=https://registry.npmjs.org || ${NPM_AUDIT_DRY_RUN:-false} && \
     npm cache clean --force
+
+COPY ${app_name}-${app_ver}-backend-dist.tar.gz .
+
+RUN  [ -f "${app_name}-${app_ver}-backend-dist.tar.gz" ] && \
+     tar -zxvf ${app_name}-${app_ver}-backend-dist.tar.gz  && \
+     rm -rf ${app_name}-${app_ver}-backend-dist.tar.gz
+
+ADD tests ./tests
+
+# Expose the listening port of your app
+EXPOSE ${port}
 
 CMD ["npm","run", "start"]

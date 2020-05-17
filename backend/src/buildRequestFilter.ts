@@ -8,7 +8,7 @@ interface Filter {
   values: (string|RangeFilterValue)[];
 }
 
-function getTermFilterValue(field: string, fieldValue: string) {
+const getTermFilterValue = (field: string, fieldValue: string) => {
   // We do this because if the value is a boolean value, we need to apply
   // our filter differently. We're also only storing the string representation
   // of the boolean value, so we need to convert it to a Boolean.
@@ -21,7 +21,7 @@ function getTermFilterValue(field: string, fieldValue: string) {
   return { [`${field}.keyword`]: fieldValue };
 }
 
-function getTermFilter(filter: Filter) { // TODO preciser
+const getTermFilter = (filter: Filter) => { // TODO preciser
   if (filter.type === "any") {
     return {
       bool: {
@@ -46,7 +46,7 @@ function getTermFilter(filter: Filter) { // TODO preciser
   }
 }
 
-function getRangeFilter(filter: Filter) {
+const getRangeFilter = (filter: Filter) => {
   if (filter.type === "any") {
     return {
       bool: {
@@ -81,7 +81,7 @@ function getRangeFilter(filter: Filter) {
   }
 }
 
-export default function buildRequestFilter(filters: any[]) {
+export const buildRequestFilter = (filters: any[]) => {
   if (!filters) return;
 
   filters = filters.reduce((acc, filter) => {

@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { BodyResponse, ScrolledResponse } from './models/body';
 
-export async function runRequest(body: BodyResponse|ScrolledResponse, scroll: string): Promise<any> { // TODO definition type
+export const runRequest = async (body: BodyResponse|ScrolledResponse, scroll: string): Promise<any> => { // TODO definition type
   let endpoint
   if (body.scroll_id) {
     endpoint = '_search/scroll'
@@ -40,7 +40,7 @@ export async function runRequest(body: BodyResponse|ScrolledResponse, scroll: st
   }
 };
 
-export async function runBulkRequest(body: any): Promise<any> { // TODO definition type
+export const runBulkRequest = async (body: any): Promise<any> => { // TODO definition type
   const response = await axios(`http://elasticsearch:9200/_msearch`, {
     method: 'post',
     data: body,

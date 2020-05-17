@@ -4,7 +4,7 @@ on: [push]
 
 jobs:
   build:
-    name: Docker image build CI
+    name: 🐳 Docker image build CI
     runs-on: ubuntu-latest
 
     steps:
@@ -13,23 +13,17 @@ jobs:
         shell: bash
         run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
         id: extract_branch
-      - name: Build the dev docker image
-        if: steps.extract_branch.outputs.branch != 'master'
-        run: make backend-build-all BACKEND_HOSTNAME=dev-deces.matchid.io
+      - name: 🐋 Build the master docker image
+        run: make backend-build-all
         env:
-          NPM_VERBOSE: 0
-      - name: Build the master docker image
-        if: steps.extract_branch.outputs.branch == 'master'
-        run: make backend-build-all BACKEND_HOSTNAME=deces.matchid.io
-        env:
-          NPM_VERBOSE: 0
-      - name: Make deploy local
+          NPM_VERBOSE: ""
+      - name: 👷 Make deploy local
         run: make deploy-local
         env:
           FILES_TO_PROCESS: deces-2020-m01.txt.gz
           STORAGE_ACCESS_KEY: ${{ secrets.aws_access_key_id }}
           STORAGE_SECRET_KEY: ${{ secrets.aws_secret_access_key }}
-      - name: Push the docker image
+      - name: 🚀 Push the docker image
         if: steps.extract_branch.outputs.branch == 'master' || steps.extract_branch.outputs.branch == 'dev'
         run: make docker-push GIT_BRANCH="$GIT_BRANCH"
         env:
@@ -44,8 +38,19 @@ jobs:
       - name: Build the dev docker image
         run: make backend-build-all
       - name: Make deploy local
-        run: make config elasticsearch-storage-pull elasticsearch-restore elasticsearch docker-check up backup-dir-clean backend-test-bulk
+        run: make config elasticsearch-storage-pull elasticsearch-restore elasticsearch docker-check up backup-dir-clean
         env:
           FILES_TO_PROCESS: deaths.txt.gz
           STORAGE_ACCESS_KEY: ${{ secrets.aws_access_key_id }}
           STORAGE_SECRET_KEY: ${{ secrets.aws_secret_access_key }}
+      - name: Make bulk tests
+        run: |
+          curl -L https://github.com/matchID-project/examples/raw/master/data/clients_test.csv -o backend/tests/clients_test.csv
+          docker cp backend/tests/clients_test.csv deces-backend:/deces-backend/tests/clients_test.csv
+          docker exec -i deces-backend ls /deces-backend/tests/clients_test.csv
+          export msg=$(docker exec -i deces-backend curl  -X POST -H "Content-Type: multipart/form-data" -F "csv=@/deces-backend/tests/clients_test.csv" -F "sep=;" -F "firstName=Prenom" -F "lastName=Nom" -F "birthDate=Date" -F "chunkSize=20" http://localhost:8080/deces/api/v1/search/csv )
+          echo "Result $msg"
+          export jobId=$(echo $msg | grep -Po '(?<=id":")[0-9a-z]+' )
+          echo "JobID $jobId"
+          until docker exec -i deces-backend curl -s --fail -X GET "http://localhost:8080/deces/api/v1/search/csv/$jobId" | tee log.log | grep --invert-match progress > /dev/null ; do cat log.log ; sleep 5 ; done ;
+          docker exec -i deces-backend curl -s --fail -X GET "http://localhost:8080/deces/api/v1/search/csv/$jobId" | head -n 50
