@@ -23,18 +23,28 @@ const queue = new Queue('example',  {
 });
 queue.process(async (job: Queue.Job) => {
   const jobFile = inputsArray.find(x => x.id === job.id)
-  const rows = jobFile.file.split('\n').map((str: string) => str.split(job.data.sep)) // TODO: parse all the attachements
-  const headers = rows.shift();
+  const rows: any = jobFile.file.split('\n').map((str: string) => str.split(';')); // TODO: parse all the attachements
+  const validFields: string[] = ['q', 'firstName', 'lastName', 'sex', 'birthDate', 'birthCity', 'birthDepartment', 'birthCountry',
+  'birthGeoPoint', 'deathDate', 'deathCity', 'deathDepartment', 'deathCountry', 'deathGeoPoint', 'deathAge',
+  'scroll', 'scrollId', 'size', 'page', 'fuzzy', 'sort'];
+  const mapField: any = {};
+  validFields.map(key => mapField[job.data[key] || key] = key );
+  const header: any = {};
+  let nFields:any = 0;
+  rows.shift().forEach((key: string, idx: number) => {
+    if (mapField[key]) {header[idx] =  mapField[key]};
+    nFields++;
+  });
   const json = rows
-    .filter((row: string[]) => row.length === headers.length)
+    .filter((row: string[]) => row.length === nFields)
     .map((row: string[]) => {
-      const readRow: any = {} // TODO
-      headers.forEach((key: string, idx: number) => readRow[key] = row[idx])
-      return {
-        firstName: readRow[job.data.firstName] ? readRow[job.data.firstName] : '',
-        lastName: readRow[job.data.lastName] ? readRow[job.data.lastName] : '',
-        birthDate: readRow[job.data.birthDate] ? readRow[job.data.birthDate] : ''
-      }
+      const request: any = {}
+      row.forEach((value: string, idx: number) => {
+        if (header[idx]) {
+          request[header[idx]] = value;
+        }
+      });
+      return request;
     })
   return processSequential(json, job)
 });
@@ -48,7 +58,7 @@ const processSequential = async (rows: any, job: Queue.Job) => {
   for (i=0, j=rows.length; i<j; i+=chunk) {
     temparray = rows.slice(i,i+chunk);
     const bulkRequest = temparray.map((row: any) => { // TODO: type
-      const requestInput = new RequestInput(null, row.firstName, row.lastName, null, row.birthDate);
+      const requestInput = new RequestInput(row.q, row.firstName, row.lastName, row.sex, row.birthDate, row.birthCity, row.birthDepartment, row.birthCountry, row.birthGeoPoint, row.deathDate, row.deathCity, row.deathDepartment, row.deathCountry, row.deathGeoPoint, row.deathAge, row.scroll, row.scrollId, row.size, row.page, row.fuzzy, row.sort);
       return [JSON.stringify({index: "deces"}), JSON.stringify(buildRequest(requestInput))];
     })
     const msearchRequest = bulkRequest.map((x: any) => x.join('\n\r')).join('\n\r') + '\n';
@@ -147,11 +157,9 @@ const decryptFile = (encryptedData: any, password: string) => { // input: BytesS
 router.post('/csv', multerSingle, async (req: any, res: express.Response) => {
   if (req.files && req.files.length > 0) {
     // Get parameters
-    const sep = req.body && req.body.sep ? req.body.sep : ','
-    const firstName = req.body && req.body.firstName ? req.body.firstName : 'firstName'
-    const lastName = req.body && req.body.lastName ? req.body.lastName : 'lastName'
-    const birthDate = req.body && req.body.birthDate ? req.body.birthDate : 'birthDate'
-    const chunkSize = req.body && req.body.chunkSize ? req.body.chunkSize : 20
+    const options = {...req.body};
+    options.chunkSize =  options.chunkSize || 20;
+    options.sep = options.sep || ',';
 
     // Use timeStamp as encryption key
     const timeStamp = new Date().getTime().toString()
@@ -161,7 +169,7 @@ router.post('/csv', multerSingle, async (req: any, res: express.Response) => {
     md.update(timeStamp);
     inputsArray.push({id: md.digest().toHex(), file: req.files[0].buffer.toString()})
     const job = await queue
-      .createJob({sep, firstName, lastName, birthDate, chunkSize})
+      .createJob({...options})
       .setId(md.digest().toHex())
       .save()
     job.on('succeeded', (result: any) => {
