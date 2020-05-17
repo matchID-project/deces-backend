@@ -23,7 +23,7 @@ const queue = new Queue('example',  {
 });
 queue.process(async (job: Queue.Job) => {
   const jobFile = inputsArray.find(x => x.id === job.id)
-  const rows: any = jobFile.file.split('\n').map((str: string) => str.split(';')); // TODO: parse all the attachements
+  const rows: any = jobFile.file.split('\n').map((str: string) => str.split(job.data.sep)); // TODO: parse all the attachements
   const validFields: string[] = ['q', 'firstName', 'lastName', 'sex', 'birthDate', 'birthCity', 'birthDepartment', 'birthCountry',
   'birthGeoPoint', 'deathDate', 'deathCity', 'deathDepartment', 'deathCountry', 'deathGeoPoint', 'deathAge',
   'scroll', 'scrollId', 'size', 'page', 'fuzzy', 'sort'];
