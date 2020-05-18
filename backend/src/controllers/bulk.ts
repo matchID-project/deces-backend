@@ -26,7 +26,8 @@ queue.process(async (job: Queue.Job) => {
   const rows: any = jobFile.file.split('\n').map((str: string) => str.split(job.data.sep)); // TODO: parse all the attachements
   const validFields: string[] = ['q', 'firstName', 'lastName', 'sex', 'birthDate', 'birthCity', 'birthDepartment', 'birthCountry',
   'birthGeoPoint', 'deathDate', 'deathCity', 'deathDepartment', 'deathCountry', 'deathGeoPoint', 'deathAge',
-  'scroll', 'scrollId', 'size', 'page', 'fuzzy', 'sort'];
+  'size', 'fuzzy', 'block'];
+  const jsonFields: string[] = ['birthGeoPoint','deathGeoPoint','block']
   const mapField: any = {};
   validFields.map(key => mapField[job.data[key] || key] = key );
   const header: any = {};
@@ -41,9 +42,18 @@ queue.process(async (job: Queue.Job) => {
       const request: any = {}
       row.forEach((value: string, idx: number) => {
         if (header[idx]) {
-          request[header[idx]] = value;
+          request[header[idx]] = jsonFields.includes(header[idx]) ? JSON.parse(value) : value;
         }
+
       });
+      request.block = request.block
+                      ? request.block
+                      : job.data.block
+                        ? JSON.parse(job.data.block)
+                        : {
+                          scope: ['name', 'birthDate'],
+                          minimum_match: 1
+                        };
       return request;
     })
   return processSequential(json, job)
@@ -58,7 +68,7 @@ const processSequential = async (rows: any, job: Queue.Job) => {
   for (i=0, j=rows.length; i<j; i+=chunk) {
     temparray = rows.slice(i,i+chunk);
     const bulkRequest = temparray.map((row: any) => { // TODO: type
-      const requestInput = new RequestInput(row.q, row.firstName, row.lastName, row.sex, row.birthDate, row.birthCity, row.birthDepartment, row.birthCountry, row.birthGeoPoint, row.deathDate, row.deathCity, row.deathDepartment, row.deathCountry, row.deathGeoPoint, row.deathAge, row.scroll, row.scrollId, row.size, row.page, row.fuzzy, row.sort);
+      const requestInput = new RequestInput(row.q, row.firstName, row.lastName, row.sex, row.birthDate, row.birthCity, row.birthDepartment, row.birthCountry, row.birthGeoPoint, row.deathDate, row.deathCity, row.deathDepartment, row.deathCountry, row.deathGeoPoint, row.deathAge, row.scroll, row.scrollId, row.size, row.page, row.fuzzy, row.sort, row.block);
       return [JSON.stringify({index: "deces"}), JSON.stringify(buildRequest(requestInput))];
     })
     const msearchRequest = bulkRequest.map((x: any) => x.join('\n\r')).join('\n\r') + '\n';

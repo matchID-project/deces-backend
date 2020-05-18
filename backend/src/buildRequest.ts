@@ -6,7 +6,7 @@ const buildMatch = (requestInput: RequestInput) => {
   if (requestInput.fullText && requestInput.fullText.value) {
     return buildSimpleMatch(requestInput.fullText.value as string)
   } else {
-    return buildAvancedMatch(requestInput)
+    return buildAdvancedMatch(requestInput)
   }
 }
 
@@ -227,19 +227,43 @@ const buildSimpleMatch = (searchInput: string) => {
 
 }
 
-const buildAvancedMatch = (searchInput: RequestInput) => {
+const buildFieldRequest = (key: string, searchInput: RequestInput, must: boolean) => {
+  const value = searchInput[key] && ( searchInput[key].mask && searchInput[key].mask.transform && searchInput[key].value
+    ? searchInput[key].mask.transform(searchInput[key].value)
+    : searchInput[key].value );
+  if (value) {
+    return searchInput[key].query(searchInput[key].field, value, searchInput[key].fuzzy, must)
+  }
+}
+
+const buildAdvancedMatch = (searchInput: RequestInput) => {
   return {
     function_score: {
       query: {
         bool: {
-          must: Object.keys(searchInput).map(key => {
-            const value = searchInput[key] && ( searchInput[key].mask && searchInput[key].mask.transform && searchInput[key].value
-                        ? searchInput[key].mask.transform(searchInput[key].value)
-                        : searchInput[key].value );
-            if (value) {
-              return searchInput[key].query(searchInput[key].field, value, searchInput[key].fuzzy)
-            }
-          }).filter(x => x),
+          must: searchInput.block
+            ?
+            [
+              {
+                bool: {
+                  should: Object.keys(searchInput)
+                        .filter(key => searchInput.block.scope.includes(key))
+                        .map(key => buildFieldRequest(key, searchInput, false))
+                        .filter(x => x),
+                  minimum_should_match: searchInput.block.minimum_match
+                },
+                bool :{
+                  should: Object.keys(searchInput)
+                    .filter(key => !searchInput.block.scope.includes(key))
+                    .map(key => buildFieldRequest(key, searchInput, false))
+                    .filter(x => x)
+                }
+              }
+            ]
+            :
+            Object.keys(searchInput)
+             .map(key => buildFieldRequest(key, searchInput, true))
+             .filter(x => x)
         }
       }
     }
