@@ -84,6 +84,33 @@ export interface Result {
   }
 }
 
+interface ResultRawES {
+  _score: number;
+  _id: string;
+  _source: {
+    SOURCE: string;
+    PRENOMS: string;
+    NOM: string;
+    SEXE: string;
+    DATE_NAISSANCE: string;
+    COMMUNE_NAISSANCE: string;
+    CODE_INSEE_NAISSANCE: string;
+    DEPARTEMENT_NAISSANCE: string;
+    PAYS_NAISSANCE: string;
+    PAYS_NAISSANCE_CODEISO3: string;
+    GEOPOINT_NAISSANCE: string;
+    GEOPOINT_DECES: string;
+    DATE_DECES: string;
+    NUM_DECES: string;
+    AGE_DECES: number;
+    COMMUNE_DECES: string;
+    CODE_INSEE_DECES: string;
+    DEPARTEMENT_DECES: string;
+    PAYS_DECES: string;
+    PAYS_DECES_CODEISO3: string;
+  }
+}
+
 export const getFromGeoPoint = (geoPoint: string, latOrLon: string): number  => {
   try {
     if (latOrLon === 'latitude') {
@@ -182,14 +209,14 @@ export const buildResultPost = (result: any, requestInput: any): Result => {
 
 }
 
-export const buildResultSingle = (item: any): any => { // TODO
+export const buildResultSingle = (item: ResultRawES): Person => {
   return {
     score: item._score,
     // source: dataCatalog[item._source.SOURCE],
     source: item._source.SOURCE,
     id: item._id,
     name: {
-      first: item._source.PRENOMS ? item._source.PRENOMS.split(' ') : "",
+      first: item._source.PRENOMS ? item._source.PRENOMS.split(' ') : [''],
       last: item._source.NOM
     },
     sex: item._source.SEXE,
