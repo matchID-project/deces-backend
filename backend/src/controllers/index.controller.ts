@@ -2,7 +2,7 @@ import { Controller, Get, Post, Body, Route, Query, Response, Tags } from 'tsoa'
 import { runRequest } from '../runRequest';
 import { buildRequest } from '../buildRequest';
 import { RequestInput, RequestBody } from '../models/requestInput';
-import { buildResult, buildResultPost } from '../models/result';
+import { buildResult } from '../models/result';
 import { Result, ErrorResponse, HealthcheckResponse } from '../models/result';
 // import getDataGouvCatalog from '../getDataGouvCatalog';
 
@@ -44,11 +44,9 @@ export class IndexController extends Controller {
         this.setStatus(400);
         return  { msg: "error - simple and complex request at the same time" };
       }
-      const searchKeys = {q, firstName, lastName, sex, birthDate, birthCity, birthDepartment, birthCountry, deathDate, deathCity, deathDepartment, deathCountry, deathAge, size, page, fuzzy, sort}
-
       const requestBuild = buildRequest(requestInput);
       const result = await runRequest(requestBuild, scroll);
-      const builtResult = buildResult(result.data, requestInput.page, requestInput.size, searchKeys)
+      const builtResult = buildResult(result.data, requestInput)
       this.setStatus(200);
       return  builtResult;
     } else {
@@ -80,7 +78,7 @@ export class IndexController extends Controller {
       }
       const requestBuild = buildRequest(requestInput);
       const result = await runRequest(requestBuild, requestInput.scroll);
-      const builtResult = buildResultPost(result.data, requestInput)
+      const builtResult = buildResult(result.data, requestInput)
       this.setStatus(200);
       return builtResult;
     } else {
