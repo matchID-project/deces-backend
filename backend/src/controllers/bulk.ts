@@ -34,18 +34,23 @@ queue.process(async (job: Queue.Job) => {
   const header: any = {};
   let nFields:any = 0;
   rows.shift().forEach((key: string, idx: number) => {
-    if (mapField[key]) {header[idx] =  mapField[key]};
+    header[idx] =  key;
     nFields++;
   });
   const json = rows
     .filter((row: string[]) => row.length === nFields)
     .map((row: string[]) => {
-      const request: any = {}
-      row.forEach((value: string, idx: number) => {
-        if (header[idx]) {
-          request[header[idx]] = jsonFields.includes(header[idx]) ? JSON.parse(value) : value;
+      const request: any = {
+        metadata: {
+          mapping: mapField,
+          source: {}
         }
-
+      }
+      row.forEach((value: string, idx: number) => {
+        if (mapField[header[idx]]) {
+          request[mapField[header[idx]]] = jsonFields.includes(header[idx]) ? JSON.parse(value) : value;
+        }
+        request.metadata.source[header[idx]] = value;
       });
       request.block = request.block
                       ? request.block
@@ -176,6 +181,7 @@ router.post('/csv', multerSingle, async (req: any, res: express.Response) => {
     const options = {...req.body};
     options.chunkSize =  options.chunkSize || 20;
     options.sep = options.sep || ',';
+    options.size = options.size || 20;
 
     // Use timeStamp as encryption key
     const timeStamp = new Date().getTime().toString()
