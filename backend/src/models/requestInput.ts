@@ -93,8 +93,9 @@ export class RequestInput {
   fuzzy?: string;
   sort?: any;
   block?: Block;
+  metadata?: any;
   errors: string[] = [];
-  constructor(q?: string, firstName?: string, lastName?: string, sex?: string, birthDate?: string|number, birthCity?: string, birthDepartment?: string, birthCountry?: string, birthGeoPoint?: GeoPoint, deathDate?: string|number, deathCity?: string, deathDepartment?: string, deathCountry?: string, deathGeoPoint?: GeoPoint, deathAge?: string|number, scroll?: string, scrollId?: string, size?: number, page?: number, fuzzy?: string, sort?: string, block?: Block) {
+  constructor(q?: string, firstName?: string, lastName?: string, sex?: string, birthDate?: string|number, birthCity?: string, birthDepartment?: string, birthCountry?: string, birthGeoPoint?: GeoPoint, deathDate?: string|number, deathCity?: string, deathDepartment?: string, deathCountry?: string, deathGeoPoint?: GeoPoint, deathAge?: string|number, scroll?: string, scrollId?: string, size?: number, page?: number, fuzzy?: string, sort?: string, block?: Block, metadata?: any) {
     this.size = size ? size : 20;
     this.page = page ? page : 1;
     this.scroll = scroll ? scroll : '';
