@@ -7,6 +7,7 @@ import { RequestInput } from '../models/requestInput';
 import { buildRequest } from '../buildRequest';
 import { runBulkRequest } from '../runRequest';
 import { buildResultSingle } from '../models/result';
+import { scoreResults } from '../score';
 
 const encryptionIv = forge.random.getBytesSync(16);
 const salt = forge.random.getBytesSync(128);
@@ -76,7 +77,12 @@ const processSequential = async (rows: any, job: Queue.Job) => {
     if (result.data.responses.length > 0) {
       result.data.responses.forEach((item: any, idx: number) => {
         if (item.hits.hits.length > 0) {
-          resultsSeq.push({...temparray[idx], ...buildResultSingle(item.hits.hits[0])})
+          const scoredResults = scoreResults(temparray[idx], item.hits.hits.map(hit => buildResultSingle(hit)))
+          if (scoredResults.length > 0) {
+            resultsSeq.push({...temparray[idx], ...scoredResults[0]})
+          } else {
+            resultsSeq.push(temparray[idx])
+          }
         } else {
           resultsSeq.push(temparray[idx])
         }
