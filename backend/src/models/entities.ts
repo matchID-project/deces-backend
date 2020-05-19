@@ -1,6 +1,6 @@
 export interface Name {
-    first: string|string[];
-    last: string|string[];
+    first: string|string[]|RequestField;
+    last: string|string[]|RequestField;
   };
 
 export interface NameFields {
@@ -11,6 +11,17 @@ export interface NameFields {
     last: string|string[];
 };
 
+export interface RequestField {
+    value: string|Name|number|GeoPoint;
+    field?: string|string[]|NameFields;
+    query?: any;
+    fuzzy?: string|boolean;
+    mask?: {
+      validation?: any;
+      transform?: any;
+    };
+  };
+
 export interface GeoPoint {
     latitude: number;
     longitude: number;
@@ -18,11 +29,11 @@ export interface GeoPoint {
 };
 
 export interface Location {
-    city?: string;
-    cityCode?: string;
-    departmentCode?: string;
-    country?: string;
-    countryCode?: string
+    city?: string|RequestField;
+    cityCode?: string|RequestField;
+    departmentCode?: string|RequestField;
+    country?: string|RequestField;
+    countryCode?: string|RequestField
     latitude?: number;
     longitude?: number;
   };

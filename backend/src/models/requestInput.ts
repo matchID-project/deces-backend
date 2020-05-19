@@ -15,25 +15,12 @@ import {
   deathGeoPointWithQuery
 } from '../fieldsWithQueries';
 
-import { Name, NameFields, GeoPoint } from './entities';
+import { GeoPoint, RequestField } from './entities';
 
 export interface Block {
   scope: string[],
   minimum_match: number
 }
-
-
-
-export interface RequestField {
-  value: string|Name|number|GeoPoint;
-  field?: string|string[]|NameFields;
-  query?: any;
-  fuzzy?: string|boolean;
-  mask?: {
-    validation?: any;
-    transform?: any;
-  };
-};
 
 /**
  * This is an example of advanced request, there is no q parameter.

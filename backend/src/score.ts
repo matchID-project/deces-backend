@@ -1,5 +1,5 @@
-import { RequestInput, Name } from './models/requestInput';
-import { Location } from './models/entities';
+import { RequestInput } from './models/requestInput';
+import { Location, Name, RequestField } from './models/entities';
 import levenshtein from 'js-levenshtein';
 import { dateTransformMask, isDateRange } from './masks';
 
@@ -20,7 +20,7 @@ const blindLocationScore = 0.8;
 
 const pruneScore = 0.3;
 
-export const scoreResults = (request: RequestInputs, results: any): any => {
+export const scoreResults = (request: RequestInput, results: any): any => {
     return results
             .filter((result: any) => result.score > 0)
             .map((result: any) => {
@@ -28,7 +28,7 @@ export const scoreResults = (request: RequestInputs, results: any): any => {
                 try {
                     scores = scoreResult(request, result).concat(scores);
                 } catch(err) {
-                    throw("failure", err, JSON.stringify(request), JSON.stringify(result))
+                    throw(err)
                 }
                 result.scores = scores;
                 result.score = scores[0];
@@ -41,7 +41,7 @@ export const scoreResults = (request: RequestInputs, results: any): any => {
 const multyiply = (a:number ,b: number): number => a*b;
 
 const scoreResult = (request: RequestInput, result: any): number[] => {
-    let score:number[] = [];
+    const score:number[] = [];
     score.unshift(scoreDate(request.birthDate, result.birth.date));
     if (pruneScore > score.reduce(multyiply)) { score.unshift(0); return score }
     score.unshift(scoreName({first: request.firstName, last: request.lastName}, result.name));
@@ -70,26 +70,26 @@ const scoreName = (nameA: Name, nameB: Name): number => {
     const lastB = tokenize(nameB.last);
 
     return 0.01 * Math.round(100*
-        Math.max(scoreToken(firstA, firstB) * scoreToken(lastA, lastB),
-        decreaseNameInversion * scoreToken(firstA, lastB) * scoreToken(lastA, firstB),
+        Math.max(scoreToken(firstA, firstB as string|string[]) * scoreToken(lastA, lastB as string),
+        decreaseNameInversion * scoreToken(firstA, lastB as string) * scoreToken(lastA, firstB as string|string[]),
         minNameScore
     ));
 }
 
-const normalize = (token: strinng): string => {
+const normalize = (token: string): string => {
     return token.normalize('NFKD').replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase().replace(/\W+/, ' ');
 }
 
-const tokenize = (sentence: string|string[]): string|string[] => {
+const tokenize = (sentence: string|string[]|RequestField): string|string[]|RequestField => {
     if (typeof(sentence) === 'string') {
         return sentence.split(/\s+/);
     } else {
         // dont tokenize if string[]
-        return sentence;
+        return sentence as string[];
     }
 }
 
-const scoreToken = (tokenA: string|string[], tokenB: string|string[]): number => {
+const scoreToken = (tokenA: string|string[]|RequestField, tokenB: string|string[]): number => {
     if (!tokenA || !tokenB) {return minNameScore}
     if (typeof(tokenA) === 'string') {
         if (typeof(tokenB) === 'string') {
@@ -99,8 +99,8 @@ const scoreToken = (tokenA: string|string[], tokenB: string|string[]): number =>
                 tokenB.length ? decreaseNamePlace * scoreToken(tokenA, tokenB.slice(1, tokenB.length)) : 0);
         }
     } else {
-        return Math.max(scoreToken(tokenA[0], tokenB),
-            tokenA.length ? decreaseNamePlace * scoreToken(tokenA.slice(1, tokenA.length), tokenB) : 0);
+        return Math.max(scoreToken((tokenA as string[])[0], tokenB),
+            (tokenA as string[]).length ? decreaseNamePlace * scoreToken((tokenA as string[]).slice(1, (tokenA as string[]).length), tokenB) : 0);
     }
 }
 
@@ -116,27 +116,27 @@ const levNormScore = (tokenA: string, tokenB: string): number => {
     }
 }
 
-const scoreCity = (cityA: string|string[], cityB: string|string[]) => {
+const scoreCity = (cityA: string|string[]|RequestField, cityB: string|string[]): number => {
     if (typeof(cityA) === 'string') {
         if (typeof(cityB) === 'string') {
             return levNormScore(cityA, cityB);
         } else {
-            return Math.max(cityB.map(city => levNormScore(cityA, city)));
+            return Math.max(...cityB.map(city => levNormScore(cityA, city)));
         }
     } else {
-        return Math.max(cityA.map(city => scoreCity(city, cityB)));
+        return Math.max(...(cityA as string[]).map(city => scoreCity(city, cityB)));
     }
 }
 
-const scoreLocation = (locA: Location, locB: Location) => {
-    let score = [];
-    score.unshift((locA.city ? ( locB.city ? scoreCity(locA.city, locB.city) : blindLocationScore ) : 1 )) ;
+const scoreLocation = (locA: Location, locB: Location): number => {
+    const score = [];
+    score.unshift((locA.city ? ( locB.city ? scoreCity(locA.city, locB.city as string|string[]) : blindLocationScore ) : 1 )) ;
     score.unshift((locA.departmentCode
             ? (locB.departmentCode
                 ? ((locA.departmentCode === locB.departmentCode) ? 1 : minLocationScore )
                 : blindLocationScore )
             : 1));
-    score.unshift((locA.country ? (locB.country ? levNormScore(locA.country, locB.country) : blindLocationScore ) : 1));
+    score.unshift((locA.country ? (locB.country ? levNormScore(locA.country as string, locB.country as string) : blindLocationScore ) : 1));
     return 0.01 * Math.round(score.reduce(multyiply) * 100);
 }
 
@@ -178,13 +178,13 @@ const scoreSex = (sexA: any, sexB: string) => {
             : blindSexScore;
 }
 
-const scoreGeo = (latA, lonA, latB, lonB) => {
+const scoreGeo = (latA: number, lonA: number, latB: number, lonB: number): number => {
     return 0.01*Math.round(
         Math.max(0, 100/(100 + distance(latA, lonA, latB, lonB)))
     )
 };
 
-const distance = (lat1, lon1, lat2, lon2) => {
+const distance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
 	if ((lat1 === lat2) && (lon1 === lon2)) {
 		return 0;
 	}

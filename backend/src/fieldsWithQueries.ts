@@ -1,4 +1,4 @@
-import { GeoPoint, Name } from './models/requestInput';
+import { GeoPoint, Name } from './models/entities';
 
 import {
     dateRangeValidationMask,

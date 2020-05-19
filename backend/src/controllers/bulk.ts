@@ -306,9 +306,9 @@ router.get('/:format(csv|json)/:id?', async (req: any, res: express.Response) =>
   }
 });
 
-const jsonPath = (json: any, path: string) => {
+const jsonPath = (json: any, path: string): any => {
   if (!json) { return undefined }
-  if (!/\./.test(path)) {
+  if (!path.includes('.')) {
     return json[path];
   } else {
     return jsonPath(

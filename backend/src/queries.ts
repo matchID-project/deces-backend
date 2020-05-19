@@ -1,4 +1,4 @@
-import { GeoPoint, NameFields, Name } from './models/requestInput';
+import { GeoPoint, NameFields, Name } from './models/entities';
 
 export const prefixQuery = (field: string, value: string, fuzzy: boolean, must: boolean) => {
     return {
@@ -40,7 +40,7 @@ export const fuzzyTermQuery = (field: string, value: string, fuzzy: boolean, mus
             }
         };
     } else {
-        return matchQuery(field, value, false);
+        return matchQuery(field, value, false, must);
     }
 };
 
@@ -54,8 +54,8 @@ export const nameQuery = (field: NameFields, value: Name, fuzzy: boolean, must: 
                     {
                         bool: {
                             should: [
-                                value.first && firstNameQuery([field.first.first, field.first.all], value.first as string, fuzzy),
-                                value.last && fuzzyTermQuery(field.last as string, value.last as string, fuzzy)
+                                value.first && firstNameQuery([field.first.first, field.first.all], value.first as string, fuzzy, must),
+                                value.last && fuzzyTermQuery(field.last as string, value.last as string, fuzzy, must)
                             ].filter(x => x),
                             minimum_should_match: min_should,
                             boost: 2
@@ -64,8 +64,8 @@ export const nameQuery = (field: NameFields, value: Name, fuzzy: boolean, must: 
                     value.first && value.last && {
                         bool: {
                             should: [
-                                firstNameQuery([field.first.first, field.first.all], value.last as string, fuzzy),
-                                fuzzyTermQuery(field.last as string, value.first as string, fuzzy)
+                                firstNameQuery([field.first.first, field.first.all], value.last as string, fuzzy, must),
+                                fuzzyTermQuery(field.last as string, value.first as string, fuzzy, must)
                             ],
                             minimum_should_match: min_should,
                             boost: 0.5
@@ -79,8 +79,8 @@ export const nameQuery = (field: NameFields, value: Name, fuzzy: boolean, must: 
             bool: {
                 minimum_should_match: min_should,
                 should: [
-                    value.first && matchQuery(field.first.first, value.first as string, false),
-                    value.last && matchQuery(field.last as string, value.last as string, false)
+                    value.first && matchQuery(field.first.first, value.first as string, false, must),
+                    value.last && matchQuery(field.last as string, value.last as string, false, must)
                 ].filter(x => x)
             }
         };
@@ -128,7 +128,7 @@ export const firstNameQuery = (field: string[], value: string, fuzzy: boolean, m
             }
         };
     } else {
-        return matchQuery(field[0], value, false);
+        return matchQuery(field[0], value, false, must);
     }
 };
 
@@ -148,9 +148,9 @@ export const dateRangeStringQuery = (field: string, value: string, fuzzy: boolea
             }
         };
     } else if (value.length < 8){
-        return prefixQuery(field, value, false);
+        return prefixQuery(field, value, false, must);
     } else {
-        return fuzzyTermQuery(field, value, fuzzy)
+        return fuzzyTermQuery(field, value, fuzzy, must);
     }
 };
 
@@ -167,7 +167,7 @@ export const ageRangeStringQuery = (field: string, value: string|number, fuzzy: 
             }
         };
     } else {
-        return matchQuery(field, value, fuzzy)
+        return matchQuery(field, value, fuzzy, must);
     }
 };
 
