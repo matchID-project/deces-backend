@@ -252,7 +252,9 @@ const buildAdvancedMatch = (searchInput: RequestInput) => {
                         .filter(x => x),
                   minimum_should_match: searchInput.block.minimum_match
                 },
-                bool :{
+              },
+              {
+                bool: {
                   should: Object.keys(searchInput)
                     .filter(key => !searchInput.block.scope.includes(key))
                     .map(key => buildFieldRequest(key, searchInput, false))
