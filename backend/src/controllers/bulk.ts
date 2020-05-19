@@ -24,7 +24,7 @@ const queue = new Queue('example',  {
 });
 queue.process(async (job: Queue.Job) => {
   const jobFile = inputsArray.find(x => x.id === job.id)
-  const rows: any = jobFile.file.split('\n').map((str: string) => str.split(job.data.sep)); // TODO: parse all the attachements
+  const rows: any = jobFile.file.split(/\s*\r?\n\r?\s*/).map((str: string) => str.split(job.data.sep)); // TODO: parse all the attachements
   const validFields: string[] = ['q', 'firstName', 'lastName', 'sex', 'birthDate', 'birthCity', 'birthDepartment', 'birthCountry',
   'birthGeoPoint', 'deathDate', 'deathCity', 'deathDepartment', 'deathCountry', 'deathGeoPoint', 'deathAge',
   'size', 'fuzzy', 'block'];
@@ -37,12 +37,17 @@ queue.process(async (job: Queue.Job) => {
     header[idx] =  key;
     nFields++;
   });
-  const json = rows
+  let json = [{
+    metadata: {
+      mapping: mapField,
+      header: [...Array(nFields).keys()].map(idx => header[idx])
+    }
+  }];
+  json = json.concat(rows
     .filter((row: string[]) => row.length === nFields)
     .map((row: string[]) => {
       const request: any = {
         metadata: {
-          mapping: mapField,
           source: {}
         }
       }
@@ -61,7 +66,7 @@ queue.process(async (job: Queue.Job) => {
                           minimum_match: 1
                         };
       return request;
-    })
+    }))
   return processSequential(json, job)
 });
 
@@ -272,26 +277,24 @@ router.get('/:format(csv|json)/:id?', async (req: any, res: express.Response) =>
     if (decryptedResult == null || decryptedResult.length === 0) {
       res.send('No results')
     } else if (req.params.format === 'json') {
+      decryptedResult.shift() // TODO: discuss if the metadata firs line (mapping & header) shall be kepts or not
       res.send(decryptedResult);
     } else if (req.params.format === 'csv') {
       res.statusCode = 200;
       res.setHeader('Content-Type', 'text/csv');
-      let updatedHeader = nameHeader;
-      if (job.data.birthDate) updatedHeader = [job.data.birthDate, ...updatedHeader]
-      if (job.data.lastName) updatedHeader = [job.data.lastName, ...updatedHeader]
-      if (job.data.firstName) updatedHeader = [job.data.firstName, ...updatedHeader]
-      res.write(updatedHeader.join(',') + '\r\n')
+      const sourceHeader = decryptedResult.shift().metadata.header;
+      res.write([
+          ...sourceHeader,
+          ...resultsHeader.map(h => h.replace(/\.location/, '').replace(/\./,' '))
+        ].join(job.data.sep) + '\r\n'
+      );
       decryptedResult.forEach((result: any) => {
-        res.write(Object.values(result)
-          .map((item: any) => {
-            if (typeof(item) === 'object') {
-              return Object.values(item).map(flatJson).join(',')
-            } else {
-              return `"${item}"`
-            }
-          })
-          .join(',') + '\r\n'
-        )})
+        // console.log(resultsHeader.map(key => jsonPath(result,key)));
+        res.write([
+          ...sourceHeader.map((key: string) => result.metadata.source[key]),
+          ...resultsHeader.map(key => jsonPath(result, key))
+        ].join(job.data.sep) + '\r\n')
+        });
       res.end();
     } else {
       res.send('Not available format')
@@ -303,30 +306,24 @@ router.get('/:format(csv|json)/:id?', async (req: any, res: express.Response) =>
   }
 });
 
-const flatJson = (item: object|string): string => {
-  if (Array.isArray(item)) {
-    return `"${item.join(' ')}"`
-  } else if (typeof(item) === 'object') {
-    return Object.values(item)
-      .map(x => {
-        if (x == null) {
-          return ""
-        } else {
-          return `"${x}"`
-        }
-      })
-      .join(',')
+const jsonPath = (json: any, path: string) => {
+  if (!json) { return undefined }
+  if (!/\./.test(path)) {
+    return json[path];
   } else {
-    return `"${item}"`
+    return jsonPath(
+      json[path.replace(/\..*$/,'')],
+      path.replace(/^.*?\./,'')
+    );
   }
 }
 
-const nameHeader = [
+const resultsHeader = [
   'score', 'source', 'id',
-  'name', 'firstName', 'lastName',
-  'sex', 'birthDate', 'birthCity',
-  'cityCode', 'departmentCode', 'country',
-  'countryCode', 'latitude', 'longitude',
-  'deathDate', 'certificateId', 'age',
-  'deathCity', 'cityCode', 'departmentCode',
-  'country', 'countryCode', 'latitude', 'longitude']
+  'name.last', 'name.first',
+  'sex', 'birth.date', 'birth.location.city',
+  'birth.location.city', 'birth.location.departmentCode', 'birth.location.country',
+  'birth.location.countryCode', 'birth.location.latitude', 'birth.location.longitude',
+  'death.date', 'death.certificateId', 'death.age',
+  'death.location.city', 'death.location.cityCode', 'death.location.departmentCode',
+  'death.location.country', 'death.location.countryCode', 'death.location.latitude', 'death.location.Longitude']
