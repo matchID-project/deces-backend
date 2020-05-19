@@ -15,29 +15,14 @@ import {
   deathGeoPointWithQuery
 } from '../fieldsWithQueries';
 
-export interface Name {
-  first: string|string[];
-  last: string|string[];
-};
-
-export interface GeoPoint {
-  latitude: number;
-  longitude: number;
-  distance: string;
-};
+import { Name, NameFields, GeoPoint } from './entities';
 
 export interface Block {
   scope: string[],
   minimum_match: number
 }
 
-export interface NameFields {
-  first?: {
-    first?: string;
-    all?: string;
-  };
-  last: string|string[];
-};
+
 
 export interface RequestField {
   value: string|Name|number|GeoPoint;
