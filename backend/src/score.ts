@@ -9,67 +9,99 @@ const minNameScore = 0.1;
 const blindNameScore = 0.7;
 
 const minSexScore = 0.5;
-const blindSexScore = 0.9;
+const blindSexScore = 1;
 
 const minDateScore = 0.2;
 const blindDateScore = 0.8;
 const uncertainDateScore = 0.7;
 
 const minLocationScore = 0.2;
-const blindLocationScore = 0.7;
+const blindLocationScore = 0.8;
 
 const pruneScore = 0.3;
 
 export const scoreResults = (request: RequestInputs, results: any): any => {
     return results
-            .filter((result: any) => result.score > 15)
+            .filter((result: any) => result.score > 0)
             .map((result: any) => {
-                result.score = scoreResult(request, result);
+                let scores = [ Math.round(result.score * 100) * 0.01 ]
+                try {
+                    scores = scoreResult(request, result).concat(scores);
+                } catch(err) {
+                    throw("failure", err, JSON.stringify(request), JSON.stringify(result))
+                }
+                result.scores = scores;
+                result.score = scores[0];
                 return result;
             })
-            .filter((result: any) => result.score > pruneScore)
-            .sort((a: any, b: any) => (a.score < b.score) ? 1 : ( (a.score > b.score) ? -1 : 0 ))
+            .filter((result: any) => result.score >= pruneScore)
+            .sort((a: any, b: any) => (a.score < b.score[0]) ? 1 : ( (a.score > b.score) ? -1 : 0 ))
 }
 
-const scoreResult = (request: RequestInput, result: any): number => {
-    // console.log(request, result);
-    let score = 1;
-    score = score * scoreDate(request.birthDate, result.birth.date);
-    if (pruneScore > score) return 0;
-    score = score * scoreName({first: request.firstName, last: request.lastName}, result.name);
-    if (pruneScore > score) return 0;
-    score = score * scoreSex(request.sex, result.sex);
-    if (pruneScore > score) return 0;
-    score = score * scoreLocation({
+const multyiply = (a:number ,b: number): number => a*b;
+
+const scoreResult = (request: RequestInput, result: any): number[] => {
+    let score:number[] = [];
+    score.unshift(scoreDate(request.birthDate, result.birth.date));
+    if (pruneScore > score.reduce(multyiply)) { score.unshift(0); return score }
+    score.unshift(scoreName({first: request.firstName, last: request.lastName}, result.name));
+    if (pruneScore > score.reduce(multyiply)) { score.unshift(0); return score }
+    score.unshift(scoreSex(request.sex, result.sex));
+    if (pruneScore > score.reduce(multyiply)) { score.unshift(0); return score }
+    score.unshift(scoreLocation({
         city: request.birthCity,
         cityCode: request.birthCityCode,
         departmentCode: request.birthDepartment,
         country: request.birthCountry,
         latitude: request.latitude,
         longitude: request.longitude
-    }, result.birth.location);
-    if (pruneScore > score) return 0;
-    return 0.01 * Math.round(score * 100);
+    }, result.birth.location));
+    if (pruneScore > score.reduce(multyiply)) { score.unshift(0); return score }
+    score.unshift(0.01 * Math.round(score.reduce(multyiply) * 100));
+    return score;
 }
 
+
 const scoreName = (nameA: Name, nameB: Name): number => {
-    // console.log(nameA, nameB);
-    return 0.01*Math.round(100*
-        Math.max(scoreToken(nameA.first, nameB.first) * scoreToken(nameB.last, nameB.last),
-        decreaseNameInversion * scoreToken(nameA.first, nameB.first) * scoreToken(nameB.last, nameB.last),
-        (!nameA.first && !nameA.last) || (!nameB.first && !nameB.first) ? blindNameScore : minNameScore
+    if ((!nameA.first && !nameA.last) || (!nameB.first && !nameB.last)) { return blindNameScore }
+    const firstA = tokenize(nameA.first);
+    const lastA = tokenize(nameA.last);
+    const firstB = tokenize(nameB.first);
+    const lastB = tokenize(nameB.last);
+
+    return 0.01 * Math.round(100*
+        Math.max(scoreToken(firstA, firstB) * scoreToken(lastA, lastB),
+        decreaseNameInversion * scoreToken(firstA, lastB) * scoreToken(lastA, firstB),
+        minNameScore
     ));
 }
 
+const normalize = (token: strinng): string => {
+    return token.normalize('NFKD').replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase().replace(/\W+/, ' ');
+}
+
+const tokenize = (sentence: string|string[]): string|string[] => {
+    if (typeof(sentence) === 'string') {
+        return sentence.split(/\s+/);
+    } else {
+        // dont tokenize if string[]
+        return sentence;
+    }
+}
+
 const scoreToken = (tokenA: string|string[], tokenB: string|string[]): number => {
-    if (typeof(tokenA) === 'string')
+    if (!tokenA || !tokenB) {return minNameScore}
+    if (typeof(tokenA) === 'string') {
         if (typeof(tokenB) === 'string') {
             return levNormScore(tokenA, tokenB);
         } else {
-            return Math.max(levNormScore(tokenA, tokenB.shift()),
-                decreaseNamePlace * Math.max((tokenB).map((token: string) => levNormScore(tokenA, token)))
-            );
+            return Math.max(levNormScore(tokenA, tokenB[0]),
+                tokenB.length ? decreaseNamePlace * scoreToken(tokenA, tokenB.slice(1, tokenB.length)) : 0);
         }
+    } else {
+        return Math.max(scoreToken(tokenA[0], tokenB),
+            tokenA.length ? decreaseNamePlace * scoreToken(tokenA.slice(1, tokenA.length), tokenB) : 0);
+    }
 }
 
 const levNormScore = (tokenA: string, tokenB: string): number => {
@@ -80,24 +112,39 @@ const levNormScore = (tokenA: string, tokenB: string): number => {
         if (tokenA.length < tokenB.length) {
             return levNormScore(tokenB, tokenA)
         }
-        return 1 - (levenshtein(tokenA.normalize('NFKD').replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase(), tokenB.normalize('NFKD').replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase()) / tokenA.length);
+        return 1 - (levenshtein(normalize(tokenA), normalize(tokenB)) / tokenA.length);
+    }
+}
+
+const scoreCity = (cityA: string|string[], cityB: string|string[]) => {
+    if (typeof(cityA) === 'string') {
+        if (typeof(cityB) === 'string') {
+            return levNormScore(cityA, cityB);
+        } else {
+            return Math.max(cityB.map(city => levNormScore(cityA, city)));
+        }
+    } else {
+        return Math.max(cityA.map(city => scoreCity(city, cityB)));
     }
 }
 
 const scoreLocation = (locA: Location, locB: Location) => {
-    let score = 1;
-    score = score * (locA.city ? ( locB.city ? levNormScore(locA.city, locB.city) : blindLocationScore ) : 1 ) ;
-    score = score * (locA.departmentCode
+    let score = [];
+    score.unshift((locA.city ? ( locB.city ? scoreCity(locA.city, locB.city) : blindLocationScore ) : 1 )) ;
+    score.unshift((locA.departmentCode
             ? (locB.departmentCode
                 ? ((locA.departmentCode === locB.departmentCode) ? 1 : minLocationScore )
                 : blindLocationScore )
-            : 1);
-    score = score * (locA.country ? (locB.country ? levNormScore(locA.country, locB.country) : blindLocationScore ) : 1);
-    return 0.01 * Math.round(score * 100);
+            : 1));
+    score.unshift((locA.country ? (locB.country ? levNormScore(locA.country, locB.country) : blindLocationScore ) : 1));
+    return 0.01 * Math.round(score.reduce(multyiply) * 100);
 }
 
-const scoreDate = (dateRangeA: any, dateStringB: string): number => {
-    // console.log(dateRangeA, dateStringB);
+const scoreDate= (dateRangeA: any, dateStringB: string): number => {
+    return 0.01 * Math.round((scoreDateRaw(dateRangeA, dateStringB) ** 4) * 100);
+}
+
+const scoreDateRaw = (dateRangeA: any, dateStringB: string): number => {
     if (/^00000000$/.test(dateStringB) || !dateStringB) {
         return blindDateScore;
     }
@@ -105,7 +152,7 @@ const scoreDate = (dateRangeA: any, dateStringB: string): number => {
         if (isDateRange(dateRangeA)) {
             const dateArrayA = dateRangeA.split(/-/);
             if (dateArrayA[0] === dateArrayA[1]) {
-                return scoreDate(dateArrayA[0], dateStringB);
+                return scoreDateRaw(dateArrayA[0], dateStringB);
             }
             return ((dateArrayA[0] <= dateStringB) && (dateArrayA[2] >= dateStringB))
                 ? uncertainDateScore

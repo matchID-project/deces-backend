@@ -87,8 +87,8 @@ const processSequential = async (rows: any, job: Queue.Job) => {
     if (result.data.responses.length > 0) {
       result.data.responses.forEach((item: any, idx: number) => {
         if (item.hits.hits.length > 0) {
-          const scoredResults = scoreResults(temparray[idx], item.hits.hits.map(hit => buildResultSingle(hit)))
-          if (scoredResults.length > 0) {
+          const scoredResults = scoreResults(temparray[idx], item.hits.hits.map((hit: any) => buildResultSingle(hit)))
+          if (scoredResults && scoredResults.length > 0) {
             resultsSeq.push({...temparray[idx], ...scoredResults[0]})
           } else {
             resultsSeq.push(temparray[idx])
@@ -186,7 +186,7 @@ router.post('/csv', multerSingle, async (req: any, res: express.Response) => {
     const options = {...req.body};
     options.chunkSize =  options.chunkSize || 20;
     options.sep = options.sep || ',';
-    options.size = options.size || 20;
+    options.size = options.size || 10;
 
     // Use timeStamp as encryption key
     const timeStamp = new Date().getTime().toString()
