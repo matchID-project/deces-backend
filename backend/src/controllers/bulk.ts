@@ -6,7 +6,7 @@ import { Router } from 'express';
 import { RequestInput } from '../models/requestInput';
 import { buildRequest } from '../buildRequest';
 import { runBulkRequest } from '../runRequest';
-import { buildResultSingle } from '../models/result';
+import { buildResultSingle, ResultRawES } from '../models/result';
 import { scoreResults } from '../score';
 
 const encryptionIv = forge.random.getBytesSync(16);
@@ -85,9 +85,9 @@ const processSequential = async (rows: any, job: Queue.Job) => {
     const msearchRequest = bulkRequest.map((x: any) => x.join('\n\r')).join('\n\r') + '\n';
     const result = await runBulkRequest(msearchRequest);
     if (result.data.responses.length > 0) {
-      result.data.responses.forEach((item: any, idx: number) => {
+      result.data.responses.forEach((item: ResultRawES, idx: number) => {
         if (item.hits.hits.length > 0) {
-          const scoredResults = scoreResults(temparray[idx], item.hits.hits.map((hit: any) => buildResultSingle(hit)))
+          const scoredResults = scoreResults(temparray[idx], item.hits.hits.map(hit => buildResultSingle(hit)))
           if (scoredResults && scoredResults.length > 0) {
             resultsSeq.push({...temparray[idx], ...scoredResults[0]})
           } else {

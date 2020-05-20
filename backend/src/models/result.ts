@@ -85,7 +85,7 @@ export interface Result {
   }
 }
 
-interface ResultRawES {
+export interface ResultRawES {
   '_scroll_id'?: string;
   took: number;
   hits: {
@@ -97,7 +97,7 @@ interface ResultRawES {
   }
 }
 
-interface ResultRawHits {
+export interface ResultRawHits {
   _score: number;
   _id: string;
   _source: {

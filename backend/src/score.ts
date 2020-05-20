@@ -1,5 +1,5 @@
 import { RequestInput } from './models/requestInput';
-import { Location, Name, RequestField } from './models/entities';
+import { Person, Location, Name, RequestField } from './models/entities';
 import levenshtein from 'js-levenshtein';
 import { dateTransformMask, isDateRange } from './masks';
 
@@ -20,17 +20,16 @@ const blindLocationScore = 0.8;
 
 const pruneScore = 0.3;
 
-export const scoreResults = (request: RequestInput, results: any): any => {
+export const scoreResults = (request: RequestInput, results: Person[]): any => {
     return results
-            .filter((result: any) => result.score > 0)
-            .map((result: any) => {
+            .filter(result => result.score > 0)
+            .map(result => {
                 let scores = [ Math.round(result.score * 100) * 0.01 ]
                 try {
                     scores = scoreResult(request, result).concat(scores);
                 } catch(err) {
                     throw(err)
                 }
-                result.scores = scores;
                 result.score = scores[0];
                 return result;
             })
@@ -38,9 +37,9 @@ export const scoreResults = (request: RequestInput, results: any): any => {
             .sort((a: any, b: any) => (a.score < b.score[0]) ? 1 : ( (a.score > b.score) ? -1 : 0 ))
 }
 
-const multyiply = (a:number ,b: number): number => a*b;
+const multyiply = (a:number, b: number): number => a*b;
 
-const scoreResult = (request: RequestInput, result: any): number[] => {
+const scoreResult = (request: RequestInput, result: Person): number[] => {
     const score:number[] = [];
     score.unshift(scoreDate(request.birthDate, result.birth.date));
     if (pruneScore > score.reduce(multyiply)) { score.unshift(0); return score }
@@ -172,7 +171,7 @@ const scoreDateRaw = (dateRangeA: any, dateStringB: string): number => {
 };
 
 
-const scoreSex = (sexA: any, sexB: string) => {
+const scoreSex = (sexA: any, sexB: string): number => {
     return (sexA && sexB)
             ? ((sexA === sexB) ? 1 : minSexScore)
             : blindSexScore;
