@@ -1,4 +1,6 @@
-import { Controller, Get, Post, Body, Route, Query, Response, Tags } from 'tsoa';
+import { Controller, Get, Post, Body, Route, Query, Response, Tags, Header, Request } from 'tsoa';
+import express from 'express';
+import { nameHeader, flatJson } from './bulk';
 import { runRequest } from '../runRequest';
 import { buildRequest } from '../buildRequest';
 import { RequestInput, RequestBody } from '../models/requestInput';
@@ -59,7 +61,8 @@ export class IndexController extends Controller {
   @Response<Result>('200', 'OK')
   @Tags('Simple')
   @Post('/search')
-  public async searchpost(@Body() requestBody: RequestBody): Promise<Result> {
+  public async searchpost(@Body() requestBody: RequestBody, @Request() request: express.Request, @Header('Accept') accept?: string): Promise<Result> {
+    const response = (request).res as express.Response;
     if (Object.keys(requestBody).length > 0) {
       const validFields = ['q', 'firstName', 'lastName', 'sex', 'birthDate', 'birthCity', 'birthDepartment', 'birthCountry', 'birthGeoPoint', 'deathDate', 'deathCity', 'deathDepartment', 'deathCountry', 'deathGeoPoint', 'deathAge', 'scroll', 'scrollId', 'size', 'page', 'fuzzy', 'sort']
       const notValidFields = Object.keys(requestBody).filter((item: string) => !validFields.includes(item))
@@ -78,9 +81,24 @@ export class IndexController extends Controller {
       }
       const requestBuild = buildRequest(requestInput);
       const result = await runRequest(requestBuild, requestInput.scroll);
-      const builtResult = buildResult(result.data, requestInput)
-      this.setStatus(200);
-      return builtResult;
+      const builtResult = buildResultPost(result.data, requestInput)
+      if (accept === 'application/csv') {
+        response.write(nameHeader.join(',') + '\r\n')
+        builtResult.response.persons.forEach((person: any) => {
+        response.write(Object.values(person)
+          .map((item: any) => {
+            if (typeof(item) === 'object') {
+              return Object.values(item).map(flatJson).join(',')
+            } else {
+              return `"${item}"`
+            }
+          })
+          .join(',') + '\r\n'
+        )})
+        response.end();
+      } else {
+        return builtResult;
+      }
     } else {
       this.setStatus(400);
       return  { msg: "error - empty request" };
