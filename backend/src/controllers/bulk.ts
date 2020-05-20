@@ -273,7 +273,7 @@ router.get('/:format(csv|json)/:id?', async (req: any, res: express.Response) =>
     const jobResult  = resultsArray.find(x => x.id === md.digest().toHex())
     // TODO: debug result encryption
     // const decryptedResult = decryptFile(jobResult.result, req.params.id)
-    const decryptedResult = jobResult.result
+    const decryptedResult = jobResult ? [...jobResult.result] : null; // Spread operator to do a deep copy to avoid problems with shift and original object
     if (decryptedResult == null || decryptedResult.length === 0) {
       res.send('No results')
     } else if (req.params.format === 'json') {
