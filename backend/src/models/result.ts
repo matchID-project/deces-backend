@@ -1,39 +1,4 @@
-interface Person {
-  score: number;
-  source: string;
-  id: string;
-  name: {
-    first: string[];
-    last: string;
-  };
-  sex: string;
-  birth: {
-    date: string;
-    location: {
-      city: string;
-      cityCode: string;
-      departmentCode: string;
-      country: string;
-      countryCode: string
-      latitude: number;
-      longitude: number;
-    }
-  };
-  death: {
-    date: string;
-    certificateId: string;
-    age: number;
-    location: {
-      city: string;
-      cityCode: string;
-      departmentCode: string;
-      country: string;
-      countryCode: string;
-      latitude: number;
-      longitude: number;
-    }
-  };
-}
+import { Person } from './entities';
 
 interface RequestType {
   [key: string]: any; // Index signature

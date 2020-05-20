@@ -15,35 +15,12 @@ import {
   deathGeoPointWithQuery
 } from '../fieldsWithQueries';
 
-export interface Name {
-  first: string|string[];
-  last: string|string[];
-};
+import { GeoPoint, RequestField } from './entities';
 
-export interface GeoPoint {
-  latitude: number;
-  longitude: number;
-  distance: string;
-};
-
-export interface NameFields {
-  first?: {
-    first?: string;
-    all?: string;
-  };
-  last: string|string[];
-};
-
-export interface RequestField {
-  value: string|Name|number|GeoPoint;
-  field?: string|string[]|NameFields;
-  query?: any;
-  fuzzy?: string|boolean;
-  mask?: {
-    validation?: any;
-    transform?: any;
-  };
-};
+export interface Block {
+  scope: string[],
+  minimum_match: number
+}
 
 /**
  * This is an example of advanced request, there is no q parameter.
@@ -102,13 +79,16 @@ export class RequestInput {
   page?: number;
   fuzzy?: string;
   sort?: any;
+  block?: Block;
+  metadata?: any;
   errors: string[] = [];
-  constructor(q?: string, firstName?: string, lastName?: string, sex?: string, birthDate?: string|number, birthCity?: string, birthDepartment?: string, birthCountry?: string, birthGeoPoint?: GeoPoint, deathDate?: string|number, deathCity?: string, deathDepartment?: string, deathCountry?: string, deathGeoPoint?: GeoPoint, deathAge?: string|number, scroll?: string, scrollId?: string, size?: number, page?: number, fuzzy?: string, sort?: string) {
+  constructor(q?: string, firstName?: string, lastName?: string, sex?: string, birthDate?: string|number, birthCity?: string, birthDepartment?: string, birthCountry?: string, birthGeoPoint?: GeoPoint, deathDate?: string|number, deathCity?: string, deathDepartment?: string, deathCountry?: string, deathGeoPoint?: GeoPoint, deathAge?: string|number, scroll?: string, scrollId?: string, size?: number, page?: number, fuzzy?: string, sort?: string, block?: Block, metadata?: any) {
     this.size = size ? size : 20;
     this.page = page ? page : 1;
     this.scroll = scroll ? scroll : '';
     this.scrollId = scrollId ? scrollId : '';
     this.sort = sort ? sort: [{score: 'desc'}];
+    this.block = block;
 
     this.fullText = fullTextWithQuery(q, fuzzy);
     this.name = nameWithQuery({
