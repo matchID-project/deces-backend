@@ -306,7 +306,7 @@ router.get('/:format(csv|json)/:id?', async (req: any, res: express.Response) =>
   }
 });
 
-const jsonPath = (json: any, path: string): any => {
+export const jsonPath = (json: any, path: string): any => {
   if (!json) { return undefined }
   if (!path.includes('.')) {
     return json[path];
@@ -318,12 +318,11 @@ const jsonPath = (json: any, path: string): any => {
   }
 }
 
-const resultsHeader = [
-  'score', 'source', 'id',
-  'name.last', 'name.first',
-  'sex', 'birth.date', 'birth.location.city',
-  'birth.location.city', 'birth.location.departmentCode', 'birth.location.country',
-  'birth.location.countryCode', 'birth.location.latitude', 'birth.location.longitude',
-  'death.date', 'death.certificateId', 'death.age',
-  'death.location.city', 'death.location.cityCode', 'death.location.departmentCode',
-  'death.location.country', 'death.location.countryCode', 'death.location.latitude', 'death.location.Longitude']
+export const resultsHeader = [
+  'score', 'source', 'id', 'name.last', 'name.first', 'sex',
+  'birth.date', 'birth.location.city', 'birth.location.departmentCode',
+  'birth.location.country', 'birth.location.countryCode', 'birth.location.latitude',
+  'birth.location.longitude',
+  'death.date', 'death.certificateId', 'death.age', 'death.location.city',
+  'death.location.cityCode', 'death.location.departmentCode', 'death.location.country',
+  'death.location.countryCode', 'death.location.latitude', 'death.location.longitude']
