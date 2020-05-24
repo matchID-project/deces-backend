@@ -15,7 +15,7 @@ const salt = forge.random.getBytesSync(128);
 export const router = Router();
 const multerSingle = multer().any();
 
-const inputsArray: any[]= []
+const inputsArray: JobInput[]= []
 const resultsArray: any[]= []
 const queue = new Queue('example',  {
   redis: {
@@ -23,7 +23,8 @@ const queue = new Queue('example',  {
   }
 });
 queue.process(async (job: Queue.Job) => {
-  const jobFile = inputsArray.find(x => x.id === job.id)
+  const jobIndex = inputsArray.findIndex(x => x.id === job.id)
+  const jobFile = inputsArray.splice(jobIndex, 1).pop()
   const rows: any = jobFile.file.split(/\s*\r?\n\r?\s*/).map((str: string) => str.split(job.data.sep)); // TODO: parse all the attachements
   const validFields: string[] = ['q', 'firstName', 'lastName', 'sex', 'birthDate', 'birthCity', 'birthDepartment', 'birthCountry',
   'birthGeoPoint', 'deathDate', 'deathCity', 'deathDepartment', 'deathCountry', 'deathGeoPoint', 'deathAge',
@@ -329,3 +330,8 @@ export const resultsHeader = [
   'death.date', 'death.certificateId', 'death.age', 'death.location.city',
   'death.location.cityCode', 'death.location.departmentCode', 'death.location.country',
   'death.location.countryCode', 'death.location.latitude', 'death.location.longitude']
+
+interface JobInput {
+  id: string;
+  file: string;
+}
