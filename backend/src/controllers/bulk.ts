@@ -70,7 +70,7 @@ queue.process(async (job: Queue.Job) => {
   return processSequential(json, job)
 });
 
-const processSequential = async (rows: any, job: Queue.Job) => {
+const processSequential = async (rows: any, job: any): Promise<any> => { // partial fix until the next release of bee-queue
   const resultsSeq = []
   const chunk = Number(job.data.chunkSize);
   let temparray: any;
@@ -100,7 +100,7 @@ const processSequential = async (rows: any, job: Queue.Job) => {
     } else {
       resultsSeq.push(temparray)
     }
-    job.reportProgress(resultsSeq.length)
+    job.reportProgress({rows: resultsSeq.length, percentage: resultsSeq.length / rows.length * 100})
   }
   return resultsSeq
 };
@@ -198,6 +198,7 @@ router.post('/csv', multerSingle, async (req: any, res: express.Response) => {
     const job = await queue
       .createJob({...options})
       .setId(md.digest().toHex())
+      // .reportProgress({rows: 0, percentage: 0}) TODO: add for bee-queue version 1.2.4
       .save()
     job.on('succeeded', (result: any) => {
       // TODO: debug results encryption
