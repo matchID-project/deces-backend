@@ -105,17 +105,17 @@ const processSequential = async (rows: any, job: any): Promise<any> => { // part
   return resultsSeq
 };
 
-const encryptFile = (buffer: string, password: string) => {
+const encryptFile = (nodeBuffer: Buffer, password: string): forge.util.ByteStringBuffer => {
   const encryptionKey = forge.pkcs5.pbkdf2(password, salt, 16, 16);
   const cipher = forge.cipher.createCipher('AES-CBC', encryptionKey);
   cipher.start({iv: encryptionIv});
-  const mybuf = forge.util.createBuffer(buffer)
-  cipher.update(mybuf);
+  const forgeBuffer = forge.util.createBuffer(nodeBuffer.toString('binary'))
+  cipher.update(forgeBuffer);
   cipher.finish();
   return cipher.output;
 }
 
-const decryptFile = (encryptedData: any, password: string) => { // input: BytesStringBuffer
+const decryptFile = (encryptedData: forge.util.ByteStringBuffer, password: string): string => {
   const encryptionKey = forge.pkcs5.pbkdf2(password, salt, 16, 16);
   const decipher = forge.cipher.createDecipher('AES-CBC', encryptionKey);
   decipher.start({iv: encryptionIv});
@@ -201,9 +201,7 @@ router.post('/csv', multerSingle, async (req: any, res: express.Response) => {
       // .reportProgress({rows: 0, percentage: 0}) TODO: add for bee-queue version 1.2.4
       .save()
     job.on('succeeded', (result: any) => {
-      // TODO: debug results encryption
-      // const encryptedResult = encryptFile(result, timeStamp)
-      const encryptedResult = result
+      const encryptedResult = encryptFile(Buffer.from(JSON.stringify(result)), timeStamp)
       resultsArray.push({id: job.id, result: encryptedResult})
     });
     res.send({msg: 'started', id: timeStamp});
@@ -272,9 +270,9 @@ router.get('/:format(csv|json)/:id?', async (req: any, res: express.Response) =>
   const job: Queue.Job|any = await queue.getJob(md.digest().toHex())
   if (job && job.status === 'succeeded') {
     const jobResult  = resultsArray.find(x => x.id === md.digest().toHex())
-    // TODO: debug result encryption
-    // const decryptedResult = decryptFile(jobResult.result, req.params.id)
-    const decryptedResult = jobResult ? [...jobResult.result] : null; // Spread operator to do a deep copy to avoid problems with shift and original object
+    const clone = Object.assign( Object.create( Object.getPrototypeOf(jobResult.result)), jobResult.result) // Clone to avoid problems with shift and original object
+    const initialCopy =  decryptFile(clone, req.params.id)
+    const decryptedResult = JSON.parse(initialCopy)
     if (decryptedResult == null || decryptedResult.length === 0) {
       res.send('No results')
     } else if (req.params.format === 'json') {
