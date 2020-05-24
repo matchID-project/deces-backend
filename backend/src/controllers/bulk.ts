@@ -16,7 +16,7 @@ export const router = Router();
 const multerSingle = multer().any();
 
 const inputsArray: JobInput[]= []
-const resultsArray: any[]= []
+const resultsArray: JobResult[]= []
 const queue = new Queue('example',  {
   redis: {
     host: 'redis'
@@ -64,7 +64,7 @@ queue.process(async (job: Queue.Job) => {
                         ? JSON.parse(job.data.block)
                         : {
                           scope: ['name', 'birthDate'],
-                          minimum_match: 1
+                          'minimum_match': 1
                         };
       return request;
     }))
@@ -271,7 +271,7 @@ router.get('/:format(csv|json)/:id?', async (req: any, res: express.Response) =>
     md.update(req.params.id);
     const job: Queue.Job|any = await queue.getJob(md.digest().toHex())
     if (job && job.status === 'succeeded') {
-      const jobResult  = resultsArray.find(x => x.id === md.digest().toHex())
+      const jobResult = resultsArray.find(x => x.id === md.digest().toHex())
       const clone = Object.assign( Object.create( Object.getPrototypeOf(jobResult.result)), jobResult.result) // Clone to avoid problems with shift and original object
       const initialCopy =  decryptFile(clone, req.params.id)
       const decryptedResult = JSON.parse(initialCopy)
@@ -334,4 +334,9 @@ export const resultsHeader = [
 interface JobInput {
   id: string;
   file: string;
+}
+
+interface JobResult {
+  id: string;
+  result: forge.util.ByteStringBuffer;
 }
