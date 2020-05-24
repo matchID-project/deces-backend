@@ -265,43 +265,47 @@ router.post('/csv', multerSingle, async (req: any, res: express.Response) => {
  *                 - $ref: '#/components/schemas/Result'
  */
 router.get('/:format(csv|json)/:id?', async (req: any, res: express.Response) => {
-  const md = forge.md.sha256.create();
-  md.update(req.params.id);
-  const job: Queue.Job|any = await queue.getJob(md.digest().toHex())
-  if (job && job.status === 'succeeded') {
-    const jobResult  = resultsArray.find(x => x.id === md.digest().toHex())
-    const clone = Object.assign( Object.create( Object.getPrototypeOf(jobResult.result)), jobResult.result) // Clone to avoid problems with shift and original object
-    const initialCopy =  decryptFile(clone, req.params.id)
-    const decryptedResult = JSON.parse(initialCopy)
-    if (decryptedResult == null || decryptedResult.length === 0) {
-      res.send('No results')
-    } else if (req.params.format === 'json') {
-      decryptedResult.shift() // TODO: discuss if the metadata firs line (mapping & header) shall be kepts or not
-      res.send(decryptedResult);
-    } else if (req.params.format === 'csv') {
-      res.statusCode = 200;
-      res.setHeader('Content-Type', 'text/csv');
-      const sourceHeader = decryptedResult.shift().metadata.header;
-      res.write([
+  if (req.params.id) {
+    const md = forge.md.sha256.create();
+    md.update(req.params.id);
+    const job: Queue.Job|any = await queue.getJob(md.digest().toHex())
+    if (job && job.status === 'succeeded') {
+      const jobResult  = resultsArray.find(x => x.id === md.digest().toHex())
+      const clone = Object.assign( Object.create( Object.getPrototypeOf(jobResult.result)), jobResult.result) // Clone to avoid problems with shift and original object
+      const initialCopy =  decryptFile(clone, req.params.id)
+      const decryptedResult = JSON.parse(initialCopy)
+      if (decryptedResult == null || decryptedResult.length === 0) {
+        res.send('No results')
+      } else if (req.params.format === 'json') {
+        decryptedResult.shift() // TODO: discuss if the metadata firs line (mapping & header) shall be kepts or not
+        res.send(decryptedResult);
+      } else if (req.params.format === 'csv') {
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'text/csv');
+        const sourceHeader = decryptedResult.shift().metadata.header;
+        res.write([
           ...sourceHeader,
           ...resultsHeader.map(h => h.replace(/\.location/, '').replace(/\./,' '))
         ].join(job.data.sep) + '\r\n'
-      );
-      decryptedResult.forEach((result: any) => {
-        // console.log(resultsHeader.map(key => jsonPath(result,key)));
-        res.write([
-          ...sourceHeader.map((key: string) => result.metadata.source[key]),
-          ...resultsHeader.map(key => jsonPath(result, key))
-        ].join(job.data.sep) + '\r\n')
+        );
+        decryptedResult.forEach((result: any) => {
+          // console.log(resultsHeader.map(key => jsonPath(result,key)));
+          res.write([
+            ...sourceHeader.map((key: string) => result.metadata.source[key]),
+            ...resultsHeader.map(key => jsonPath(result, key))
+          ].join(job.data.sep) + '\r\n')
         });
-      res.end();
+        res.end();
+      } else {
+        res.send('Not available format')
+      }
+    } else if (job) {
+      res.send({status: job.status, id: req.params.id, progress: job.progress});
     } else {
-      res.send('Not available format')
+      res.send({msg: 'job doesn\'t exists'});
     }
-  } else if (job) {
-    res.send({status: job.status, id: req.params.id, progress: job.progress});
   } else {
-    res.send({msg: 'job doesn\'t exists'});
+    res.send({msg: 'no job id'})
   }
 });
 
