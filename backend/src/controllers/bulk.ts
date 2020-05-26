@@ -64,7 +64,8 @@ queue.process(async (job: Queue.Job) => {
                         ? JSON.parse(job.data.block)
                         : {
                           scope: ['name', 'birthDate'],
-                          'minimum_match': 1
+                          minimum_match: 1,
+                          should: true
                         };
       return request;
     }))

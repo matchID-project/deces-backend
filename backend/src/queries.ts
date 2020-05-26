@@ -16,7 +16,22 @@ export const matchQuery = (field: string, value: string|number, fuzzy: boolean, 
     }
 };
 
-export const fuzzyTermQuery = (field: string, value: string, fuzzy: boolean, must: boolean) => {
+export const fuzzyTermQuery = (field: string, value: string, fuzzy: number|string, must: boolean) => {
+    if (fuzzy) {
+        return {
+            match: {
+                    [field]: {
+                        query: value,
+                        fuzziness: fuzzy
+                    }
+                }
+            };
+    } else {
+        return matchQuery(field, value, false, must);
+    }
+};
+
+export const fuzzyShouldTermQuery = (field: string, value: string, fuzzy: boolean, must: boolean) => {
     if (fuzzy) {
         return {
             bool: {
