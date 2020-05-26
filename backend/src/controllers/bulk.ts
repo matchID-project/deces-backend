@@ -189,27 +189,28 @@ router.post('/csv', multerSingle, async (req: any, res: express.Response) => {
     options.sep = options.sep || ',';
     options.size = options.size || 10;
 
-    // Use timeStamp as encryption key
-    const timeStamp = new Date().getTime().toString()
+    // Use random number as enctyption key
+    const bytes = forge.random.getBytesSync(32);
+    const randomKey = forge.util.bytesToHex(bytes);
 
     // Use hash key index
     const md = forge.md.sha256.create();
-    md.update(timeStamp);
-    inputsArray.push({id: md.digest().toHex(), file: req.files[0].buffer.toString()})
+    md.update(randomKey);
+    inputsArray.push({id: md.digest().toHex(), file: req.files[0].buffer.toString()}) // Use key hash as job identifier
     const job = await queue
       .createJob({...options})
       .setId(md.digest().toHex())
       // .reportProgress({rows: 0, percentage: 0}) TODO: add for bee-queue version 1.2.4
       .save()
     job.on('succeeded', (result: any) => {
-      const encryptedResult = encryptFile(Buffer.from(JSON.stringify(result)), timeStamp)
+      const encryptedResult = encryptFile(Buffer.from(JSON.stringify(result)), randomKey)
       resultsArray.push({id: job.id, result: encryptedResult})
       setTimeout(() => {
         const jobIndex = resultsArray.findIndex(x => x.id === job.id)
         resultsArray.splice(jobIndex, 1)
       }, 3600000) // Delete results after 1 hour
     });
-    res.send({msg: 'started', id: timeStamp});
+    res.send({msg: 'started', id: randomKey});
   } else {
     res.send({msg: 'no files attached'});
   }
