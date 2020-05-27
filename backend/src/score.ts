@@ -272,27 +272,25 @@ const scoreCity = (cityA: string|string[]|RequestField, cityB: string|string[]):
     }
 }
 
-const levNormScore = (tokenA: string, tokenB: string): number => {
-    if (!tokenA || !tokenB) { return 0 }
-    if (tokenA === tokenB) {
-        return 1
-    } else {
-        if (tokenA.length < tokenB.length) {
-            return levNormScore(tokenB, tokenA)
-        }
-        return 1 - (levenshtein(normalize(tokenA), normalize(tokenB)) / tokenA.length);
-    }
+const countryRegExp = [
+    [ /(^|\s)(de|en|les|le|la|a|aux|au|du|de la|s|sous|sur|l|d|des)\s/g, ' '],
+];
+
+const countryNorm = (country: string|string[]): string|string[] => {
+    return applyRegex(country, countryRegExp);
 }
 
-const scoreCity = (cityA: string|string[]|RequestField, cityB: string|string[]): number => {
-    if (typeof(cityA) === 'string') {
-        if (typeof(cityB) === 'string') {
-            return levNormScore(cityA, cityB);
+const scoreCountry = (countryA: string|string[]|RequestField, countryB: string|string[]): number => {
+    if (typeof(countryA) === 'string') {
+        const countryNormA = countryNorm(countryA) as string;
+        if (typeof(countryB) === 'string') {
+            return fuzzyScore(countryNormA, countryNorm(countryB));
         } else {
-            return Math.max(...cityB.map(city => levNormScore(cityA, city)));
+            return Math.max(...countryB.map(country => fuzzyScore(countryNormA, countryNorm(country))));
         }
     } else {
-        return Math.max(...(cityA as string[]).map(city => scoreCity(city, cityB)));
+        const countryNormB = countryNorm(countryB);
+        return Math.max(...(countryA as string[]).map(country => scoreCountry(countryNorm(country), countryNormB)));
     }
 }
 
