@@ -42,14 +42,10 @@ const fuzzyScore = (tokenA: string, tokenB: string): number => {
     }
     const a:string = normalize(tokenA);
     const b:string = normalize(tokenB);
-    // console.log(a,b);
     if (a === b) {return 1}
-    const s1 = levNormScore(a, b);
-    const s2 = (soundex(a) === soundex(b));
     const s = 0.01 * Math.round(
         100 * (levNormScore(a, b) ** ((soundex(a) === soundex(b)) ? (1/boostSoundex) : boostSoundex ** 2) )
     );
-    // console.log('fuzzyScore',a,b,s,s1,s2);
     return s;
 };
 
@@ -68,7 +64,7 @@ const levNormScore = (tokenA: string, tokenB: string): number => {
 const applyRegex = (a: string|string[], reTable: any): string|string[] => {
     if (typeof(a) === 'string') {
         let b = normalize(a);
-        reTable.map(r => b = b.replace(r[0], r[1]));
+        reTable.map((r:any) => b = b.replace(r[0], r[1]));
         return b;
     } else {
         return a.map(c => applyRegex(c, reTable) as string);
@@ -103,18 +99,16 @@ const scoreReduce = (score:any):number => {
 
 export const scoreResults = (request: RequestInput, results: any): any => {
     return results
-            .filter(result => result.score > 0)
-            .map(result => {
+            .filter((result:any) => result.score > 0)
+            .map((result:any) => {
                 try {
                     result.scores = scoreResult(request, result);
                     result.scores.score = scoreReduce(result.scores) ** (3/(Object.keys(result.scores).length || 1));
                 } catch(err) {
-                    // console.log(err);
                     result.scores = {};
                 }
                 result.scores.es = 0.005 * Math.round(Math.min(200, result.score));
                 result.score = (result.scores.score !== undefined) ? result.scores.score : result.scores.es;
-                // console.log(result.score, result.scores);
                 return result;
             })
             .filter((result: any) => result.score >= pruneScore)
@@ -130,7 +124,6 @@ const scoreResult = (request: RequestInput, result: Person): any => {
     }
     if (request.firstName || request.lastName) {
         score.name = scoreName({first: request.firstName, last: request.lastName}, result.name);
-        // console.log('name', score.name, {first: request.firstName, last: request.lastName}, result.name);
         if (pruneScore > scoreReduce(score)) { score.score = 0; return score }
     }
     if (request.sex) {
@@ -168,13 +161,6 @@ const scoreName = (nameA: Name, nameB: Name): number => {
     const firstB = tokenize(nameB.first);
     const lastB = tokenize(filterStopNames(nameB.last as string|string[]));
 
-    // console.log('scoreName',nameA, firstA, lastA, nameB, firstB, lastB,
-    //     scoreToken(firstA, firstB as string|string[]),
-    //     scoreToken(lastA, lastB as string),
-    //     scoreToken(firstA, lastB as string),
-    //     scoreToken(lastA, firstB as string|string[])
-    //     );
-
     return (0.01 * Math.round(100*
         Math.max(
             Math.max(
@@ -185,8 +171,7 @@ const scoreName = (nameA: Name, nameB: Name): number => {
     )));
 }
 
-const scoreToken = (tokenA: string|string[]|RequestField, tokenB: string|string[], option: string): number => {
-    // console.log('scoreToken before', tokenA, tokenB)
+const scoreToken = (tokenA: string|string[]|RequestField, tokenB: string|string[], option?: string): number => {
     let s:number;
     try {
         if (!tokenA || !tokenB) {
@@ -194,10 +179,8 @@ const scoreToken = (tokenA: string|string[]|RequestField, tokenB: string|string[
         } else {
             if (typeof(tokenA) === 'string') {
                 if (typeof(tokenB) === 'string') {
-                    // console.log('scoreToken string string', tokenA, tokenB);
                     s = fuzzyScore(tokenA, tokenB);
                 } else {
-                    // console.log('scoreToken string to string[]', tokenA, tokenB);
                     s = Math.max(
                         fuzzyScore(tokenA, tokenB[0]),
                         ( tokenB.length > 1 )
@@ -206,11 +189,9 @@ const scoreToken = (tokenA: string|string[]|RequestField, tokenB: string|string[
                 }
             } else {
                 if (typeof(tokenB) === 'string') {
-                    // console.log('scoreToken string[] string', tokenA, tokenB);
-                    s = scoreToken(tokenB, tokenA, option);
+                    s = scoreToken(tokenB, tokenA as string|string[], option);
                 } else {
                     // if both tokenA and tokenB are arrays
-                    // console.log('scoreToken string[] string[]', tokenA, tokenB);
                     if (option === 'any') {
                         s = (tokenA as string[]).map(a => tokenB.map(b => fuzzyScore(a,b)).reduce(max)).reduce(max);
                     } else {
@@ -228,7 +209,6 @@ const scoreToken = (tokenA: string|string[]|RequestField, tokenB: string|string[
     } catch(err) {
         s = err;
     }
-    // console.log('scoreToken after', tokenA, tokenB, s);
     return s;
 }
 
@@ -255,7 +235,6 @@ const cityRegExp = [
 ];
 
 const cityNorm = (city: string|string[]): string|string[] => {
-    // console.log(applyRegex(city, cityRegExp));
     return applyRegex(city, cityRegExp);
 }
 
@@ -263,9 +242,9 @@ const scoreCity = (cityA: string|string[]|RequestField, cityB: string|string[]):
     if (typeof(cityA) === 'string') {
         const cityNormA = cityNorm(cityA) as string;
         if (typeof(cityB) === 'string') {
-            return fuzzyScore(cityNormA, cityNorm(cityB));
+            return fuzzyScore(cityNormA, cityNorm(cityB) as string);
         } else {
-            return Math.max(...cityB.map(city => fuzzyScore(cityNormA, cityNorm(city))));
+            return Math.max(...cityB.map(city => fuzzyScore(cityNormA, cityNorm(city) as string)));
         }
     } else {
         const cityNormB = cityNorm(cityB);
@@ -285,9 +264,9 @@ const scoreCountry = (countryA: string|string[]|RequestField, countryB: string|s
     if (typeof(countryA) === 'string') {
         const countryNormA = countryNorm(countryA) as string;
         if (typeof(countryB) === 'string') {
-            return fuzzyScore(countryNormA, countryNorm(countryB));
+            return fuzzyScore(countryNormA, countryNorm(countryB) as string);
         } else {
-            return Math.max(...countryB.map(country => fuzzyScore(countryNormA, countryNorm(country))));
+            return Math.max(...countryB.map(country => fuzzyScore(countryNormA, countryNorm(country) as string)));
         }
     } else {
         const countryNormB = countryNorm(countryB);
@@ -305,15 +284,13 @@ const scoreLocation = (locA: Location, locB: Location): any => {
         score.department = (locA.departmentCode === locB.departmentCode) ? 1 : minDepScore;
     }
     if (locA.country && locB.country) {
-        score.country = scoreCountry(locA.country, tokenize(locB.country as string));
+        score.country = scoreCountry(locA.country, tokenize(locB.country as string) as string|string[]);
     }
     score.score = Math.max(minLocationScore, scoreReduce(score));
-    // console.log(locA, locB, score)
     return score;
 }
 
 const scoreDate= (dateRangeA: any, dateStringB: string): number => {
-    // console.log(dateRangeA, dateStringB);
     return 0.01 * Math.round((scoreDateRaw(dateRangeA, dateStringB) ** datePenalty) * 100);
 }
 

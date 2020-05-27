@@ -70,7 +70,7 @@ export const nameQuery = (field: NameFields, value: Name, fuzzy: boolean, must: 
                         bool: {
                             should: [
                                 value.first && firstNameQuery([field.first.first, field.first.all], value.first as string, fuzzy, must),
-                                value.last && fuzzyTermQuery(field.last as string, value.last as string, fuzzy, must)
+                                value.last && fuzzyShouldTermQuery(field.last as string, value.last as string, fuzzy, must)
                             ].filter(x => x),
                             minimum_should_match: min_should,
                             boost: 2
@@ -80,7 +80,7 @@ export const nameQuery = (field: NameFields, value: Name, fuzzy: boolean, must: 
                         bool: {
                             should: [
                                 firstNameQuery([field.first.first, field.first.all], value.last as string, fuzzy, must),
-                                fuzzyTermQuery(field.last as string, value.first as string, fuzzy, must)
+                                fuzzyShouldTermQuery(field.last as string, value.first as string, fuzzy, must)
                             ],
                             minimum_should_match: min_should,
                             boost: 0.5
@@ -165,7 +165,7 @@ export const dateRangeStringQuery = (field: string, value: string, fuzzy: boolea
     } else if (value.length < 8){
         return prefixQuery(field, value, false, must);
     } else {
-        return fuzzyTermQuery(field, value, fuzzy, must);
+        return fuzzyShouldTermQuery(field, value, fuzzy, must);
     }
 };
 
