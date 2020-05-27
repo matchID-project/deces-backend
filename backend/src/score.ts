@@ -104,17 +104,21 @@ export const scoreResults = (request: RequestInput, results: any): any => {
     return results
             .filter(result => result.score > 0)
             .map(result => {
-                let scores = [ Math.round(result.score * 100) * 0.01 ]
                 try {
-                    scores = scoreResult(request, result).concat(scores);
+                    result.scores = scoreResult(request, result);
+                    result.scores.score = scoreReduce(result.scores) ** (3/(Object.keys(result.scores).length || 1));
                 } catch(err) {
-                    throw(err)
+                    // console.log(err);
+                    result.scores = {};
                 }
-                result.score = scores[0];
+                result.scores.es = 0.005 * Math.round(Math.min(200, result.score));
+                result.score = (result.scores.score !== undefined) ? result.scores.score : result.scores.es;
+                // console.log(result.score, result.scores);
                 return result;
             })
             .filter((result: any) => result.score >= pruneScore)
-            .sort((a: any, b: any) => (a.score < b.score[0]) ? 1 : ( (a.score > b.score) ? -1 : 0 ))
+            .sort((a: any, b: any) => (a.score < b.score) ? 1 : ( (a.score > b.score) ? -1 : 0 ))
+            // .map(r =>y, b: any) => (a.score < b.score) ? 1 : ( (a.score > b.score) ? -1 : 0 ))
 }
 
 const multyiply = (a:number, b: number): number => a*b;
