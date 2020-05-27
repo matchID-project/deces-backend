@@ -294,16 +294,21 @@ const scoreCountry = (countryA: string|string[]|RequestField, countryB: string|s
     }
 }
 
-const scoreLocation = (locA: Location, locB: Location): number => {
-    const score = [];
-    score.unshift((locA.city ? ( locB.city ? scoreCity(locA.city, locB.city as string|string[]) : blindLocationScore ) : 1 )) ;
-    score.unshift((locA.departmentCode
-            ? (locB.departmentCode
-                ? ((locA.departmentCode === locB.departmentCode) ? 1 : minLocationScore )
-                : blindLocationScore )
-            : 1));
-    score.unshift((locA.country ? (locB.country ? levNormScore(locA.country as string, locB.country as string) : blindLocationScore ) : 1));
-    return 0.01 * Math.round(score.reduce(multyiply) * 100);
+
+const scoreLocation = (locA: Location, locB: Location): any => {
+    const score: any = {};
+    if (locA.city && locB.city) {
+        score.city = scoreCity(locA.city, locB.city as string|string[]);
+    }
+    if (locA.departmentCode && locB.departmentCode) {
+        score.department = (locA.departmentCode === locB.departmentCode) ? 1 : minDepScore;
+    }
+    if (locA.country && locB.country) {
+        score.country = scoreCountry(locA.country, tokenize(locB.country as string));
+    }
+    score.score = Math.max(minLocationScore, scoreReduce(score));
+    // console.log(locA, locB, score)
+    return score;
 }
 
 const scoreDate= (dateRangeA: any, dateStringB: string): number => {
