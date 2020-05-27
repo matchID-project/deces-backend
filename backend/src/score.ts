@@ -151,19 +151,37 @@ const scoreResult = (request: RequestInput, result: Person): any => {
     return score;
 }
 
+export const stopNames = [
+    [/(^|\s)(le|du|de|de la|l|d|de los|dos|del|el)\s/, '$1 $2'],
+    [/st/, 'saint']
+];
+
+const filterStopNames = (name: string|string[]): string|string[] => {
+    return applyRegex(name, stopNames);
+}
 
 const scoreName = (nameA: Name, nameB: Name): number => {
     if ((!nameA.first && !nameA.last) || (!nameB.first && !nameB.last)) { return blindNameScore }
     const firstA = tokenize(nameA.first);
-    const lastA = tokenize(nameA.last);
+    const lastA = tokenize(filterStopNames(nameA.last as string|string[]));
     const firstB = tokenize(nameB.first);
-    const lastB = tokenize(nameB.last);
+    const lastB = tokenize(filterStopNames(nameB.last as string|string[]));
 
-    return 0.01 * Math.round(100*
-        Math.max(scoreToken(firstA, firstB as string|string[]) * scoreToken(lastA, lastB as string),
-        decreaseNameInversion * scoreToken(firstA, lastB as string) * scoreToken(lastA, firstB as string|string[]),
+    // console.log('scoreName',nameA, firstA, lastA, nameB, firstB, lastB,
+    //     scoreToken(firstA, firstB as string|string[]),
+    //     scoreToken(lastA, lastB as string),
+    //     scoreToken(firstA, lastB as string),
+    //     scoreToken(lastA, firstB as string|string[])
+    //     );
+
+    return (0.01 * Math.round(100*
+        Math.max(
+            Math.max(
+                (scoreToken(firstA, firstB as string|string[])) * (scoreToken(lastA, lastB as string) ** lastNamePenalty),
+                decreaseNameInversion * (scoreToken(firstA, lastB as string) ** lastNamePenalty) * scoreToken(lastA, firstB as string|string[]) ** lastNamePenalty
+            ),
         minNameScore
-    ));
+    )));
 }
 
 const normalize = (token: string): string => {
