@@ -121,26 +121,33 @@ export const scoreResults = (request: RequestInput, results: any): any => {
             // .map(r =>y, b: any) => (a.score < b.score) ? 1 : ( (a.score > b.score) ? -1 : 0 ))
 }
 
-const multyiply = (a:number, b: number): number => a*b;
-
-const scoreResult = (request: RequestInput, result: Person): number[] => {
-    const score:number[] = [];
-    score.unshift(scoreDate(request.birthDate, result.birth.date));
-    if (pruneScore > score.reduce(multyiply)) { score.unshift(0); return score }
-    score.unshift(scoreName({first: request.firstName, last: request.lastName}, result.name));
-    if (pruneScore > score.reduce(multyiply)) { score.unshift(0); return score }
-    score.unshift(scoreSex(request.sex, result.sex));
-    if (pruneScore > score.reduce(multyiply)) { score.unshift(0); return score }
-    score.unshift(scoreLocation({
-        city: request.birthCity,
-        cityCode: request.birthCityCode,
-        departmentCode: request.birthDepartment,
-        country: request.birthCountry,
-        latitude: request.latitude,
-        longitude: request.longitude
-    }, result.birth.location));
-    if (pruneScore > score.reduce(multyiply)) { score.unshift(0); return score }
-    score.unshift(0.01 * Math.round(score.reduce(multyiply) * 100));
+const scoreResult = (request: RequestInput, result: Person): any => {
+    const score:any = {};
+    if (request.birthDate) {
+        score.date = scoreDate(request.birthDate, result.birth.date);
+        if (pruneScore > scoreReduce(score)) { score.score = 0; return score }
+    }
+    if (request.firstName || request.lastName) {
+        score.name = scoreName({first: request.firstName, last: request.lastName}, result.name);
+        // console.log('name', score.name, {first: request.firstName, last: request.lastName}, result.name);
+        if (pruneScore > scoreReduce(score)) { score.score = 0; return score }
+    }
+    if (request.sex) {
+        score.sex = scoreSex(request.sex, result.sex);
+        if (pruneScore > scoreReduce(score)) { score.score = 0; return score }
+    }
+    if (request.birthCity || request.birthCityCode || request.birthDepartment || request.latitude || request.longitude) {
+        score.location = scoreLocation({
+            city: request.birthCity,
+            cityCode: request.birthCityCode,
+            departmentCode: request.birthDepartment,
+            country: request.birthCountry,
+            latitude: request.latitude,
+            longitude: request.longitude
+        }, result.birth.location);
+        if (pruneScore > scoreReduce(score)) { score.score = 0; return score }
+    }
+    score.score = scoreReduce(score);
     return score;
 }
 
