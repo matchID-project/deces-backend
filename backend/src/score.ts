@@ -231,27 +231,44 @@ const scoreToken = (tokenA: string|string[]|RequestField, tokenB: string|string[
     return s;
 }
 
-const tokenize = (sentence: string|string[]|RequestField): string|string[]|RequestField => {
-    if (typeof(sentence) === 'string') {
-        return sentence.split(/\s+/);
-    } else {
-        // dont tokenize if string[]
-        return sentence as string[];
-    }
+const cityRegExp = [
+    [ /^\s*(lyon|marseille|paris)(\s.*|\s*\d\d*.*|.*art.*|.*arr.*)$/, '$1'],
+    [ /montreuil s.* bois/, 'montreuil'],
+    [ /(^|\s)ste(\s|$)/, '$1sainte$2'],
+    [ /(^|\s)st(\s|$)/, '$1saint$2'],
+    [ /^aix pce$/, 'aix provence'],
+    [ /(^|\s)(de|en|les|le|la|a|aux|au|du|de la|sous|ss?|sur|l|d|des)\s/g, ' '],
+    [ /(^|\s)(de|en|les|le|la|a|aux|au|du|de la|sous|ss?|sur|l|d|des)\s/g, ' '],
+    [ /^x$:/, ''],
+    [ /\s+/, ' '],
+    [ /œ/, 'oe'],
+    [ /æ/, 'ae'],
+    [ /^.*inconnu.*$/, ''],
+    [ /sainte clotilde/, 'saint denis'],
+    [ /berck mer/, 'berck'],
+    [ /clichy garenne.*/, 'clichy'],
+    [ /belleville saone/, 'belleville'],
+    [ /^levallois$/, 'levallois perret'],
+    [ /'\s$/, ''],
+    [ /^\s*/, '']
+];
+
+const cityNorm = (city: string|string[]): string|string[] => {
+    // console.log(applyRegex(city, cityRegExp));
+    return applyRegex(city, cityRegExp);
 }
 
-const scoreToken = (tokenA: string|string[]|RequestField, tokenB: string|string[]): number => {
-    if (!tokenA || !tokenB) {return minNameScore}
-    if (typeof(tokenA) === 'string') {
-        if (typeof(tokenB) === 'string') {
-            return levNormScore(tokenA, tokenB);
+const scoreCity = (cityA: string|string[]|RequestField, cityB: string|string[]): number => {
+    if (typeof(cityA) === 'string') {
+        const cityNormA = cityNorm(cityA) as string;
+        if (typeof(cityB) === 'string') {
+            return fuzzyScore(cityNormA, cityNorm(cityB));
         } else {
-            return Math.max(levNormScore(tokenA, tokenB[0]),
-                tokenB.length ? decreaseNamePlace * scoreToken(tokenA, tokenB.slice(1, tokenB.length)) : 0);
+            return Math.max(...cityB.map(city => fuzzyScore(cityNormA, cityNorm(city))));
         }
     } else {
-        return Math.max(scoreToken((tokenA as string[])[0], tokenB),
-            (tokenA as string[]).length ? decreaseNamePlace * scoreToken((tokenA as string[]).slice(1, (tokenA as string[]).length), tokenB) : 0);
+        const cityNormB = cityNorm(cityB);
+        return Math.max(...(cityA as string[]).map(city => scoreCity(cityNorm(city), cityNormB)));
     }
 }
 
