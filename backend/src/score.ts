@@ -2,11 +2,15 @@ import { RequestInput } from './models/requestInput';
 import { Person, Location, Name, RequestField } from './models/entities';
 import levenshtein from 'js-levenshtein';
 import { dateTransformMask, isDateRange } from './masks';
+import soundex from '@thejellyfish/soundex-fr';
+
+const decreaseTokenPlace = 0.7;
+const blindTokenScore = 0.5;
 
 const decreaseNameInversion = 0.7;
-const decreaseNamePlace = 0.5;
 const minNameScore = 0.1;
-const blindNameScore = 0.7;
+const blindNameScore = 0.5;
+const lastNamePenalty = 3
 
 const minSexScore = 0.5;
 const blindSexScore = 1;
@@ -16,11 +20,87 @@ const blindDateScore = 0.8;
 const uncertainDateScore = 0.7;
 
 const minLocationScore = 0.2;
-const blindLocationScore = 0.8;
+const minDepScore = 0.6;
 
-const pruneScore = 0.3;
+const boostSoundex = 1.5;
 
-export const scoreResults = (request: RequestInput, results: Person[]): any => {
+const pruneScore = 0.25;
+
+const multyiply = (a:number, b: number): number => a*b;
+const max = (a:number, b: number): number => Math.max(a*b);
+const sum = (a:number, b: number): number => a+b;
+const mean = (table: number[]): number => (table.length ? table.reduce(sum)/table.length : 0);
+
+const normalize = (token: string): string => {
+    return token.normalize('NFKD').replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase().replace(/[^a-z0-9]+/g, ' ');
+}
+
+const fuzzyScore = (tokenA: string, tokenB: string): number => {
+    if (!tokenA || !tokenB) {
+        return 0;
+    }
+    const a:string = normalize(tokenA);
+    const b:string = normalize(tokenB);
+    // console.log(a,b);
+    if (a === b) {return 1}
+    const s1 = levNormScore(a, b);
+    const s2 = (soundex(a) === soundex(b));
+    const s = 0.01 * Math.round(
+        100 * (levNormScore(a, b) ** ((soundex(a) === soundex(b)) ? (1/boostSoundex) : boostSoundex ** 2) )
+    );
+    // console.log('fuzzyScore',a,b,s,s1,s2);
+    return s;
+};
+
+const levNormScore = (tokenA: string, tokenB: string): number => {
+    if (!tokenA || !tokenB) { return 0 }
+    if (tokenA === tokenB) {
+        return 1
+    } else {
+        if (tokenA.length < tokenB.length) {
+            return levNormScore(tokenB, tokenA)
+        }
+        return 0.01 * Math.round(100 * (1 - (levenshtein(normalize(tokenA), normalize(tokenB)) / tokenA.length)));
+    }
+}
+
+const applyRegex = (a: string|string[], reTable: any): string|string[] => {
+    if (typeof(a) === 'string') {
+        let b = normalize(a);
+        reTable.map(r => b = b.replace(r[0], r[1]));
+        return b;
+    } else {
+        return a.map(c => applyRegex(c, reTable) as string);
+    }
+}
+
+const tokenize = (sentence: string|string[]|RequestField): string|string[]|RequestField => {
+    if (typeof(sentence) === 'string') {
+        const s = sentence.split(/,\s*|\s+/);
+        return s.length === 1 ? s[0] : s ;
+    } else {
+        // dont tokenize if string[]
+        return sentence as string[];
+    }
+}
+
+
+const scoreReduce = (score:any):number => {
+    if (score.score) {
+        return score.score;
+    } else {
+        const r:any = Object.keys(score).map(k => {
+            if (typeof(score[k]) === 'number') {
+                return score[k];
+            } else {
+                return score[k].score || scoreReduce(score[k]);
+            }
+        });
+        return 0.01 * Math.round(100 * r.reduce(multyiply));
+    }
+}
+
+export const scoreResults = (request: RequestInput, results: any): any => {
     return results
             .filter(result => result.score > 0)
             .map(result => {
