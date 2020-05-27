@@ -184,8 +184,51 @@ const scoreName = (nameA: Name, nameB: Name): number => {
     )));
 }
 
-const normalize = (token: string): string => {
-    return token.normalize('NFKD').replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase().replace(/\W+/, ' ');
+const scoreToken = (tokenA: string|string[]|RequestField, tokenB: string|string[], option: string): number => {
+    // console.log('scoreToken before', tokenA, tokenB)
+    let s:number;
+    try {
+        if (!tokenA || !tokenB) {
+            s = blindTokenScore
+        } else {
+            if (typeof(tokenA) === 'string') {
+                if (typeof(tokenB) === 'string') {
+                    // console.log('scoreToken string string', tokenA, tokenB);
+                    s = fuzzyScore(tokenA, tokenB);
+                } else {
+                    // console.log('scoreToken string to string[]', tokenA, tokenB);
+                    s = Math.max(
+                        fuzzyScore(tokenA, tokenB[0]),
+                        ( tokenB.length > 1 )
+                            ? (option === 'any' ? 1 : decreaseTokenPlace) * tokenB.slice(1, tokenB.length).map(token => fuzzyScore(tokenA, token)).reduce(max) : 0
+                    );
+                }
+            } else {
+                if (typeof(tokenB) === 'string') {
+                    // console.log('scoreToken string[] string', tokenA, tokenB);
+                    s = scoreToken(tokenB, tokenA, option);
+                } else {
+                    // if both tokenA and tokenB are arrays
+                    // console.log('scoreToken string[] string[]', tokenA, tokenB);
+                    if (option === 'any') {
+                        s = (tokenA as string[]).map(a => tokenB.map(b => fuzzyScore(a,b)).reduce(max)).reduce(max);
+                    } else {
+                    // compare field by field
+                        let min = 1
+                        s = mean((tokenA as string[]).map((token, i) => {
+                            const current = tokenB[i] ? fuzzyScore(token, tokenB[i]) : min;
+                            if (min > current) { min = current }
+                            return current;
+                        }))
+                    }
+                }
+            }
+        }
+    } catch(err) {
+        s = err;
+    }
+    // console.log('scoreToken after', tokenA, tokenB, s);
+    return s;
 }
 
 const tokenize = (sentence: string|string[]|RequestField): string|string[]|RequestField => {
