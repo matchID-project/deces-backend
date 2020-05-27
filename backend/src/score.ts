@@ -18,6 +18,7 @@ const blindSexScore = 1;
 const minDateScore = 0.2;
 const blindDateScore = 0.8;
 const uncertainDateScore = 0.7;
+const datePenalty = 3
 
 const minLocationScore = 0.2;
 const minDepScore = 0.6;
@@ -312,7 +313,8 @@ const scoreLocation = (locA: Location, locB: Location): any => {
 }
 
 const scoreDate= (dateRangeA: any, dateStringB: string): number => {
-    return 0.01 * Math.round((scoreDateRaw(dateRangeA, dateStringB) ** 4) * 100);
+    // console.log(dateRangeA, dateStringB);
+    return 0.01 * Math.round((scoreDateRaw(dateRangeA, dateStringB) ** datePenalty) * 100);
 }
 
 const scoreDateRaw = (dateRangeA: any, dateStringB: string): number => {
