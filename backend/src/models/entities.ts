@@ -43,7 +43,7 @@ export interface Person {
     source: string;
     id: string;
     name: Name;
-    sex: string;
+    sex: 'M'|'F';
     birth: {
       date: string;
       location: Location;

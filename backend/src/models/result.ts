@@ -104,7 +104,7 @@ export interface ResultRawHits {
     SOURCE: string;
     PRENOMS: string;
     NOM: string;
-    SEXE: string;
+    SEXE: 'M'|'F';
     DATE_NAISSANCE: string;
     COMMUNE_NAISSANCE: string;
     CODE_INSEE_NAISSANCE: string;

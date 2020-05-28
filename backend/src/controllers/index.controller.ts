@@ -19,7 +19,7 @@ export class IndexController extends Controller {
     @Query() q?: string,
     @Query() firstName?: string,
     @Query() lastName?: string,
-    @Query() sex?: string,
+    @Query() sex?: 'M'|'F',
     @Query() birthDate?: StrAndNumber,
     @Query() birthCity?: string,
     @Query() birthDepartment?: string,

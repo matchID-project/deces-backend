@@ -43,7 +43,7 @@ export interface RequestBody {
  fullText?: string;
  firstName?: string;
  lastName?: string;
- sex?: string;
+ sex?: 'M'|'F';
  birthDate?: string|number;
  birthCity?: string;
  birthDepartment?: string;
