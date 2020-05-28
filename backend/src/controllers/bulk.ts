@@ -15,6 +15,7 @@ const salt = forge.random.getBytesSync(128);
 export const router = Router();
 const multerSingle = multer().any();
 
+let stopJob = false;
 const inputsArray: JobInput[]= []
 const resultsArray: JobResult[]= []
 const queue = new Queue('example',  {
@@ -103,7 +104,9 @@ const processSequential = async (rows: any, job: any): Promise<any> => { // part
       resultsSeq.push(temparray)
     }
     job.reportProgress({rows: resultsSeq.length, percentage: resultsSeq.length / rows.length * 100})
+    if (stopJob) break;
   }
+  stopJob = false;
   return resultsSeq
 };
 
@@ -314,6 +317,24 @@ router.get('/:format(csv|json)/:id?', async (req: any, res: express.Response) =>
       res.send({status: job.status, id: req.params.id, progress: job.progress});
     } else {
       res.send({msg: 'job doesn\'t exists'});
+    }
+  } else {
+    res.send({msg: 'no job id'})
+  }
+});
+
+router.delete('/:format(csv|json)/:id?', async (req: any, res: express.Response) => {
+  if (req.params.id) {
+    const md = forge.md.sha256.create();
+    md.update(req.params.id);
+    const job: Queue.Job|any= await queue.getJob(md.digest().toHex())
+    if (job && job.status === 'created') {
+      stopJob = true;
+      res.send({msg: `Job ${req.params.id} cancelled`})
+    } else if (job) {
+      res.send({msg: `job is ${job.status}`})
+    } else {
+      res.send({msg: 'no job found'})
     }
   } else {
     res.send({msg: 'no job id'})
