@@ -37,7 +37,7 @@ const normalize = (token: string|string[]): string|string[] => {
     if (typeof(token) === 'string') {
         return token.normalize('NFKD').replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase().replace(/[^a-z0-9]+/g, ' ');
     } else {
-        return token.map(t => normalize(t));
+        return token.map(t => normalize(t) as string);
     }
 }
 
@@ -45,8 +45,8 @@ const fuzzyScore = (tokenA: string, tokenB: string): number => {
     if (!tokenA || !tokenB) {
         return 0;
     }
-    const a:string = normalize(tokenA);
-    const b:string = normalize(tokenB);
+    const a:string = normalize(tokenA) as string;
+    const b:string = normalize(tokenB) as string;
     if (a === b) {return 1}
     const s = 0.01 * Math.round(
         100 * (levNormScore(a, b) ** ((soundex(a) === soundex(b)) ? (1/boostSoundex) : boostSoundex ** 2) )
@@ -62,13 +62,13 @@ const levNormScore = (tokenA: string, tokenB: string): number => {
         if (tokenA.length < tokenB.length) {
             return levNormScore(tokenB, tokenA)
         }
-        return 0.01 * Math.round(100 * (1 - (levenshtein(normalize(tokenA), normalize(tokenB)) / tokenA.length)));
+        return 0.01 * Math.round(100 * (1 - (levenshtein(normalize(tokenA) as string, normalize(tokenB) as string) / tokenA.length)));
     }
 }
 
 const applyRegex = (a: string|string[], reTable: any): string|string[] => {
     if (typeof(a) === 'string') {
-        let b = normalize(a);
+        let b = normalize(a) as string;
         reTable.map((r:any) => b = b.replace(r[0], r[1]));
         return b;
     } else {
@@ -82,7 +82,7 @@ const tokenize = (sentence: string|string[]|RequestField, tokenizeArray?: boolea
         return s.length === 1 ? s[0] : s ;
     } else {
         if (tokenizeArray) {
-            return sentence.map(s => tokenize(s)).flat();
+            return ((sentence as string[]).map(s => tokenize(s)) as any).flat();
         } else {
             // default dont tokenize if string[]
             return sentence as string[];
@@ -103,7 +103,7 @@ const scoreReduce = (score:any):number => {
                 return score[k].score || scoreReduce(score[k]);
             }
         });
-        return 0.01 * Math.round(100 * r.reduce(multyiply));
+        return r.length ? 0.01 * Math.round(100 * r.reduce(multyiply)) : 0;
     }
 }
 
@@ -151,7 +151,7 @@ const scoreResult = (request: RequestInput, result: Person): any => {
         }, result.birth.location);
         if (pruneScore > scoreReduce(score)) { score.score = 0; return score }
     }
-    score.score = scoreReduce(score);
+    score.score = scoreReduce(score)
     return score;
 }
 
@@ -166,9 +166,9 @@ const filterStopNames = (name: string|string[]): string|string[] => {
 
 const scoreName = (nameA: Name, nameB: Name): number => {
     if ((!nameA.first && !nameA.last) || (!nameB.first && !nameB.last)) { return blindNameScore }
-    const firstA = tokenize(normalize(nameA.first), true);
+    const firstA = tokenize(normalize(nameA.first as string|string[]), true);
     const lastA = tokenize(filterStopNames(nameA.last as string|string[]));
-    const firstB = tokenize(normalize(nameB.first), true);
+    const firstB = tokenize(normalize(nameB.first as string|string[]), true);
     const lastB = tokenize(filterStopNames(nameB.last as string|string[]));
 
     return (0.01 * Math.round(100*
@@ -288,7 +288,7 @@ const scoreCountry = (countryA: string|string[]|RequestField, countryB: string|s
 const scoreLocation = (locA: Location, locB: Location): any => {
     const score: any = {};
     if (locA.city && locB.city) {
-        if (locB.country && /FRANCE/i.test(locB.country)) {
+        if (locB.country && (scoreCountry('FRANCE', locB.country as string|string[]) === 1)) {
             score.city = scoreCity(locA.city, locB.city as string|string[])
         } else {
             score.city = Math.max(minNotFrCityScore, scoreCity(locA.city, tokenize(locB.city) as string|string[]));
