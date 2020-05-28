@@ -32,8 +32,12 @@ const max = (a:number, b: number): number => Math.max(a*b);
 const sum = (a:number, b: number): number => a+b;
 const mean = (table: number[]): number => (table.length ? table.reduce(sum)/table.length : 0);
 
-const normalize = (token: string): string => {
-    return token.normalize('NFKD').replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase().replace(/[^a-z0-9]+/g, ' ');
+const normalize = (token: string|string[]): string|string[] => {
+    if (typeof(token) === 'string') {
+        return token.normalize('NFKD').replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase().replace(/[^a-z0-9]+/g, ' ');
+    } else {
+        return token.map(t => normalize(t));
+    }
 }
 
 const fuzzyScore = (tokenA: string, tokenB: string): number => {
@@ -71,13 +75,18 @@ const applyRegex = (a: string|string[], reTable: any): string|string[] => {
     }
 }
 
-const tokenize = (sentence: string|string[]|RequestField): string|string[]|RequestField => {
+const tokenize = (sentence: string|string[]|RequestField, tokenizeArray?: boolean): string|string[]|RequestField => {
     if (typeof(sentence) === 'string') {
         const s = sentence.split(/,\s*|\s+/);
         return s.length === 1 ? s[0] : s ;
     } else {
-        // dont tokenize if string[]
-        return sentence as string[];
+        if (tokenizeArray) {
+            return sentence.map(s => tokenize(s)).flat();
+        } else {
+            // default dont tokenize if string[]
+            return sentence as string[];
+        }
+
     }
 }
 
@@ -156,9 +165,9 @@ const filterStopNames = (name: string|string[]): string|string[] => {
 
 const scoreName = (nameA: Name, nameB: Name): number => {
     if ((!nameA.first && !nameA.last) || (!nameB.first && !nameB.last)) { return blindNameScore }
-    const firstA = tokenize(nameA.first);
+    const firstA = tokenize(normalize(nameA.first), true);
     const lastA = tokenize(filterStopNames(nameA.last as string|string[]));
-    const firstB = tokenize(nameB.first);
+    const firstB = tokenize(normalize(nameB.first), true);
     const lastB = tokenize(filterStopNames(nameB.last as string|string[]));
 
     return (0.01 * Math.round(100*
@@ -196,7 +205,7 @@ const scoreToken = (tokenA: string|string[]|RequestField, tokenB: string|string[
                         s = (tokenA as string[]).map(a => tokenB.map(b => fuzzyScore(a,b)).reduce(max)).reduce(max);
                     } else {
                     // compare field by field
-                        let min = 1
+                        let min = blindNameScore;
                         s = mean((tokenA as string[]).map((token, i) => {
                             const current = tokenB[i] ? fuzzyScore(token, tokenB[i]) : min;
                             if (min > current) { min = current }
