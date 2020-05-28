@@ -1,4 +1,4 @@
-import { GeoPoint, Name } from './models/requestInput';
+import { GeoPoint, Name } from './models/entities';
 
 import {
     dateRangeValidationMask,
@@ -13,7 +13,7 @@ import {
     dateRangeStringQuery,
     ageRangeStringQuery,
     nameQuery,
-    fuzzyTermQuery,
+    fuzzyShouldTermQuery,
     geoPointQuery,
     matchQuery
 } from './queries'
@@ -61,7 +61,7 @@ export const birthDateWithQuery = (value: string|number, fuzzy: string|boolean) 
 export const birthCityWithQuery = (value: string, fuzzy: string|boolean) => value && {
     value,
     field: "COMMUNE_NAISSANCE",
-    query: fuzzyTermQuery,
+    query: fuzzyShouldTermQuery,
     fuzzy: (fuzzy && fuzzy === 'false') ? false : "auto"
 };
 
@@ -75,7 +75,7 @@ export const birthDepartmentWithQuery = (value: string, fuzzy: string|boolean) =
 export const birthCountryWithQuery = (value: string, fuzzy: string|boolean) => value && {
     value,
     field: "PAYS_NAISSANCE",
-    query: fuzzyTermQuery,
+    query: fuzzyShouldTermQuery,
     fuzzy: (fuzzy && fuzzy === 'false') ? false : "auto"
 };
 
@@ -111,7 +111,7 @@ export const deathAgeWithQuery = (value: string|number, fuzzy: string|boolean) =
 export const deathCityWithQuery = (value: string, fuzzy: string|boolean) => value && {
     value,
     field: "COMMUNE_DECES",
-    query: fuzzyTermQuery,
+    query: fuzzyShouldTermQuery,
     fuzzy: (fuzzy && fuzzy === 'false') ? false : "auto"
 };
 
@@ -125,7 +125,7 @@ export const deathDepartmentWithQuery = (value: string, fuzzy: string|boolean) =
 export const deathCountryWithQuery = (value: string, fuzzy: string|boolean) => value && {
     value,
     field: "PAYS_DECES",
-    query: fuzzyTermQuery,
+    query: fuzzyShouldTermQuery,
     fuzzy: (fuzzy && fuzzy === 'false') ? false : "auto"
 };
 

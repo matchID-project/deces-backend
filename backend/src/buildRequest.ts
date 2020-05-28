@@ -1,12 +1,44 @@
 import { RequestInput } from './models/requestInput';
 import { BodyResponse, ScrolledResponse } from './models/body';
 import { buildRequestFilter } from "./buildRequestFilter";
+import { fuzzyTermQuery, matchQuery } from './queries';
 
 const buildMatch = (requestInput: RequestInput) => {
-  if (requestInput.fullText && requestInput.fullText.value) {
-    return buildSimpleMatch(requestInput.fullText.value as string)
+  if (requestInput.block) {
+    return buildAdaptativeBlockMatch(requestInput);
   } else {
-    return buildAvancedMatch(requestInput)
+    if (requestInput.fullText && requestInput.fullText.value) {
+      return buildSimpleMatch(requestInput.fullText.value as string)
+    } else {
+      return buildAdvancedMatch(requestInput)
+    }
+  }
+}
+
+const buildAdaptativeBlockMatch = (searchInput: RequestInput) => {
+  /*
+    apply the costless blocking strategy :
+  */
+  if (searchInput.name && searchInput.name.value && searchInput.name.value.last && searchInput.name.value.first && searchInput.birthDate.value) {
+    return {
+        function_score : {
+          query: {
+            bool: {
+              must: [
+                fuzzyTermQuery('PRENOMS_NOM', [searchInput.name.value.last, searchInput.name.value.first].filter(x => x).join(" "), "auto", false),
+                fuzzyTermQuery('DATE_NAISSANCE', searchInput.birthDate.mask.transform(searchInput.birthDate.value) as string, "auto", false),
+              ],
+              should: [
+                matchQuery('NOM', searchInput.name.value.last as string, false, false),
+                matchQuery('DATE_NAISSANCE', searchInput.birthDate.mask.transform(searchInput.birthDate.value) as string, false, false),
+              ],
+              minimum_should_match: 1
+            }
+          }
+        }
+    };
+  } else {
+    return buildAdvancedMatch(searchInput);
   }
 }
 
@@ -227,19 +259,45 @@ const buildSimpleMatch = (searchInput: string) => {
 
 }
 
-const buildAvancedMatch = (searchInput: RequestInput) => {
+const buildFieldRequest = (key: string, searchInput: RequestInput, must: boolean) => {
+  const value = searchInput[key] && ( searchInput[key].mask && searchInput[key].mask.transform && searchInput[key].value
+    ? searchInput[key].mask.transform(searchInput[key].value)
+    : searchInput[key].value );
+  if (value) {
+    return searchInput[key].query(searchInput[key].field, value, searchInput[key].fuzzy, must)
+  }
+}
+
+const buildAdvancedMatch = (searchInput: RequestInput) => {
   return {
     function_score: {
       query: {
         bool: {
-          must: Object.keys(searchInput).map(key => {
-            const value = searchInput[key] && ( searchInput[key].mask && searchInput[key].mask.transform && searchInput[key].value
-                        ? searchInput[key].mask.transform(searchInput[key].value)
-                        : searchInput[key].value );
-            if (value) {
-              return searchInput[key].query(searchInput[key].field, value, searchInput[key].fuzzy)
-            }
-          }).filter(x => x),
+          must: searchInput.block
+            ?
+            [
+              {
+                bool: {
+                  should: Object.keys(searchInput)
+                        .filter(key => searchInput.block.scope.includes(key))
+                        .map(key => buildFieldRequest(key, searchInput, false))
+                        .filter(x => x),
+                  minimum_should_match: searchInput.block.minimum_match
+                },
+              },
+              searchInput.block.should && {
+                bool: {
+                  should: Object.keys(searchInput)
+                    .filter(key => !searchInput.block.scope.includes(key))
+                    .map(key => buildFieldRequest(key, searchInput, false))
+                    .filter(x => x)
+                }
+              }
+            ]
+            :
+            Object.keys(searchInput)
+             .map(key => buildFieldRequest(key, searchInput, true))
+             .filter(x => x)
         }
       }
     }
@@ -293,7 +351,7 @@ export const buildRequest = (requestInput: RequestInput): BodyResponse|ScrolledR
       // --------------------------
       // https://www.elastic.co/guide/en/elasticsearch/reference/7.x/search-request-highlighting.html
       min_score: ((requestInput.fullText && requestInput.fullText.value) ? 5: 0),
-      track_total_hits: true,
+      track_total_hits: requestInput.block ? false : true,
       // highlight: {
       //   fragment_size: 200,
       //   number_of_fragments: 1,

@@ -6,7 +6,8 @@ import { Router } from 'express';
 import { RequestInput } from '../models/requestInput';
 import { buildRequest } from '../buildRequest';
 import { runBulkRequest } from '../runRequest';
-import { buildResultSingle } from '../models/result';
+import { buildResultSingle, ResultRawES } from '../models/result';
+import { scoreResults } from '../score';
 
 const encryptionIv = forge.random.getBytesSync(16);
 const salt = forge.random.getBytesSync(128);
@@ -14,42 +15,64 @@ const salt = forge.random.getBytesSync(128);
 export const router = Router();
 const multerSingle = multer().any();
 
-const inputsArray: any[]= []
-const resultsArray: any[]= []
+const inputsArray: JobInput[]= []
+const resultsArray: JobResult[]= []
 const queue = new Queue('example',  {
   redis: {
     host: 'redis'
   }
 });
 queue.process(async (job: Queue.Job) => {
-  const jobFile = inputsArray.find(x => x.id === job.id)
-  const rows: any = jobFile.file.split('\n').map((str: string) => str.split(job.data.sep)); // TODO: parse all the attachements
+  const jobIndex = inputsArray.findIndex(x => x.id === job.id)
+  const jobFile = inputsArray.splice(jobIndex, 1).pop()
+  const rows: any = jobFile.file.split(/\s*\r?\n\r?\s*/).map((str: string) => str.split(job.data.sep)); // TODO: parse all the attachements
   const validFields: string[] = ['q', 'firstName', 'lastName', 'sex', 'birthDate', 'birthCity', 'birthDepartment', 'birthCountry',
   'birthGeoPoint', 'deathDate', 'deathCity', 'deathDepartment', 'deathCountry', 'deathGeoPoint', 'deathAge',
-  'scroll', 'scrollId', 'size', 'page', 'fuzzy', 'sort'];
+  'size', 'fuzzy', 'block'];
+  const jsonFields: string[] = ['birthGeoPoint','deathGeoPoint','block']
   const mapField: any = {};
   validFields.map(key => mapField[job.data[key] || key] = key );
   const header: any = {};
   let nFields:any = 0;
   rows.shift().forEach((key: string, idx: number) => {
-    if (mapField[key]) {header[idx] =  mapField[key]};
+    header[idx] =  key;
     nFields++;
   });
-  const json = rows
+  let json = [{
+    metadata: {
+      mapping: mapField,
+      header: [...Array(nFields).keys()].map(idx => header[idx])
+    }
+  }];
+  json = json.concat(rows
     .filter((row: string[]) => row.length === nFields)
     .map((row: string[]) => {
-      const request: any = {}
-      row.forEach((value: string, idx: number) => {
-        if (header[idx]) {
-          request[header[idx]] = value;
+      const request: any = {
+        metadata: {
+          source: {}
         }
+      }
+      row.forEach((value: string, idx: number) => {
+        if (mapField[header[idx]]) {
+          request[mapField[header[idx]]] = jsonFields.includes(header[idx]) ? JSON.parse(value) : value;
+        }
+        request.metadata.source[header[idx]] = value;
       });
+      request.block = request.block
+                      ? request.block
+                      : job.data.block
+                        ? JSON.parse(job.data.block)
+                        : {
+                          scope: ['name', 'birthDate'],
+                          minimum_match: 1,
+                          should: true
+                        };
       return request;
-    })
+    }))
   return processSequential(json, job)
 });
 
-const processSequential = async (rows: any, job: Queue.Job) => {
+const processSequential = async (rows: any, job: any): Promise<any> => { // partial fix until the next release of bee-queue
   const resultsSeq = []
   const chunk = Number(job.data.chunkSize);
   let temparray: any;
@@ -58,15 +81,20 @@ const processSequential = async (rows: any, job: Queue.Job) => {
   for (i=0, j=rows.length; i<j; i+=chunk) {
     temparray = rows.slice(i,i+chunk);
     const bulkRequest = temparray.map((row: any) => { // TODO: type
-      const requestInput = new RequestInput(row.q, row.firstName, row.lastName, row.sex, row.birthDate, row.birthCity, row.birthDepartment, row.birthCountry, row.birthGeoPoint, row.deathDate, row.deathCity, row.deathDepartment, row.deathCountry, row.deathGeoPoint, row.deathAge, row.scroll, row.scrollId, row.size, row.page, row.fuzzy, row.sort);
+      const requestInput = new RequestInput(row.q, row.firstName, row.lastName, row.sex, row.birthDate, row.birthCity, row.birthDepartment, row.birthCountry, row.birthGeoPoint, row.deathDate, row.deathCity, row.deathDepartment, row.deathCountry, row.deathGeoPoint, row.deathAge, row.scroll, row.scrollId, row.size, row.page, row.fuzzy, row.sort, row.block);
       return [JSON.stringify({index: "deces"}), JSON.stringify(buildRequest(requestInput))];
     })
     const msearchRequest = bulkRequest.map((x: any) => x.join('\n\r')).join('\n\r') + '\n';
     const result = await runBulkRequest(msearchRequest);
     if (result.data.responses.length > 0) {
-      result.data.responses.forEach((item: any, idx: number) => {
+      result.data.responses.forEach((item: ResultRawES, idx: number) => {
         if (item.hits.hits.length > 0) {
-          resultsSeq.push({...temparray[idx], ...buildResultSingle(item.hits.hits[0])})
+          const scoredResults = scoreResults(temparray[idx], item.hits.hits.map(hit => buildResultSingle(hit)))
+          if (scoredResults && scoredResults.length > 0) {
+            resultsSeq.push({...temparray[idx], ...scoredResults[0]})
+          } else {
+            resultsSeq.push(temparray[idx])
+          }
         } else {
           resultsSeq.push(temparray[idx])
         }
@@ -74,22 +102,22 @@ const processSequential = async (rows: any, job: Queue.Job) => {
     } else {
       resultsSeq.push(temparray)
     }
-    job.reportProgress(resultsSeq.length)
+    job.reportProgress({rows: resultsSeq.length, percentage: resultsSeq.length / rows.length * 100})
   }
   return resultsSeq
 };
 
-const encryptFile = (buffer: string, password: string) => {
+const encryptFile = (nodeBuffer: Buffer, password: string): forge.util.ByteStringBuffer => {
   const encryptionKey = forge.pkcs5.pbkdf2(password, salt, 16, 16);
   const cipher = forge.cipher.createCipher('AES-CBC', encryptionKey);
   cipher.start({iv: encryptionIv});
-  const mybuf = forge.util.createBuffer(buffer)
-  cipher.update(mybuf);
+  const forgeBuffer = forge.util.createBuffer(nodeBuffer.toString('binary'))
+  cipher.update(forgeBuffer);
   cipher.finish();
   return cipher.output;
 }
 
-const decryptFile = (encryptedData: any, password: string) => { // input: BytesStringBuffer
+const decryptFile = (encryptedData: forge.util.ByteStringBuffer, password: string): string => {
   const encryptionKey = forge.pkcs5.pbkdf2(password, salt, 16, 16);
   const decipher = forge.cipher.createDecipher('AES-CBC', encryptionKey);
   decipher.start({iv: encryptionIv});
@@ -160,25 +188,30 @@ router.post('/csv', multerSingle, async (req: any, res: express.Response) => {
     const options = {...req.body};
     options.chunkSize =  options.chunkSize || 20;
     options.sep = options.sep || ',';
+    options.size = options.size || 10;
 
-    // Use timeStamp as encryption key
-    const timeStamp = new Date().getTime().toString()
+    // Use random number as enctyption key
+    const bytes = forge.random.getBytesSync(32);
+    const randomKey = forge.util.bytesToHex(bytes);
 
     // Use hash key index
     const md = forge.md.sha256.create();
-    md.update(timeStamp);
-    inputsArray.push({id: md.digest().toHex(), file: req.files[0].buffer.toString()})
+    md.update(randomKey);
+    inputsArray.push({id: md.digest().toHex(), file: req.files[0].buffer.toString()}) // Use key hash as job identifier
     const job = await queue
       .createJob({...options})
       .setId(md.digest().toHex())
+      // .reportProgress({rows: 0, percentage: 0}) TODO: add for bee-queue version 1.2.4
       .save()
     job.on('succeeded', (result: any) => {
-      // TODO: debug results encryption
-      // const encryptedResult = encryptFile(result, timeStamp)
-      const encryptedResult = result
+      const encryptedResult = encryptFile(Buffer.from(JSON.stringify(result)), randomKey)
       resultsArray.push({id: job.id, result: encryptedResult})
+      setTimeout(() => {
+        const jobIndex = resultsArray.findIndex(x => x.id === job.id)
+        resultsArray.splice(jobIndex, 1)
+      }, 3600000) // Delete results after 1 hour
     });
-    res.send({msg: 'started', id: timeStamp});
+    res.send({msg: 'started', id: randomKey});
   } else {
     res.send({msg: 'no files attached'});
   }
@@ -239,72 +272,81 @@ router.post('/csv', multerSingle, async (req: any, res: express.Response) => {
  *                 - $ref: '#/components/schemas/Result'
  */
 router.get('/:format(csv|json)/:id?', async (req: any, res: express.Response) => {
-  const md = forge.md.sha256.create();
-  md.update(req.params.id);
-  const job: Queue.Job|any = await queue.getJob(md.digest().toHex())
-  if (job && job.status === 'succeeded') {
-    const jobResult  = resultsArray.find(x => x.id === md.digest().toHex())
-    // TODO: debug result encryption
-    // const decryptedResult = decryptFile(jobResult.result, req.params.id)
-    const decryptedResult = jobResult.result
-    if (decryptedResult == null || decryptedResult.length === 0) {
-      res.send('No results')
-    } else if (req.params.format === 'json') {
-      res.send(decryptedResult);
-    } else if (req.params.format === 'csv') {
-      res.statusCode = 200;
-      res.setHeader('Content-Type', 'text/csv');
-      let updatedHeader = nameHeader;
-      if (job.data.birthDate) updatedHeader = [job.data.birthDate, ...updatedHeader]
-      if (job.data.lastName) updatedHeader = [job.data.lastName, ...updatedHeader]
-      if (job.data.firstName) updatedHeader = [job.data.firstName, ...updatedHeader]
-      res.write(updatedHeader.join(',') + '\r\n')
-      decryptedResult.forEach((result: any) => {
-        res.write(Object.values(result)
-          .map((item: any) => {
-            if (typeof(item) === 'object') {
-              return Object.values(item).map(flatJson).join(',')
-            } else {
-              return `"${item}"`
-            }
-          })
-          .join(',') + '\r\n'
-        )})
-      res.end();
+  if (req.params.id) {
+    const md = forge.md.sha256.create();
+    md.update(req.params.id);
+    const job: Queue.Job|any = await queue.getJob(md.digest().toHex())
+    if (job && job.status === 'succeeded') {
+      const jobResult = resultsArray.find(x => x.id === md.digest().toHex())
+      if (jobResult == null) {
+        res.send({msg: 'No results'})
+      } else {
+        const clone = Object.assign( Object.create( Object.getPrototypeOf(jobResult.result)), jobResult.result) // Clone to avoid problems with shift and original object
+        const initialCopy =  decryptFile(clone, req.params.id)
+        const decryptedResult = JSON.parse(initialCopy)
+        if (decryptedResult == null || decryptedResult.length === 0) {
+          res.send({msg: 'Empty results'})
+        } else if (req.params.format === 'json') {
+          decryptedResult.shift() // TODO: discuss if the metadata firs line (mapping & header) shall be kepts or not
+          res.send(decryptedResult);
+        } else if (req.params.format === 'csv') {
+          res.statusCode = 200;
+          res.setHeader('Content-Type', 'text/csv');
+          const sourceHeader = decryptedResult.shift().metadata.header;
+          res.write([
+            ...sourceHeader,
+            ...resultsHeader.map(h => h.replace(/\.location/, '').replace(/\./,' '))
+          ].join(job.data.sep) + '\r\n'
+          );
+          decryptedResult.forEach((result: any) => {
+            // console.log(resultsHeader.map(key => jsonPath(result,key)));
+            res.write([
+              ...sourceHeader.map((key: string) => result.metadata.source[key]),
+              ...resultsHeader.map(key => jsonPath(result, key))
+            ].join(job.data.sep) + '\r\n')
+          });
+          res.end();
+        } else {
+          res.send({msg: 'Not available format'})
+        }
+      }
+    } else if (job) {
+      res.send({status: job.status, id: req.params.id, progress: job.progress});
     } else {
-      res.send('Not available format')
+      res.send({msg: 'job doesn\'t exists'});
     }
-  } else if (job) {
-    res.send({status: job.status, id: req.params.id, progress: job.progress});
   } else {
-    res.send({msg: 'job doesn\'t exists'});
+    res.send({msg: 'no job id'})
   }
 });
 
-const flatJson = (item: object|string): string => {
-  if (Array.isArray(item)) {
-    return `"${item.join(' ')}"`
-  } else if (typeof(item) === 'object') {
-    return Object.values(item)
-      .map(x => {
-        if (x == null) {
-          return ""
-        } else {
-          return `"${x}"`
-        }
-      })
-      .join(',')
+export const jsonPath = (json: any, path: string): any => {
+  if (!json) { return undefined }
+  if (!path.includes('.')) {
+    return json[path];
   } else {
-    return `"${item}"`
+    return jsonPath(
+      json[path.replace(/\..*$/,'')],
+      path.replace(/^.*?\./,'')
+    );
   }
 }
 
-const nameHeader = [
-  'score', 'source', 'id',
-  'name', 'firstName', 'lastName',
-  'sex', 'birthDate', 'birthCity',
-  'cityCode', 'departmentCode', 'country',
-  'countryCode', 'latitude', 'longitude',
-  'deathDate', 'certificateId', 'age',
-  'deathCity', 'cityCode', 'departmentCode',
-  'country', 'countryCode', 'latitude', 'longitude']
+export const resultsHeader = [
+  'score', 'source', 'id', 'name.last', 'name.first', 'sex',
+  'birth.date', 'birth.location.city', 'birth.location.departmentCode',
+  'birth.location.country', 'birth.location.countryCode', 'birth.location.latitude',
+  'birth.location.longitude',
+  'death.date', 'death.certificateId', 'death.age', 'death.location.city',
+  'death.location.cityCode', 'death.location.departmentCode', 'death.location.country',
+  'death.location.countryCode', 'death.location.latitude', 'death.location.longitude']
+
+interface JobInput {
+  id: string;
+  file: string;
+}
+
+interface JobResult {
+  id: string;
+  result: forge.util.ByteStringBuffer;
+}

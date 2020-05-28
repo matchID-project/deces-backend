@@ -45,7 +45,8 @@ jobs:
           STORAGE_SECRET_KEY: ${{ secrets.aws_secret_access_key }}
       - name: Make bulk tests
         run: |
-          curl -L https://github.com/matchID-project/examples/raw/master/data/clients_test.csv -o backend/tests/clients_test.csv
+          curl -L https://github.com/matchID-project/examples/raw/master/data/clients_test.csv -o clients_test.csv
+          head -n 100 clients_test.csv > backend/tests/clients_test.csv
           docker cp backend/tests/clients_test.csv deces-backend:/deces-backend/tests/clients_test.csv
           docker exec -i deces-backend ls /deces-backend/tests/clients_test.csv
           export msg=$(docker exec -i deces-backend curl  -X POST -H "Content-Type: multipart/form-data" -F "csv=@/deces-backend/tests/clients_test.csv" -F "sep=;" -F "firstName=Prenom" -F "lastName=Nom" -F "birthDate=Date" -F "chunkSize=20" http://localhost:8080/deces/api/v1/search/csv )
@@ -53,4 +54,9 @@ jobs:
           export jobId=$(echo $msg | grep -Po '(?<=id":")[0-9a-z]+' )
           echo "JobID $jobId"
           until docker exec -i deces-backend curl -s --fail -X GET "http://localhost:8080/deces/api/v1/search/csv/$jobId" | tee log.log | grep --invert-match progress > /dev/null ; do cat log.log ; sleep 5 ; done ;
-          docker exec -i deces-backend curl -s --fail -X GET "http://localhost:8080/deces/api/v1/search/csv/$jobId" | head -n 50
+          docker exec -i deces-backend curl -s --fail -X GET "http://localhost:8080/deces/api/v1/search/csv/$jobId" > results.csv
+      - name: 📦 Upload results as job artifact
+        uses: actions/upload-artifact@v1
+        with:
+          name: match-results
+          path: results.csv

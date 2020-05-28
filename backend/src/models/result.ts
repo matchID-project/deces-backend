@@ -1,39 +1,5 @@
-interface Person {
-  score: number;
-  source: string;
-  id: string;
-  name: {
-    first: string[];
-    last: string;
-  };
-  sex: string;
-  birth: {
-    date: string;
-    location: {
-      city: string;
-      cityCode: string;
-      departmentCode: string;
-      country: string;
-      countryCode: string
-      latitude: number;
-      longitude: number;
-    }
-  };
-  death: {
-    date: string;
-    certificateId: string;
-    age: number;
-    location: {
-      city: string;
-      cityCode: string;
-      departmentCode: string;
-      country: string;
-      countryCode: string;
-      latitude: number;
-      longitude: number;
-    }
-  };
-}
+import { Person } from './entities';
+import { RequestInput } from './requestInput';
 
 interface RequestType {
   [key: string]: any; // Index signature
@@ -119,6 +85,45 @@ export interface Result {
   }
 }
 
+export interface ResultRawES {
+  '_scroll_id'?: string;
+  took: number;
+  hits: {
+    total: {
+      value: number;
+    }
+    'max_score': number;
+    hits:  ResultRawHits[]
+  }
+}
+
+export interface ResultRawHits {
+  _score: number;
+  _id: string;
+  _source: {
+    SOURCE: string;
+    PRENOMS: string;
+    NOM: string;
+    SEXE: string;
+    DATE_NAISSANCE: string;
+    COMMUNE_NAISSANCE: string;
+    CODE_INSEE_NAISSANCE: string;
+    DEPARTEMENT_NAISSANCE: string;
+    PAYS_NAISSANCE: string;
+    PAYS_NAISSANCE_CODEISO3: string;
+    GEOPOINT_NAISSANCE: string;
+    GEOPOINT_DECES: string;
+    DATE_DECES: string;
+    NUM_DECES: string;
+    AGE_DECES: number;
+    COMMUNE_DECES: string;
+    CODE_INSEE_DECES: string;
+    DEPARTEMENT_DECES: string;
+    PAYS_DECES: string;
+    PAYS_DECES_CODEISO3: string;
+  }
+}
+
 export const getFromGeoPoint = (geoPoint: string, latOrLon: string): number  => {
   try {
     if (latOrLon === 'latitude') {
@@ -133,65 +138,7 @@ export const getFromGeoPoint = (geoPoint: string, latOrLon: string): number  => 
   }
 }
 
-export const buildResult = (result: any, page: any, size: any, searchKeys: any): Result => {
-  // const dataCatalog = await getDataGouvCatalog()
-  const filteredResults = result.hits.hits.map((item: any) => {
-    return {
-      score: item._score,
-      // source: dataCatalog[item._source.SOURCE],
-      source: item._source.SOURCE,
-      id: item._id,
-      name: {
-        first: item._source.PRENOMS ? item._source.PRENOMS.split(' ') : "",
-        last: item._source.NOM
-      },
-      sex: item._source.SEXE,
-      birth: {
-        date: item._source.DATE_NAISSANCE,
-        location: {
-          city: item._source.COMMUNE_NAISSANCE,
-          cityCode: item._source.CODE_INSEE_NAISSANCE,
-          departmentCode: item._source.DEPARTEMENT_NAISSANCE,
-          country: item._source.PAYS_NAISSANCE,
-          countryCode: item._source.PAYS_NAISSANCE_CODEISO3,
-          latitude: getFromGeoPoint(item._source.GEOPOINT_NAISSANCE, 'latitude'),
-          longitude: getFromGeoPoint(item._source.GEOPOINT_NAISSANCE, 'longitude')
-        }
-      },
-      death: {
-        date: item._source.DATE_DECES,
-        certificateId: item._source.NUM_DECES,
-        age: item._source.AGE_DECES,
-        location: {
-          city: item._source.COMMUNE_DECES, // str|str[]
-          cityCode: item._source.CODE_INSEE_DECES,
-          departmentCode: item._source.DEPARTEMENT_DECES,
-          country: item._source.PAYS_DECES,
-          countryCode: item._source.PAYS_DECES_CODEISO3,
-          latitude: getFromGeoPoint(item._source.GEOPOINT_DECES, 'latitude'),
-          longitude: getFromGeoPoint(item._source.GEOPOINT_DECES, 'longitude')
-        }
-      }
-    }
-  });
-  const composedResult: Result = {
-    request: searchKeys,
-    response: {
-      total: result.hits.total.value,
-      maxScore: result.hits.max_score,
-      size,
-      page,
-      delay: result.took,
-      persons: filteredResults
-    }
-  }
-  if (result._scroll_id) {
-    composedResult.response.scrollId = result._scroll_id
-  }
-  return composedResult
-}
-
-export const buildResultPost = (result: any, requestInput: any): Result => {
+export const buildResult = (result: ResultRawES, requestInput: RequestInput): Result => {
   const filteredRequest: RequestType = {}
   Object.keys(requestInput).forEach((item: any) => {
     if (requestInput[item] && requestInput[item].value) {
@@ -217,14 +164,14 @@ export const buildResultPost = (result: any, requestInput: any): Result => {
 
 }
 
-export const buildResultSingle = (item: any): any => { // TODO
+export const buildResultSingle = (item: ResultRawHits): Person => {
   return {
     score: item._score,
     // source: dataCatalog[item._source.SOURCE],
     source: item._source.SOURCE,
     id: item._id,
     name: {
-      first: item._source.PRENOMS ? item._source.PRENOMS.split(' ') : "",
+      first: item._source.PRENOMS ? item._source.PRENOMS.split(' ') : [''],
       last: item._source.NOM
     },
     sex: item._source.SEXE,

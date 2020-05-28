@@ -1,8 +1,10 @@
-import { Controller, Get, Post, Body, Route, Query, Response, Tags } from 'tsoa';
+import { Controller, Get, Post, Body, Route, Query, Response, Tags, Header, Request } from 'tsoa';
+import express from 'express';
+import { resultsHeader, jsonPath } from './bulk';
 import { runRequest } from '../runRequest';
 import { buildRequest } from '../buildRequest';
 import { RequestInput, RequestBody } from '../models/requestInput';
-import { buildResult, buildResultPost } from '../models/result';
+import { buildResult } from '../models/result';
 import { Result, ErrorResponse, HealthcheckResponse } from '../models/result';
 // import getDataGouvCatalog from '../getDataGouvCatalog';
 
@@ -44,11 +46,9 @@ export class IndexController extends Controller {
         this.setStatus(400);
         return  { msg: "error - simple and complex request at the same time" };
       }
-      const searchKeys = {q, firstName, lastName, sex, birthDate, birthCity, birthDepartment, birthCountry, deathDate, deathCity, deathDepartment, deathCountry, deathAge, size, page, fuzzy, sort}
-
       const requestBuild = buildRequest(requestInput);
       const result = await runRequest(requestBuild, scroll);
-      const builtResult = buildResult(result.data, requestInput.page, requestInput.size, searchKeys)
+      const builtResult = buildResult(result.data, requestInput)
       this.setStatus(200);
       return  builtResult;
     } else {
@@ -61,7 +61,8 @@ export class IndexController extends Controller {
   @Response<Result>('200', 'OK')
   @Tags('Simple')
   @Post('/search')
-  public async searchpost(@Body() requestBody: RequestBody): Promise<Result> {
+  public async searchpost(@Body() requestBody: RequestBody, @Request() request: express.Request, @Header('Accept') accept?: string): Promise<Result> {
+    const response = (request).res as express.Response;
     if (Object.keys(requestBody).length > 0) {
       const validFields = ['q', 'firstName', 'lastName', 'sex', 'birthDate', 'birthCity', 'birthDepartment', 'birthCountry', 'birthGeoPoint', 'deathDate', 'deathCity', 'deathDepartment', 'deathCountry', 'deathGeoPoint', 'deathAge', 'scroll', 'scrollId', 'size', 'page', 'fuzzy', 'sort']
       const notValidFields = Object.keys(requestBody).filter((item: string) => !validFields.includes(item))
@@ -80,9 +81,22 @@ export class IndexController extends Controller {
       }
       const requestBuild = buildRequest(requestInput);
       const result = await runRequest(requestBuild, requestInput.scroll);
-      const builtResult = buildResultPost(result.data, requestInput)
-      this.setStatus(200);
-      return builtResult;
+      const builtResult = buildResult(result.data, requestInput)
+      if (accept === 'application/csv') {
+        response.setHeader('Content-Type', 'text/csv');
+        response.write([
+          ...resultsHeader.map(h => h.replace(/\.location/, '').replace(/\./,' '))
+        ].join(',') + '\r\n'
+        );
+        builtResult.response.persons.forEach((row: any) => {
+          response.write([
+            ...resultsHeader.map(key => jsonPath(row, key))
+          ].join(',') + '\r\n')
+        });
+        response.end();
+      } else {
+        return builtResult;
+      }
     } else {
       this.setStatus(400);
       return  { msg: "error - empty request" };

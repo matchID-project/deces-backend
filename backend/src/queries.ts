@@ -1,6 +1,6 @@
-import { GeoPoint, NameFields, Name } from './models/requestInput';
+import { GeoPoint, NameFields, Name } from './models/entities';
 
-export const prefixQuery = (field: string, value: string, fuzzy: boolean) => {
+export const prefixQuery = (field: string, value: string, fuzzy: boolean, must: boolean) => {
     return {
         prefix: {
             [field]: value
@@ -8,7 +8,7 @@ export const prefixQuery = (field: string, value: string, fuzzy: boolean) => {
     };
 };
 
-export const matchQuery = (field: string, value: string|number, fuzzy: boolean) => {
+export const matchQuery = (field: string, value: string|number, fuzzy: boolean, must: boolean) => {
     return {
         match: {
             [field]: value
@@ -16,7 +16,22 @@ export const matchQuery = (field: string, value: string|number, fuzzy: boolean) 
     }
 };
 
-export const fuzzyTermQuery = (field: string, value: string, fuzzy: boolean) => {
+export const fuzzyTermQuery = (field: string, value: string, fuzzy: number|string, must: boolean) => {
+    if (fuzzy) {
+        return {
+            match: {
+                    [field]: {
+                        query: value,
+                        fuzziness: fuzzy
+                    }
+                }
+            };
+    } else {
+        return matchQuery(field, value, false, must);
+    }
+};
+
+export const fuzzyShouldTermQuery = (field: string, value: string, fuzzy: boolean, must: boolean) => {
     if (fuzzy) {
         return {
             bool: {
@@ -40,11 +55,12 @@ export const fuzzyTermQuery = (field: string, value: string, fuzzy: boolean) => 
             }
         };
     } else {
-        return matchQuery(field, value, false);
+        return matchQuery(field, value, false, must);
     }
 };
 
-export const nameQuery = (field: NameFields, value: Name, fuzzy: boolean) => {
+export const nameQuery = (field: NameFields, value: Name, fuzzy: boolean, must: boolean) => {
+    const min_should = ((value.last && value.first) ? 2 : 1) - (must ? 0 : 1);
     if (fuzzy) {
         return {
             bool: {
@@ -52,19 +68,21 @@ export const nameQuery = (field: NameFields, value: Name, fuzzy: boolean) => {
                 should: [
                     {
                         bool: {
-                            must: [
-                                value.first && firstNameQuery([field.first.first, field.first.all], value.first as string, fuzzy),
-                                value.last && fuzzyTermQuery(field.last as string, value.last as string, fuzzy)
+                            should: [
+                                value.first && firstNameQuery([field.first.first, field.first.all], value.first as string, fuzzy, must),
+                                value.last && fuzzyShouldTermQuery(field.last as string, value.last as string, fuzzy, must)
                             ].filter(x => x),
+                            minimum_should_match: min_should,
                             boost: 2
                         },
                     },
                     value.first && value.last && {
                         bool: {
-                            must: [
-                                firstNameQuery([field.first.first, field.first.all], value.last as string, fuzzy),
-                                fuzzyTermQuery(field.last as string, value.first as string, fuzzy)
+                            should: [
+                                firstNameQuery([field.first.first, field.first.all], value.last as string, fuzzy, must),
+                                fuzzyShouldTermQuery(field.last as string, value.first as string, fuzzy, must)
                             ],
+                            minimum_should_match: min_should,
                             boost: 0.5
                         }
                     }
@@ -74,16 +92,17 @@ export const nameQuery = (field: NameFields, value: Name, fuzzy: boolean) => {
     } else {
         return {
             bool: {
-                must: [
-                    value.first && matchQuery(field.first.first, value.first as string, false),
-                    value.last && matchQuery(field.last as string, value.last as string, false)
+                minimum_should_match: min_should,
+                should: [
+                    value.first && matchQuery(field.first.first, value.first as string, false, must),
+                    value.last && matchQuery(field.last as string, value.last as string, false, must)
                 ].filter(x => x)
             }
         };
     }
 }
 
-export const firstNameQuery = (field: string[], value: string, fuzzy: boolean) => {
+export const firstNameQuery = (field: string[], value: string, fuzzy: boolean, must: boolean) => {
     if (fuzzy) {
         return {
             bool: {
@@ -124,12 +143,12 @@ export const firstNameQuery = (field: string[], value: string, fuzzy: boolean) =
             }
         };
     } else {
-        return matchQuery(field[0], value, false);
+        return matchQuery(field[0], value, false, must);
     }
 };
 
 
-export const dateRangeStringQuery = (field: string, value: string, fuzzy: boolean) => {
+export const dateRangeStringQuery = (field: string, value: string, fuzzy: boolean, must: boolean) => {
     if (Array.isArray(value) && (value.length === 2)) {
         let min = (value[0] <= value[1]) ? value[0] : value[1];
         min = min.padEnd(8,'0');
@@ -144,13 +163,13 @@ export const dateRangeStringQuery = (field: string, value: string, fuzzy: boolea
             }
         };
     } else if (value.length < 8){
-        return prefixQuery(field, value, false);
+        return prefixQuery(field, value, false, must);
     } else {
-        return fuzzyTermQuery(field, value, fuzzy)
+        return fuzzyShouldTermQuery(field, value, fuzzy, must);
     }
 };
 
-export const ageRangeStringQuery = (field: string, value: string|number, fuzzy: boolean) => {
+export const ageRangeStringQuery = (field: string, value: string|number, fuzzy: boolean, must: boolean) => {
     if (Array.isArray(value) && (value.length === 2)) {
         const min = (Number(value[0]) <= Number(value[1])) ? Number(value[0]) : Number(value[1]);
         const max = (Number(value[0]) <= Number(value[1])) ? Number(value[1]) : Number(value[0]);
@@ -163,11 +182,11 @@ export const ageRangeStringQuery = (field: string, value: string|number, fuzzy: 
             }
         };
     } else {
-        return matchQuery(field, value, fuzzy)
+        return matchQuery(field, value, fuzzy, must);
     }
 };
 
-export const geoPointQuery = (field: string, value: GeoPoint, fuzzy: boolean) =>  {
+export const geoPointQuery = (field: string, value: GeoPoint, fuzzy: boolean, must: boolean) =>  {
     if (value.latitude && value.longitude) {
         let distance;
         if (value.distance && /[1-9]\d*\s*(mi|miles|yd|yards|ft|feet|in|inch|km|kilometers|m|meters|cm|centimeters|mm|millimeters|NM|nminauticalmiles)$/.exec(value.distance)) {
