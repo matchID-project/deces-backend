@@ -2,11 +2,15 @@ import { RequestInput } from './models/requestInput';
 import { Person, Location, Name, RequestField } from './models/entities';
 import levenshtein from 'js-levenshtein';
 import { dateTransformMask, isDateRange } from './masks';
+import soundex from '@thejellyfish/soundex-fr';
+
+const decreaseTokenPlace = 0.7;
+const blindTokenScore = 0.5;
 
 const decreaseNameInversion = 0.7;
-const decreaseNamePlace = 0.5;
 const minNameScore = 0.1;
-const blindNameScore = 0.7;
+const blindNameScore = 0.5;
+const lastNamePenalty = 3
 
 const minSexScore = 0.5;
 const blindSexScore = 1;
@@ -14,94 +18,41 @@ const blindSexScore = 1;
 const minDateScore = 0.2;
 const blindDateScore = 0.8;
 const uncertainDateScore = 0.7;
+const datePenalty = 3
 
 const minLocationScore = 0.2;
-const blindLocationScore = 0.8;
+const minDepScore = 0.6;
+const minNotFrCityScore = 0.4;
 
-const pruneScore = 0.3;
+const boostSoundex = 1.5;
 
-export const scoreResults = (request: RequestInput, results: Person[]): any => {
-    return results
-            .filter(result => result.score > 0)
-            .map(result => {
-                let scores = [ Math.round(result.score * 100) * 0.01 ]
-                try {
-                    scores = scoreResult(request, result).concat(scores);
-                } catch(err) {
-                    throw(err)
-                }
-                result.score = scores[0];
-                return result;
-            })
-            .filter((result: any) => result.score >= pruneScore)
-            .sort((a: any, b: any) => (a.score < b.score[0]) ? 1 : ( (a.score > b.score) ? -1 : 0 ))
-}
+const pruneScore = 0.25;
 
 const multyiply = (a:number, b: number): number => a*b;
+const max = (a:number, b: number): number => Math.max(a*b);
+const sum = (a:number, b: number): number => a+b;
+const mean = (table: number[]): number => (table.length ? table.reduce(sum)/table.length : 0);
 
-const scoreResult = (request: RequestInput, result: Person): number[] => {
-    const score:number[] = [];
-    score.unshift(scoreDate(request.birthDate, result.birth.date));
-    if (pruneScore > score.reduce(multyiply)) { score.unshift(0); return score }
-    score.unshift(scoreName({first: request.firstName, last: request.lastName}, result.name));
-    if (pruneScore > score.reduce(multyiply)) { score.unshift(0); return score }
-    score.unshift(scoreSex(request.sex, result.sex));
-    if (pruneScore > score.reduce(multyiply)) { score.unshift(0); return score }
-    score.unshift(scoreLocation({
-        city: request.birthCity,
-        cityCode: request.birthCityCode,
-        departmentCode: request.birthDepartment,
-        country: request.birthCountry,
-        latitude: request.latitude,
-        longitude: request.longitude
-    }, result.birth.location));
-    if (pruneScore > score.reduce(multyiply)) { score.unshift(0); return score }
-    score.unshift(0.01 * Math.round(score.reduce(multyiply) * 100));
-    return score;
-}
-
-
-const scoreName = (nameA: Name, nameB: Name): number => {
-    if ((!nameA.first && !nameA.last) || (!nameB.first && !nameB.last)) { return blindNameScore }
-    const firstA = tokenize(nameA.first);
-    const lastA = tokenize(nameA.last);
-    const firstB = tokenize(nameB.first);
-    const lastB = tokenize(nameB.last);
-
-    return 0.01 * Math.round(100*
-        Math.max(scoreToken(firstA, firstB as string|string[]) * scoreToken(lastA, lastB as string),
-        decreaseNameInversion * scoreToken(firstA, lastB as string) * scoreToken(lastA, firstB as string|string[]),
-        minNameScore
-    ));
-}
-
-const normalize = (token: string): string => {
-    return token.normalize('NFKD').replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase().replace(/\W+/, ' ');
-}
-
-const tokenize = (sentence: string|string[]|RequestField): string|string[]|RequestField => {
-    if (typeof(sentence) === 'string') {
-        return sentence.split(/\s+/);
+const normalize = (token: string|string[]): string|string[] => {
+    if (typeof(token) === 'string') {
+        return token.normalize('NFKD').replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase().replace(/[^a-z0-9]+/g, ' ');
     } else {
-        // dont tokenize if string[]
-        return sentence as string[];
+        return token.map(t => normalize(t) as string);
     }
 }
 
-const scoreToken = (tokenA: string|string[]|RequestField, tokenB: string|string[]): number => {
-    if (!tokenA || !tokenB) {return minNameScore}
-    if (typeof(tokenA) === 'string') {
-        if (typeof(tokenB) === 'string') {
-            return levNormScore(tokenA, tokenB);
-        } else {
-            return Math.max(levNormScore(tokenA, tokenB[0]),
-                tokenB.length ? decreaseNamePlace * scoreToken(tokenA, tokenB.slice(1, tokenB.length)) : 0);
-        }
-    } else {
-        return Math.max(scoreToken((tokenA as string[])[0], tokenB),
-            (tokenA as string[]).length ? decreaseNamePlace * scoreToken((tokenA as string[]).slice(1, (tokenA as string[]).length), tokenB) : 0);
+const fuzzyScore = (tokenA: string, tokenB: string): number => {
+    if (!tokenA || !tokenB) {
+        return 0;
     }
-}
+    const a:string = normalize(tokenA) as string;
+    const b:string = normalize(tokenB) as string;
+    if (a === b) {return 1}
+    const s = 0.01 * Math.round(
+        100 * (levNormScore(a, b) ** ((soundex(a) === soundex(b)) ? (1/boostSoundex) : boostSoundex ** 2) )
+    );
+    return s;
+};
 
 const levNormScore = (tokenA: string, tokenB: string): number => {
     if (!tokenA || !tokenB) { return 0 }
@@ -111,36 +62,250 @@ const levNormScore = (tokenA: string, tokenB: string): number => {
         if (tokenA.length < tokenB.length) {
             return levNormScore(tokenB, tokenA)
         }
-        return 1 - (levenshtein(normalize(tokenA), normalize(tokenB)) / tokenA.length);
+        return 0.01 * Math.round(100 * (1 - (levenshtein(normalize(tokenA) as string, normalize(tokenB) as string) / tokenA.length)));
     }
+}
+
+const applyRegex = (a: string|string[], reTable: any): string|string[] => {
+    if (typeof(a) === 'string') {
+        let b = normalize(a) as string;
+        reTable.map((r:any) => b = b.replace(r[0], r[1]));
+        return b;
+    } else {
+        return a.map(c => applyRegex(c, reTable) as string);
+    }
+}
+
+const tokenize = (sentence: string|string[]|RequestField, tokenizeArray?: boolean): string|string[]|RequestField => {
+    if (typeof(sentence) === 'string') {
+        const s = sentence.split(/,\s*|\s+/);
+        return s.length === 1 ? s[0] : s ;
+    } else {
+        if (tokenizeArray) {
+            return ((sentence as string[]).map(s => tokenize(s)) as any).flat();
+        } else {
+            // default dont tokenize if string[]
+            return sentence as string[];
+        }
+
+    }
+}
+
+
+const scoreReduce = (score:any):number => {
+    if (score.score) {
+        return score.score;
+    } else {
+        const r:any = Object.keys(score).map(k => {
+            if (typeof(score[k]) === 'number') {
+                return score[k];
+            } else {
+                return score[k].score || scoreReduce(score[k]);
+            }
+        });
+        return r.length ? 0.01 * Math.round(100 * r.reduce(multyiply)) : 0;
+    }
+}
+
+export const scoreResults = (request: RequestInput, results: any): any => {
+    return results
+            .filter((result:any) => result.score > 0)
+            .map((result:any) => {
+                try {
+                    result.scores = scoreResult(request, result);
+                    result.scores.score = scoreReduce(result.scores) ** (3/(Object.keys(result.scores).length || 1));
+                } catch(err) {
+                    result.scores = {};
+                }
+                result.scores.es = 0.005 * Math.round(Math.min(200, result.score));
+                result.score = (result.scores.score !== undefined) ? result.scores.score : result.scores.es;
+                return result;
+            })
+            .filter((result: any) => result.score >= pruneScore)
+            .sort((a: any, b: any) => (a.score < b.score) ? 1 : ( (a.score > b.score) ? -1 : 0 ))
+            // .map(r =>y, b: any) => (a.score < b.score) ? 1 : ( (a.score > b.score) ? -1 : 0 ))
+}
+
+const scoreResult = (request: RequestInput, result: Person): any => {
+    const score:any = {};
+    if (request.birthDate) {
+        score.date = scoreDate(request.birthDate, result.birth.date);
+        if (pruneScore > scoreReduce(score)) { score.score = 0; return score }
+    }
+    if (request.firstName || request.lastName) {
+        score.name = scoreName({first: request.firstName, last: request.lastName}, result.name);
+        if (pruneScore > scoreReduce(score)) { score.score = 0; return score }
+    }
+    if (request.sex) {
+        score.sex = scoreSex(request.sex, result.sex);
+        if (pruneScore > scoreReduce(score)) { score.score = 0; return score }
+    }
+    if (request.birthCity || request.birthCityCode || request.birthDepartment || request.latitude || request.longitude) {
+        score.location = scoreLocation({
+            city: request.birthCity,
+            cityCode: request.birthCityCode,
+            departmentCode: request.birthDepartment,
+            country: request.birthCountry,
+            latitude: request.latitude,
+            longitude: request.longitude
+        }, result.birth.location);
+        if (pruneScore > scoreReduce(score)) { score.score = 0; return score }
+    }
+    score.score = scoreReduce(score)
+    return score;
+}
+
+export const stopNames = [
+    [/(^|\s)(le|du|de|de la|l|d|de los|dos|del|el)\s/, '$1 $2'],
+    [/st/, 'saint']
+];
+
+const filterStopNames = (name: string|string[]): string|string[] => {
+    return applyRegex(name, stopNames);
+}
+
+const scoreName = (nameA: Name, nameB: Name): number => {
+    if ((!nameA.first && !nameA.last) || (!nameB.first && !nameB.last)) { return blindNameScore }
+    const firstA = tokenize(normalize(nameA.first as string|string[]), true);
+    const lastA = tokenize(filterStopNames(nameA.last as string|string[]));
+    const firstB = tokenize(normalize(nameB.first as string|string[]), true);
+    const lastB = tokenize(filterStopNames(nameB.last as string|string[]));
+
+    return (0.01 * Math.round(100*
+        Math.max(
+            Math.max(
+                (scoreToken(firstA, firstB as string|string[])) * (scoreToken(lastA, lastB as string) ** lastNamePenalty),
+                decreaseNameInversion * (scoreToken(firstA, lastB as string) ** lastNamePenalty) * scoreToken(lastA, firstB as string|string[]) ** lastNamePenalty
+            ),
+        minNameScore
+    )));
+}
+
+const scoreToken = (tokenA: string|string[]|RequestField, tokenB: string|string[], option?: string): number => {
+    let s:number;
+    try {
+        if (!tokenA || !tokenB) {
+            s = blindTokenScore
+        } else {
+            if (typeof(tokenA) === 'string') {
+                if (typeof(tokenB) === 'string') {
+                    s = fuzzyScore(tokenA, tokenB);
+                } else {
+                    s = Math.max(
+                        fuzzyScore(tokenA, tokenB[0]),
+                        ( tokenB.length > 1 )
+                            ? (option === 'any' ? 1 : decreaseTokenPlace) * tokenB.slice(1, tokenB.length).map(token => fuzzyScore(tokenA, token)).reduce(max) : 0
+                    );
+                }
+            } else {
+                if (typeof(tokenB) === 'string') {
+                    s = scoreToken(tokenB, tokenA as string|string[], option);
+                } else {
+                    // if both tokenA and tokenB are arrays
+                    if (option === 'any') {
+                        s = (tokenA as string[]).map(a => tokenB.map(b => fuzzyScore(a,b)).reduce(max)).reduce(max);
+                    } else {
+                    // compare field by field
+                        let min = blindNameScore;
+                        s = mean((tokenA as string[]).map((token, i) => {
+                            const current = tokenB[i] ? fuzzyScore(token, tokenB[i]) : min;
+                            if (min > current) { min = current }
+                            return current;
+                        }))
+                    }
+                }
+            }
+        }
+    } catch(err) {
+        s = err;
+    }
+    return s;
+}
+
+const cityRegExp = [
+    [ /^\s*(lyon|marseille|paris)(\s.*|\s*\d\d*.*|.*art.*|.*arr.*)$/, '$1'],
+    [ /montreuil s.* bois/, 'montreuil'],
+    [ /(^|\s)ste(\s|$)/, '$1sainte$2'],
+    [ /(^|\s)st(\s|$)/, '$1saint$2'],
+    [ /^aix pce$/, 'aix provence'],
+    [ /(^|\s)(de|en|les|le|la|a|aux|au|du|de la|sous|ss?|sur|l|d|des)\s/g, ' '],
+    [ /(^|\s)(de|en|les|le|la|a|aux|au|du|de la|sous|ss?|sur|l|d|des)\s/g, ' '],
+    [ /^x$:/, ''],
+    [ /\s+/, ' '],
+    [ /œ/, 'oe'],
+    [ /æ/, 'ae'],
+    [ /^.*inconnu.*$/, ''],
+    [ /sainte clotilde/, 'saint denis'],
+    [ /berck mer/, 'berck'],
+    [ /clichy garenne.*/, 'clichy'],
+    [ /belleville saone/, 'belleville'],
+    [ /^levallois$/, 'levallois perret'],
+    [ /'\s$/, ''],
+    [ /^\s*/, '']
+];
+
+const cityNorm = (city: string|string[]): string|string[] => {
+    return applyRegex(city, cityRegExp);
 }
 
 const scoreCity = (cityA: string|string[]|RequestField, cityB: string|string[]): number => {
     if (typeof(cityA) === 'string') {
+        const cityNormA = cityNorm(cityA) as string;
         if (typeof(cityB) === 'string') {
-            return levNormScore(cityA, cityB);
+            return fuzzyScore(cityNormA, cityNorm(cityB) as string);
         } else {
-            return Math.max(...cityB.map(city => levNormScore(cityA, city)));
+            return Math.max(...cityB.map(city => fuzzyScore(cityNormA, cityNorm(city) as string)));
         }
     } else {
-        return Math.max(...(cityA as string[]).map(city => scoreCity(city, cityB)));
+        const cityNormB = cityNorm(cityB);
+        return Math.max(...(cityA as string[]).map(city => scoreCity(cityNorm(city), cityNormB)));
     }
 }
 
-const scoreLocation = (locA: Location, locB: Location): number => {
-    const score = [];
-    score.unshift((locA.city ? ( locB.city ? scoreCity(locA.city, locB.city as string|string[]) : blindLocationScore ) : 1 )) ;
-    score.unshift((locA.departmentCode
-            ? (locB.departmentCode
-                ? ((locA.departmentCode === locB.departmentCode) ? 1 : minLocationScore )
-                : blindLocationScore )
-            : 1));
-    score.unshift((locA.country ? (locB.country ? levNormScore(locA.country as string, locB.country as string) : blindLocationScore ) : 1));
-    return 0.01 * Math.round(score.reduce(multyiply) * 100);
+const countryRegExp = [
+    [ /(^|\s)(de|en|les|le|la|a|aux|au|du|de la|s|sous|sur|l|d|des)\s/g, ' '],
+];
+
+const countryNorm = (country: string|string[]): string|string[] => {
+    return applyRegex(country, countryRegExp);
+}
+
+const scoreCountry = (countryA: string|string[]|RequestField, countryB: string|string[]): number => {
+    if (typeof(countryA) === 'string') {
+        const countryNormA = countryNorm(countryA) as string;
+        if (typeof(countryB) === 'string') {
+            return fuzzyScore(countryNormA, countryNorm(countryB) as string);
+        } else {
+            return Math.max(...countryB.map(country => fuzzyScore(countryNormA, countryNorm(country) as string)));
+        }
+    } else {
+        const countryNormB = countryNorm(countryB);
+        return Math.max(...(countryA as string[]).map(country => scoreCountry(countryNorm(country), countryNormB)));
+    }
+}
+
+
+const scoreLocation = (locA: Location, locB: Location): any => {
+    const score: any = {};
+    if (locA.city && locB.city) {
+        if (locB.country && (scoreCountry('FRANCE', locB.country as string|string[]) === 1)) {
+            score.city = scoreCity(locA.city, locB.city as string|string[])
+        } else {
+            score.city = Math.max(minNotFrCityScore, scoreCity(locA.city, tokenize(locB.city) as string|string[]));
+        }
+    }
+    if (locA.departmentCode && locB.departmentCode) {
+        score.department = (locA.departmentCode === locB.departmentCode) ? 1 : minDepScore;
+    }
+    if (locA.country && locB.country) {
+        score.country = scoreCountry(locA.country, tokenize(locB.country as string) as string|string[]);
+    }
+    score.score = Math.max(minLocationScore, scoreReduce(score));
+    return score;
 }
 
 const scoreDate= (dateRangeA: any, dateStringB: string): number => {
-    return 0.01 * Math.round((scoreDateRaw(dateRangeA, dateStringB) ** 4) * 100);
+    return 0.01 * Math.round((scoreDateRaw(dateRangeA, dateStringB) ** datePenalty) * 100);
 }
 
 const scoreDateRaw = (dateRangeA: any, dateStringB: string): number => {
