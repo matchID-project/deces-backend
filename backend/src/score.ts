@@ -22,6 +22,7 @@ const datePenalty = 3
 
 const minLocationScore = 0.2;
 const minDepScore = 0.6;
+const minNotFrCityScore = 0.4;
 
 const boostSoundex = 1.5;
 
@@ -287,7 +288,11 @@ const scoreCountry = (countryA: string|string[]|RequestField, countryB: string|s
 const scoreLocation = (locA: Location, locB: Location): any => {
     const score: any = {};
     if (locA.city && locB.city) {
-        score.city = scoreCity(locA.city, locB.city as string|string[]);
+        if (locB.country && /FRANCE/i.test(locB.country)) {
+            score.city = scoreCity(locA.city, locB.city as string|string[])
+        } else {
+            score.city = Math.max(minNotFrCityScore, scoreCity(locA.city, tokenize(locB.city) as string|string[]));
+        }
     }
     if (locA.departmentCode && locB.departmentCode) {
         score.department = (locA.departmentCode === locB.departmentCode) ? 1 : minDepScore;
