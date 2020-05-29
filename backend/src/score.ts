@@ -1,4 +1,4 @@
-import { RequestInput } from './models/requestInput';
+import { RequestBody } from './models/requestInput';
 import { Person, Location, Name, RequestField } from './models/entities';
 import levenshtein from 'js-levenshtein';
 import { dateTransformMask, isDateRange } from './masks';
@@ -107,7 +107,7 @@ const scoreReduce = (score:any):number => {
     }
 }
 
-export const scoreResults = (request: RequestInput, results: any): any => {
+export const scoreResults = (request: RequestBody, results: Person[]): Person[] => {
     return results
             .filter((result:any) => result.score > 0)
             .map((result:any) => {
@@ -126,7 +126,52 @@ export const scoreResults = (request: RequestInput, results: any): any => {
             // .map(r =>y, b: any) => (a.score < b.score) ? 1 : ( (a.score > b.score) ? -1 : 0 ))
 }
 
-const scoreResult = (request: RequestInput, result: Person): any => {
+export class ScoreResult {
+  score: number;
+  date: number
+  name?: number;
+  sex?: number;
+  location?: number;
+
+  constructor(request: RequestBody, result: Person) {
+     if (request.birthDate) {
+         this.date = scoreDate(request.birthDate, result.birth.date);
+     }
+     if (request.firstName || request.lastName) {
+       if (pruneScore < scoreReduce(this)) {
+         this.name = scoreName({first: request.firstName, last: request.lastName}, result.name);
+       } else {
+         this.score = 0
+       }
+     }
+     if (request.sex) {
+       if (pruneScore < scoreReduce(this)) {
+         this.sex = scoreSex(request.sex, result.sex);
+       } else {
+         this.score = 0
+       }
+     }
+     if (request.birthCity || request.birthCityCode || request.birthDepartment || request.latitude || request.longitude) {
+       if (pruneScore < scoreReduce(this)) {
+         this.location = scoreLocation({
+             city: request.birthCity,
+             cityCode: request.birthCityCode,
+             departmentCode: request.birthDepartment,
+             country: request.birthCountry,
+             latitude: request.latitude,
+             longitude: request.longitude
+         }, result.birth.location);
+       } else {
+         this.score = 0
+       }
+     }
+    if (!this.score) {
+     this.score = scoreReduce(this)
+    }
+  }
+}
+
+export const scoreResult = (request: RequestBody, result: Person): any => {
     const score:any = {};
     if (request.birthDate) {
         score.date = scoreDate(request.birthDate, result.birth.date);
