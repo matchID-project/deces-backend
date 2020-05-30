@@ -30,42 +30,43 @@ const parseStream = async (readable: any, job: any, totalRows: number, headers: 
   let totalResult: any = []
   const chunkSize = Number(job.data.chunkSize);
   for await (const row of readable) {
+    const request: any = {
+      metadata: {
+        source: {}
+      }
+    }
+    Object.values(row).forEach((value: string, idx: number) => {
+      if (mapField[headers[idx]]) {
+        request[mapField[headers[idx]]] = jsonFields.includes(headers[idx]) ? JSON.parse(value) : value;
+      }
+      request.metadata.source[headers[idx]] = value;
+    });
+    request.block = request.block
+      ? request.block
+      : job.data.block
+      ? JSON.parse(job.data.block)
+      : {
+        scope: ['name', 'birthDate'],
+        minimum_match: 1,
+        should: true
+      };
+    chunk.push(request)
+
     if (chunk.length >= chunkSize) {
       const result = await processChunk(chunk)
       totalResult = [...totalResult, ...result]
       chunk.length = 0;
       job.reportProgress({rows: totalResult.length, percentage: totalResult.length / totalRows * 100})
-    } else {
-      const request: any = {
-        metadata: {
-          source: {}
-        }
-      }
-      Object.values(row).forEach((value: string, idx: number) => {
-        if (mapField[headers[idx]]) {
-          request[mapField[headers[idx]]] = jsonFields.includes(headers[idx]) ? JSON.parse(value) : value;
-        }
-        request.metadata.source[headers[idx]] = value;
-      });
-      request.block = request.block
-        ? request.block
-        : job.data.block
-        ? JSON.parse(job.data.block)
-        : {
-          scope: ['name', 'birthDate'],
-          minimum_match: 1,
-          should: true
-        };
-      chunk.push(request)
     }
     if (stopJob) break;
   }
   stopJob = false;
   if (chunk.length > 0) {
     const result = await processChunk(chunk)
-    totalResult = [...totalResult, ...result]
+    return [...totalResult, ...result]
+  } else {
+    return totalResult
   }
-  return totalResult
 }
 
 const countLines = async (readable: any): Promise<number> => {
