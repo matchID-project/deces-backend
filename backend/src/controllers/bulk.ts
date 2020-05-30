@@ -102,7 +102,13 @@ export const processCsv =  async (job: any, jobFile: any): Promise<any> => {
       header: [...Array(headersRead.length).keys()].map(idx => headersRead[idx])
     }
   }];
-  stream = parse({ delimiter: job.data.sep, headers: true, ignoreEmpty: true })
+  stream = parse({
+    delimiter: job.data.sep,
+    headers: true,
+    ignoreEmpty: true,
+    encoding: job.data.encoding,
+    escape: job.data.escape
+  })
   stream.write(jobFile.file);
   stream.end();
   const totalResult = await parseStream(stream, job, totalRows, headersRead, jsonFields, mapField)
@@ -222,6 +228,8 @@ router.post('/csv', multerSingle, async (req: any, res: express.Response) => {
     options.chunkSize =  options.chunkSize || 20;
     options.sep = options.sep || ',';
     options.size = options.size || 10;
+    options.encoding = options.encoding || 'utf8';
+    options.escape = options.escape || '"';
 
     // Use random number as enctyption key
     const bytes = forge.random.getBytesSync(32);
