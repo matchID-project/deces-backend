@@ -5,9 +5,9 @@
   "main": "dist/index.js",
   "scripts": {
     "lint": "eslint -c .eslintrc.js  --ext .ts src/ --fix",
-    "tsoa": "mkdir -p src/routes && mkdir -p src/api && ./node_modules/.bin/tsc src/tsoa.ts --outDir dist && node dist/tsoa.js",
+    "tsoa": "mkdir -p src/routes && mkdir -p src/api && tsc src/tsoa.ts --outDir dist && node dist/tsoa.js",
     "prebuild": "npm run lint && npm run tsoa",
-    "build": "./node_modules/.bin/tsc --outDir dist",
+    "build": "tsc --outDir dist",
     "start": "node .",
     "predev": "npm run lint && npm run tsoa",
     "dev": "ts-node-dev --respawn -- src/index.ts",
