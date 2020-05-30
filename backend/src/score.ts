@@ -112,7 +112,7 @@ export const scoreResults = (request: RequestBody, results: Person[]): Person[] 
             .filter((result:any) => result.score > 0)
             .map((result:any) => {
                 try {
-                    result.scores = scoreResult(request, result);
+                    result.scores = new ScoreResult(request, result);
                     result.scores.score = scoreReduce(result.scores) ** (3/(Object.keys(result.scores).length || 1));
                 } catch(err) {
                     result.scores = {};
@@ -134,70 +134,41 @@ export class ScoreResult {
   location?: number;
 
   constructor(request: RequestBody, result: Person) {
-     if (request.birthDate) {
-         this.date = scoreDate(request.birthDate, result.birth.date);
-     }
-     if (request.firstName || request.lastName) {
-       if (pruneScore < scoreReduce(this)) {
-         this.name = scoreName({first: request.firstName, last: request.lastName}, result.name);
-       } else {
-         this.score = 0
-       }
-     }
-     if (request.sex) {
-       if (pruneScore < scoreReduce(this)) {
-         this.sex = scoreSex(request.sex, result.sex);
-       } else {
-         this.score = 0
-       }
-     }
-     if (request.birthCity || request.birthCityCode || request.birthDepartment || request.latitude || request.longitude) {
-       if (pruneScore < scoreReduce(this)) {
-         this.location = scoreLocation({
-             city: request.birthCity,
-             cityCode: request.birthCityCode,
-             departmentCode: request.birthDepartment,
-             country: request.birthCountry,
-             latitude: request.latitude,
-             longitude: request.longitude
-         }, result.birth.location);
-       } else {
-         this.score = 0
-       }
-     }
-    if (!this.score) {
-     this.score = scoreReduce(this)
-    }
-  }
-}
-
-export const scoreResult = (request: RequestBody, result: Person): any => {
-    const score:any = {};
     if (request.birthDate) {
-        score.date = scoreDate(request.birthDate, result.birth.date);
-        if (pruneScore > scoreReduce(score)) { score.score = 0; return score }
+      this.date = scoreDate(request.birthDate, result.birth.date);
     }
     if (request.firstName || request.lastName) {
-        score.name = scoreName({first: request.firstName, last: request.lastName}, result.name);
-        if (pruneScore > scoreReduce(score)) { score.score = 0; return score }
+      if (pruneScore < scoreReduce(this)) {
+        this.name = scoreName({first: request.firstName, last: request.lastName}, result.name);
+      } else {
+        this.score = 0
+      }
     }
     if (request.sex) {
-        score.sex = scoreSex(request.sex, result.sex);
-        if (pruneScore > scoreReduce(score)) { score.score = 0; return score }
+      if (pruneScore < scoreReduce(this)) {
+        this.sex = scoreSex(request.sex, result.sex);
+      } else {
+        this.score = 0
+      }
     }
     if (request.birthCity || request.birthCityCode || request.birthDepartment || request.latitude || request.longitude) {
-        score.location = scoreLocation({
-            city: request.birthCity,
-            cityCode: request.birthCityCode,
-            departmentCode: request.birthDepartment,
-            country: request.birthCountry,
-            latitude: request.latitude,
-            longitude: request.longitude
+      if (pruneScore < scoreReduce(this)) {
+        this.location = scoreLocation({
+          city: request.birthCity,
+          cityCode: request.birthCityCode,
+          departmentCode: request.birthDepartment,
+          country: request.birthCountry,
+          latitude: request.latitude,
+          longitude: request.longitude
         }, result.birth.location);
-        if (pruneScore > scoreReduce(score)) { score.score = 0; return score }
+      } else {
+        this.score = 0
+      }
     }
-    score.score = scoreReduce(score)
-    return score;
+    if (!this.score) {
+      this.score = scoreReduce(this)
+    }
+  }
 }
 
 export const stopNames = [
