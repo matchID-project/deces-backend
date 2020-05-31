@@ -231,7 +231,7 @@ router.post('/csv', multerSingle, async (req: any, res: express.Response) => {
     options.size = options.size || 10;
     options.encoding = options.encoding || 'utf8';
     options.escape = options.escape || '"';
-    options.quote = options.quote || '"';
+    options.quote = options.quote === "null" ? null : (options.quote || '"');
 
     // Use random number as enctyption key
     const bytes = forge.random.getBytesSync(32);
