@@ -107,7 +107,8 @@ export const processCsv =  async (job: any, jobFile: any): Promise<any> => {
     headers: true,
     ignoreEmpty: true,
     encoding: job.data.encoding,
-    escape: job.data.escape
+    escape: job.data.escape,
+    quote: job.data.quote
   })
   stream.write(jobFile.file);
   stream.end();
@@ -225,11 +226,12 @@ router.post('/csv', multerSingle, async (req: any, res: express.Response) => {
   if (req.files && req.files.length > 0) {
     // Get parameters
     const options = {...req.body};
-    options.chunkSize =  options.chunkSize || 20;
+    options.chunkSize =  options.chunkSize || 50;
     options.sep = options.sep || ',';
     options.size = options.size || 10;
     options.encoding = options.encoding || 'utf8';
     options.escape = options.escape || '"';
+    options.quote = options.quote || '"';
 
     // Use random number as enctyption key
     const bytes = forge.random.getBytesSync(32);
