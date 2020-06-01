@@ -20,6 +20,7 @@
     "axios": "^0.19.2",
     "bee-queue": "^1.2.3",
     "express": "^4.17.1",
+    "fast-csv": "^4.3.0",
     "js-levenshtein": "^1.1.6",
     "morgan": "^1.10.0",
     "multer": "^1.4.2",
