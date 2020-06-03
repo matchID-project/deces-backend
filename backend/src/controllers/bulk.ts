@@ -3,6 +3,7 @@ import express from 'express';
 import Queue from 'bee-queue';
 import forge from 'node-forge';
 import { parse } from '@fast-csv/parse';
+import { format } from '@fast-csv/format';
 import { Router } from 'express';
 import { RequestInput } from '../models/requestInput';
 import { buildRequest } from '../buildRequest';
@@ -333,22 +334,27 @@ router.get('/:format(csv|json)/:id?', async (req: any, res: express.Response) =>
           decryptedResult.shift() // TODO: discuss if the metadata firs line (mapping & header) shall be kepts or not
           res.send(decryptedResult);
         } else if (req.params.format === 'csv') {
-          res.statusCode = 200;
+
           res.setHeader('Content-Type', 'text/csv');
           const sourceHeader = decryptedResult.shift().metadata.header;
-          res.write([
-            ...sourceHeader,
-            ...resultsHeader.map(h => h.replace(/\.location/, '').replace(/\./,' '))
-          ].join(job.data.sep) + '\r\n'
-          );
+          const csvStream = format({
+            headers: [...sourceHeader,...resultsHeader.map(h => h.replace(/\.location/, ''))],
+            writeHeaders: true,
+            delimiter: job.data.sep
+          });
+
+          // pipe csvstream write to res
+          csvStream.pipe(res)
+
+          // write csv
           decryptedResult.forEach((result: any) => {
-            // console.log(resultsHeader.map(key => jsonPath(result,key)));
-            res.write([
+            csvStream.write([
               ...sourceHeader.map((key: string) => result.metadata.source[key]),
               ...resultsHeader.map(key => jsonPath(result, key))
-            ].join(job.data.sep) + '\r\n')
+            ])
           });
-          res.end();
+          // end stream write
+          csvStream.end();
         } else {
           res.send({msg: 'Not available format'})
         }
