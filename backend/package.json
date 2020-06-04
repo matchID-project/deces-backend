@@ -5,13 +5,13 @@
   "main": "dist/index.js",
   "scripts": {
     "lint": "eslint -c .eslintrc.js  --ext .ts src/ --fix",
-    "tsoa": "mkdir -p src/routes && mkdir -p src/api && ./node_modules/.bin/tsc src/tsoa.ts --outDir dist && node dist/tsoa.js",
+    "tsoa": "mkdir -p src/routes && mkdir -p src/api && tsc src/tsoa.ts --outDir dist && node dist/tsoa.js",
     "prebuild": "npm run lint && npm run tsoa",
-    "build": "./node_modules/.bin/tsc --outDir dist",
+    "build": "tsc --outDir dist",
     "start": "node .",
     "predev": "npm run lint && npm run tsoa",
     "dev": "ts-node-dev --respawn -- src/index.ts",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "TS_NODE_FILES=true mocha -r ts-node/register src/*.spec.ts src/**/*.spec.ts --exit"
   },
   "author": "Cristian Brokate",
   "license": "ISC",
@@ -20,6 +20,7 @@
     "axios": "^0.19.2",
     "bee-queue": "^1.2.3",
     "express": "^4.17.1",
+    "fast-csv": "^4.3.0",
     "js-levenshtein": "^1.1.6",
     "morgan": "^1.10.0",
     "multer": "^1.4.2",
@@ -30,9 +31,11 @@
     "winston": "^3.2.1"
   },
   "devDependencies": {
+    "@types/chai": "^4.2.11",
     "@types/express": "^4.17.2",
-    "@types/morgan": "^1.9.0",
     "@types/js-levenshtein": "^1.1.0",
+    "@types/mocha": "^7.0.2",
+    "@types/morgan": "^1.9.0",
     "@types/multer": "^1.4.3",
     "@types/node": "^13.7.7",
     "@types/node-forge": "^0.9.3",
@@ -41,10 +44,12 @@
     "@types/swagger-ui-express": "^4.1.1",
     "@typescript-eslint/eslint-plugin": "^2.33.0",
     "@typescript-eslint/parser": "^2.33.0",
+    "chai": "^4.2.0",
     "eslint": "^7.0.0",
     "eslint-config-prettier": "^6.11.0",
     "eslint-plugin-jsdoc": "^25.4.1",
     "eslint-plugin-prefer-arrow": "^1.2.1",
+    "mocha": "^7.2.0",
     "ts-node-dev": "^1.0.0-pre.44",
     "typescript": "^3.7.5"
   }

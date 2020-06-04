@@ -62,7 +62,7 @@ export class IndexController extends Controller {
   @Tags('Simple')
   @Post('/search')
   public async searchpost(@Body() requestBody: RequestBody, @Request() request: express.Request, @Header('Accept') accept?: string): Promise<Result> {
-    const response = (request).res as express.Response;
+    const response = (request).res;
     if (Object.keys(requestBody).length > 0) {
       const validFields = ['q', 'firstName', 'lastName', 'sex', 'birthDate', 'birthCity', 'birthDepartment', 'birthCountry', 'birthGeoPoint', 'deathDate', 'deathCity', 'deathDepartment', 'deathCountry', 'deathGeoPoint', 'deathAge', 'scroll', 'scrollId', 'size', 'page', 'fuzzy', 'sort']
       const notValidFields = Object.keys(requestBody).filter((item: string) => !validFields.includes(item))
