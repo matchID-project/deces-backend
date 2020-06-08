@@ -79,6 +79,10 @@ export class IndexController extends Controller {
     }
   }
 
+  /**
+   * Launch single request
+   * @summary Rapprocher une seule identité
+   */
   @Response<ErrorResponse>('400', 'Bad request')
   @Response<Result>('200', 'OK')
   @Tags('Simple')
