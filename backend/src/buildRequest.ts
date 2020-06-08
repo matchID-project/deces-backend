@@ -263,7 +263,7 @@ const buildFieldRequest = (key: string, searchInput: RequestInput, must: boolean
   const value = searchInput[key] && ( searchInput[key].mask && searchInput[key].mask.transform && searchInput[key].value
     ? searchInput[key].mask.transform(searchInput[key].value)
     : searchInput[key].value );
-  if (value) {
+  if (value && searchInput[key].query) {
     return searchInput[key].query(searchInput[key].field, value, searchInput[key].fuzzy, must)
   }
 }
@@ -326,14 +326,20 @@ const referenceSort: any = {
 }
 
 export const buildSort = (inputs?: any) => {
-  return inputs.map((item: string) => {
+  let parsedInput
+  if (typeof(inputs) === 'string') {
+    parsedInput = JSON.parse(inputs)
+  } else {
+    parsedInput = Object.values(inputs);
+  }
+  return parsedInput.map((item: any) => {
     const _myvar = Object.keys(item)[0]
     return {field: referenceSort[_myvar], order: Object.values(item)[0]}
   }).filter((x:any) => x.order).map((x: any) => { return { [x.field]: x.order } })
 }
 
 export const buildRequest = (requestInput: RequestInput): BodyResponse|ScrolledResponse => {
-  const sort = buildSort(requestInput.sort);
+  const sort = buildSort(requestInput.sort.value);
   const match = buildMatch(requestInput);
   // const filter = buildRequestFilter(myFilters); // TODO
   const size = requestInput.size;

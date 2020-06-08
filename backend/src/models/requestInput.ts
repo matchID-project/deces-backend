@@ -2,6 +2,7 @@ import {
   fullTextWithQuery,
   nameWithQuery,
   sexWithQuery,
+  sortWithQuery,
   birthDateWithQuery,
   birthCityWithQuery,
   birthDepartmentWithQuery,
@@ -15,7 +16,7 @@ import {
   deathGeoPointWithQuery
 } from '../fieldsWithQueries';
 
-import { GeoPoint, RequestField } from './entities';
+import { GeoPoint, RequestField, Sort } from './entities';
 
 export interface Block {
   scope: string[],
@@ -40,6 +41,7 @@ export interface RequestBody {
  scrollId?: string;
  size?: number;
  page?: number;
+ sort?: string|Sort[];
  fullText?: string;
  firstName?: string;
  lastName?: string;
@@ -79,16 +81,16 @@ export class RequestInput {
   scrollId?: string;
   page?: number;
   fuzzy?: string;
-  sort?: any;
+  sort?: RequestField;
   block?: Block;
   metadata?: any;
   errors: string[] = [];
-  constructor(q?: string, firstName?: string, lastName?: string, sex?: string, birthDate?: string|number, birthCity?: string, birthDepartment?: string, birthCountry?: string, birthGeoPoint?: GeoPoint, deathDate?: string|number, deathCity?: string, deathDepartment?: string, deathCountry?: string, deathGeoPoint?: GeoPoint, deathAge?: string|number, scroll?: string, scrollId?: string, size?: number, page?: number, fuzzy?: string, sort?: string, block?: Block, metadata?: any) {
+  constructor(q?: string, firstName?: string, lastName?: string, sex?: string, birthDate?: string|number, birthCity?: string, birthDepartment?: string, birthCountry?: string, birthGeoPoint?: GeoPoint, deathDate?: string|number, deathCity?: string, deathDepartment?: string, deathCountry?: string, deathGeoPoint?: GeoPoint, deathAge?: string|number, scroll?: string, scrollId?: string, size?: number, page?: number, fuzzy?: string, sort?: string|Sort[], block?: Block, metadata?: any) {
     this.size = size ? size : 20;
     this.page = page ? page : 1;
     this.scroll = scroll ? scroll : '';
     this.scrollId = scrollId ? scrollId : '';
-    this.sort = sort ? sort: [{score: 'desc'}];
+    this.sort = sort ? sortWithQuery(sort) : {value: [{score: 'desc'}]}
     this.block = block;
 
     this.fullText = fullTextWithQuery(q, fuzzy);

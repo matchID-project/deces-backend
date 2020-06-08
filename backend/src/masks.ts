@@ -1,3 +1,5 @@
+import { Sort } from './models/entities'
+
 export const ageValidationMask = (ageString: string) => {
     return /^(|[0-9]|[1-9]([0-9]|[0-3][0-9]))$/.test(ageString);
 }
@@ -58,4 +60,21 @@ export const sexValidationMask = (sex: string) => {
 
 export const sexTransformMask = (sex: string) => {
     return sex.replace(/^(F|M).*$/,'$1');
+}
+
+export const sortValidationMask = (sort: string|Sort[]) => {
+  if (typeof(sort) === 'string') {
+    try {
+      JSON.parse(sort)
+      return true;
+    } catch (e) {
+      return false;
+    }
+  } else {
+    try {
+      if (Object.values(sort).length > 0) return true;
+    } catch (e) {
+      return false;
+    }
+  }
 }
