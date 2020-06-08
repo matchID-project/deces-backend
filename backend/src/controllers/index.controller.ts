@@ -11,6 +11,28 @@ import { Result, ErrorResponse, HealthcheckResponse } from '../models/result';
 @Route('')
 export class IndexController extends Controller {
 
+  /**
+   * Launch single request
+   * @summary Rapprocher une seule identité
+   * @param firstName Prénom
+   * @param lastName Nom de famille
+   * @param sex Sexe
+   * @param birthDate Date de naissance au format\: JJ/MM/AAAA<br>  <li> Pour une date inconnue les valeurs sont 0000 pour AAAA; 00 pour MM et JJ</li><br> <li> Une recherche par tranche de date est également possible sous la forme: JJ/MM/AAAA - JJ/MM/AAAA</li>
+   * @param birthCity Localité\: de naissance en claire (pour les personnes nées en France ou dans les DOM/TOM/COM)
+   * @param birthDepartment Code département du lieu de naissance
+   * @param birthCountry Libellé de pays de naissance en clair (pour les personnes nées à l'étranger)
+   * @param deathDate Date de décès au format\: JJ/MM/AAAA. <br> <li> Pour une date inconnue les valeurs sont 0000 pour AAAA; 00 pour MM et JJ</li>.<br> <li> Une recherche par tranche de date est également possible sous la forme: JJ/MM/AAAA - JJ/MM/AAAA</li>
+   * @param deathCity Localité de décès en claire** (pour les personnes nées en France ou dans les DOM/TOM/COM)
+   * @param deathDepartment Code département du lieu de décès
+   * @param deathCountry Pays du lieu de décès
+   * @param deathAge Age du décès
+   * @param scroll Le temps durant lequel le contexte de la requête doit être garde
+   * @param scrollId Identifiant technique du contexte
+   * @param size Nombre d\'identités retourne par page
+   * @param page Numéro de page
+   * @param fuzzy Recherche floue ou exacte
+   * @param sort Tri sur les colonnes (à préciser sur la structure du champs)
+   */
   @Response<ErrorResponse>('400', 'Bad request')
   @Response<Result>('200', 'OK')
   @Tags('Simple')
@@ -33,7 +55,7 @@ export class IndexController extends Controller {
     @Query() scrollId?: string,
     @Query() size?: number,
     @Query() page?: number,
-    @Query() fuzzy?: string,
+    @Query() fuzzy?: 'true'|'false',
     @Query() sort?: string
   ): Promise<Result> {
     if (q || firstName || lastName || sex || birthDate || birthCity || birthDepartment || birthCountry || deathDate || deathCity || deathDepartment || deathCountry || deathAge || scroll) {

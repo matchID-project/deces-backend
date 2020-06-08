@@ -20,6 +20,31 @@ interface RequestType {
   sort?: string;
 }
 
+interface ResType {
+ scrollId?: string;
+ /**
+  * nombre d'identité trouvé
+  */
+ total: number;
+ /**
+  * score maximum obtenu lors de la recherche
+  */
+ maxScore: number;
+ /**
+  * nombre d'identité présent dans la réponse
+  */
+ size: number;
+ /**
+  * numéro de page
+  */
+ page: number;
+ /**
+  * délai du traitement
+  */
+ delay: number;
+ persons: Person[];
+}
+
 /**
  * This is a description of a model
  * @tsoaModel
@@ -74,15 +99,7 @@ interface RequestType {
 export interface Result {
   msg?: string|string[];
   request?: RequestType;
-  response?: {
-    scrollId?: string;
-    total: number;
-    maxScore: number;
-    size: number;
-    page: number;
-    delay: number;
-    persons: Person[];
-  }
+  response?: ResType;
 }
 
 export interface ResultRawES {
@@ -205,7 +222,7 @@ export const buildResultSingle = (item: ResultRawHits): Person => {
 }
 
 /**
- * The message shows information to solve the error
+ * Ce message décrit les erreurs rencontrées
  * @tsoaModel
  * @example
  * {
