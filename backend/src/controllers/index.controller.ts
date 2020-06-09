@@ -82,6 +82,7 @@ export class IndexController extends Controller {
   /**
    * Launch single request
    * @summary Rapprocher une seule identité
+   * @param accept Format of the response text/csv for csv otherwise application/json
    */
   @Response<ErrorResponse>('400', 'Bad request')
   @Response<Result>('200', 'OK')
