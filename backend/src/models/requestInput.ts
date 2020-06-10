@@ -2,6 +2,7 @@ import {
   fullTextWithQuery,
   nameWithQuery,
   sexWithQuery,
+  sortWithQuery,
   birthDateWithQuery,
   birthCityWithQuery,
   birthDepartmentWithQuery,
@@ -15,7 +16,7 @@ import {
   deathGeoPointWithQuery
 } from '../fieldsWithQueries';
 
-import { GeoPoint, RequestField } from './entities';
+import { GeoPoint, RequestField, Sort } from './entities';
 
 export interface Block {
   scope: string[],
@@ -24,7 +25,7 @@ export interface Block {
 }
 
 /**
- * This is an example of advanced request, there is no q parameter.
+ * These are all the query parameters
  * @tsoaModel
  * @example
  * {
@@ -36,24 +37,85 @@ export interface Block {
  */
 export interface RequestBody {
  [key: string]: any; // Index signature
+ /**
+  * Le temps durant lequel le contexte de la requête doit être garde
+  */
  scroll?: string;
+ /**
+  * Identifiant technique du contexte
+  */
  scrollId?: string;
+ /**
+  * Nombre d\'identités retourne par page
+  */
  size?: number;
+ /**
+  * Numéro de page
+  */
  page?: number;
+ /**
+  * Tri sur les colonnes (à préciser sur la structure du champs)
+  */
+ sort?: string|Sort[];
+ /**
+  * Simple query
+  */
  fullText?: string;
+ /**
+  * Prénom
+  */
  firstName?: string;
+ /**
+  * Nom de famille
+  */
  lastName?: string;
- sex?: string;
+ /**
+  * Sexe
+  */
+ sex?: 'M'|'F';
+ /**
+  * Date de naissance au format\: JJ/MM/AAAA<br>  <li> Pour une date inconnue les valeurs sont 0000 pour AAAA; 00 pour MM et JJ</li><br> <li> Une recherche par tranche de date est également possible sous la forme: JJ/MM/AAAA - JJ/MM/AAAA</li>
+  */
  birthDate?: string|number;
+ /**
+  * Localité\: de naissance en claire (pour les personnes nées en France ou dans les DOM/TOM/COM)
+  */
  birthCity?: string;
+ /**
+  * Code département du lieu de naissance
+  */
  birthDepartment?: string;
+ /**
+  * Libellé de pays de naissance en clair (pour les personnes nées à l'étranger)
+  */
  birthCountry?: string;
+ /**
+  * Coordonnés GPS du lieu de naissance
+  */
  birthGeoPoint?: GeoPoint;
+ /**
+  * Date de décès au format\: JJ/MM/AAAA. <br> <li> Pour une date inconnue les valeurs sont 0000 pour AAAA; 00 pour MM et JJ</li>.<br> <li> Une recherche par tranche de date est également possible sous la forme: JJ/MM/AAAA - JJ/MM/AAAA</li>
+  */
  deathDate?: string|number;
+ /**
+  * Localité de décès en claire** (pour les personnes nées en France ou dans les DOM/TOM/COM)
+  */
  deathCity?: string;
+ /**
+  * Code département du lieu de décès
+  */
  deathDepartment?: string;
+ /**
+  * Pays du lieu de décès
+  */
  deathCountry?: string;
+ /**
+  * Coordonnés GPS du lieu de décès
+  */
  deathGeoPoint?: GeoPoint;
+ /**
+  * Age du décès
+  */
  deathAge?: string|number;
 };
 
@@ -79,16 +141,16 @@ export class RequestInput {
   scrollId?: string;
   page?: number;
   fuzzy?: string;
-  sort?: any;
+  sort?: RequestField;
   block?: Block;
   metadata?: any;
   errors: string[] = [];
-  constructor(q?: string, firstName?: string, lastName?: string, sex?: string, birthDate?: string|number, birthCity?: string, birthDepartment?: string, birthCountry?: string, birthGeoPoint?: GeoPoint, deathDate?: string|number, deathCity?: string, deathDepartment?: string, deathCountry?: string, deathGeoPoint?: GeoPoint, deathAge?: string|number, scroll?: string, scrollId?: string, size?: number, page?: number, fuzzy?: string, sort?: string, block?: Block, metadata?: any) {
+  constructor(q?: string, firstName?: string, lastName?: string, sex?: string, birthDate?: string|number, birthCity?: string, birthDepartment?: string, birthCountry?: string, birthGeoPoint?: GeoPoint, deathDate?: string|number, deathCity?: string, deathDepartment?: string, deathCountry?: string, deathGeoPoint?: GeoPoint, deathAge?: string|number, scroll?: string, scrollId?: string, size?: number, page?: number, fuzzy?: string, sort?: string|Sort[], block?: Block, metadata?: any) {
     this.size = size ? size : 20;
     this.page = page ? page : 1;
     this.scroll = scroll ? scroll : '';
     this.scrollId = scrollId ? scrollId : '';
-    this.sort = sort ? sort: [{score: 'desc'}];
+    this.sort = sort ? sortWithQuery(sort) : {value: [{score: 'desc'}]}
     this.block = block;
 
     this.fullText = fullTextWithQuery(q, fuzzy);

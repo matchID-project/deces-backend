@@ -1,4 +1,4 @@
-import { GeoPoint, Name } from './models/entities';
+import { GeoPoint, Name, Sort } from './models/entities';
 
 import {
     dateRangeValidationMask,
@@ -6,7 +6,8 @@ import {
     ageRangeTransformMask,
     ageRangeValidationMask,
     sexTransformMask,
-    sexValidationMask
+    sexValidationMask,
+    sortValidationMask
 } from './masks';
 
 import {
@@ -134,4 +135,11 @@ export const deathGeoPointWithQuery = (value: GeoPoint, fuzzy: string|boolean) =
     field: "GEOPOINT_DECES",
     query: geoPointQuery,
     fuzzy: false
+};
+
+export const sortWithQuery = (value: string|Sort[]) => value && {
+    value,
+    mask: {
+        validation: sortValidationMask
+    }
 };
