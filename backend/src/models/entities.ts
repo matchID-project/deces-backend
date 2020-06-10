@@ -1,3 +1,7 @@
+export interface Sort {
+ [key: string]: 'asc'|'desc';
+}
+
 export interface Name {
     first: string|string[]|RequestField;
     last: string|string[]|RequestField;
@@ -12,7 +16,7 @@ export interface NameFields {
 };
 
 export interface RequestField {
-    value: string|Name|number|GeoPoint;
+    value: string|Name|number|GeoPoint|Sort[];
     field?: string|string[]|NameFields;
     query?: any;
     fuzzy?: string|boolean;

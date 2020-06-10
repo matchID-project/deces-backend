@@ -114,6 +114,12 @@ else
     echo -e "\e[31msex: KO!\e[0m"
     exit 1
 fi
+if curl -s -g -XGET http://localhost:${BACKEND_PORT}/deces/api/v1/search?deathDate=2020\&sort=[{\"sex\":\"asc\"}] | grep -q --invert-match 'sex":"M"'; then
+    echo "sort: OK"
+else
+    echo -e "\e[31msort: KO!\e[0m"
+    exit 1
+fi
 scrollId=$(curl -s -XGET http://localhost:${BACKEND_PORT}/deces/api/v1/search?firstName=Jean\&scroll=1m | grep -Po 'scrollId":"\K.*?(?=")')
 echo First scrollId is $scrollId
 curl -s -XGET http://localhost:${BACKEND_PORT}/deces/api/v1/search?scrollId=$scrollId\&scroll=1m | grep -Po 'scrollId":"\K.*?(?=")'

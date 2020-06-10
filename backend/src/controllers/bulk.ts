@@ -176,11 +176,10 @@ const decryptFile = (encryptedData: forge.util.ByteStringBuffer, password: strin
  * path:
  *  /search/csv:
  *    post:
- *      summary: Bulk match
+ *      summary: Rapprochement par lot
  *      description: Launch bulk matching using csv
  *      tags: [Bulk]
  *      requestBody:
- *        description: Information pour réserver une place d'examen
  *        required: false
  *        content:
  *          multipart/form-data:
@@ -189,27 +188,27 @@ const decryptFile = (encryptedData: forge.util.ByteStringBuffer, password: strin
  *              properties:
  *                sep:
  *                  type: string
- *                  description: Separator delimiter
+ *                  description: Caractère séparateur
  *                  example: ","
  *                firstName:
  *                  type: string
- *                  description: Column name for first name
+ *                  description: Prénom
  *                  example: "Prenom"
  *                lastName:
  *                  type: string
- *                  description: Column name for last name
+ *                  description: Nom de famille
  *                  example: "Nom"
  *                birthDate:
  *                  type: string
- *                  description: Column name for birthdate
+ *                  description: Date de naissance au format JJ/MM/AAAA<br>  <li> Pour une date inconnue les valeurs sont 0000 pour AAAA; 00 pour MM et JJ</li><br>
  *                  example: "dateColumn"
  *                chunkSize:
  *                  type: number
- *                  description: Chunk size for processing
+ *                  description: Taille du lot pour le  traitement
  *                  example: 20
  *                fileName:
  *                  type: string
- *                  description: CSV file with identities to match
+ *                  description: Fichier CSV contenant le noms des identités à comparer
  *                  format: binary
  *      responses:
  *        200:
@@ -265,15 +264,15 @@ router.post('/csv', multerSingle, async (req: any, res: express.Response) => {
  * @swagger
  * tags:
  *   name: Bulk
- *   description: Matching par lot
+ *   description: Rapprochement par lot
  */
 
 /**
  * @swagger
  * /search/csv/{jobId}:
  *    get:
- *      description: Get job status and result
- *      summary: Get job status and result
+ *      description: Obtenir le statut et le résultat du job
+ *      summary: Obtenir le statut et le résultat du traitement
  *      tags: [Bulk]
  *      parameters:
  *       - in: path
@@ -295,8 +294,8 @@ router.post('/csv', multerSingle, async (req: any, res: express.Response) => {
  *
  * /search/json/{jobId}:
  *    get:
- *      description: Get job status and result
- *      summary: Get job status and result
+ *      description: Obtenir le statut et le résultat du job
+ *      summary: Obtenir le statut et le résultat du traitement
  *      tags: [Bulk]
  *      parameters:
  *       - in: path
