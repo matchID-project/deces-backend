@@ -402,12 +402,13 @@ export const jsonPath = (json: any, path: string): any => {
 
 export const resultsHeader = [
   'score', 'source', 'id', 'name.last', 'name.first', 'sex',
-  'birth.date', 'birth.location.city', 'birth.location.departmentCode',
-  'birth.location.country', 'birth.location.countryCode', 'birth.location.latitude',
-  'birth.location.longitude',
-  'death.date', 'death.certificateId', 'death.age', 'death.location.city',
-  'death.location.cityCode', 'death.location.departmentCode', 'death.location.country',
-  'death.location.countryCode', 'death.location.latitude', 'death.location.longitude']
+  'birth.date', 'birth.location.city', 'birth.location.cityCode',
+  'birth.location.departmentCode', 'birth.location.country', 'birth.location.countryCode',
+  'birth.location.latitude', 'birth.location.longitude',
+  'death.certificateId', 'death.age',
+  'death.date', 'death.location.city', 'death.location.cityCode',
+  'death.location.departmentCode', 'death.location.country', 'death.location.countryCode',
+  'death.location.latitude', 'death.location.longitude']
 
 interface JobInput {
   id: string;
