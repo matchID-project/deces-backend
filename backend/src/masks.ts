@@ -1,3 +1,4 @@
+import moment from 'moment'
 import { Sort } from './models/entities'
 
 export const ageValidationMask = (ageString: string) => {
@@ -46,12 +47,16 @@ export const dateTransformMask = (dateString: string|number): string => {
   }
 }
 
-export const dateRangeTransformMask = (dateRangeString: string) => {
-    if (/[0-9\/]+\-[0-9\/]+/.test(dateRangeString)) {
-        return dateRangeString.toString().split('-').map(d => dateTransformMask(d));
+export const dateRangeTransformMask = (dateRangeString: string, dateFormat?: string) => {
+  if (dateFormat) {
+    return moment(dateRangeString.toString(), dateFormat).format("YYYYMMDD");
+  } else {
+    if (/[0-9\/]+\-[0-9\/]+/.test(dateRangeString) && dateRangeString.toString().split('-').length === 2) {
+      return dateRangeString.toString().split('-').map(d => dateTransformMask(d));
     } else {
-        return dateTransformMask(dateRangeString);
+      return dateTransformMask(dateRangeString);
     }
+  }
 }
 
 export const sexValidationMask = (sex: string) => {

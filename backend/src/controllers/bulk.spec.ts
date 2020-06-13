@@ -31,4 +31,21 @@ describe('Process csv', () => {
     expect(result[1].name.last).to.equal('Pierre')
     expect(result[2].name.last).to.equal('Michel')
   });
+
+  it('Passing alternative date format', async () => {
+    const result = await processCsv(
+      {
+        data: {
+          sep: ',',
+          chunkSize: 5,
+          dateFormat: 'YYYY-MM-DD'
+        }
+      },
+      {file: ['firstName,lastName,birthDate', 'jean,pierre,1933-08-04', 'georges,michel,1939-03-12'].join('\r\n')}
+    )
+    expect(result[1]).to.have.property('name')
+    expect(result[2]).to.have.property('name')
+    expect(result[1].name.last).to.equal('Pierre')
+    expect(result[2].name.last).to.equal('Michel')
+  });
 });

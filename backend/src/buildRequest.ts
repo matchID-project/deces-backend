@@ -23,8 +23,8 @@ const buildAdaptativeBlockMatch = (searchInput: RequestInput) => {
     let queryMust = [fuzzyTermQuery('PRENOMS_NOM', [searchInput.name.value.last, searchInput.name.value.first].filter(x => x).join(" "), "auto", false)]
     let queryShould = [matchQuery('NOM', searchInput.name.value.last as string, false, false)]
     if (searchInput.birthDate && searchInput.birthDate.value) {
-      queryMust = [...queryMust, fuzzyTermQuery('DATE_NAISSANCE', searchInput.birthDate.mask.transform(searchInput.birthDate.value) as string, "auto", false)]
-      queryShould = [...queryShould, matchQuery('DATE_NAISSANCE', searchInput.birthDate.mask.transform(searchInput.birthDate.value) as string, false, false)]
+      queryMust = [...queryMust, fuzzyTermQuery('DATE_NAISSANCE', searchInput.birthDate.mask.transform(searchInput.birthDate.value, searchInput.dateFormat) as string, "auto", false)]
+      queryShould = [...queryShould, matchQuery('DATE_NAISSANCE', searchInput.birthDate.mask.transform(searchInput.birthDate.value, searchInput.dateFormat) as string, false, false)]
     }
     return {
         function_score : {
