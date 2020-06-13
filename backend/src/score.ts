@@ -138,7 +138,7 @@ export class ScoreResult {
       this.date = scoreDate(request.birthDate, result.birth.date);
     }
     if (request.firstName || request.lastName) {
-      if (pruneScore < scoreReduce(this)) {
+      if (pruneScore < scoreReduce(this) || !this.date) {
         this.name = scoreName({first: request.firstName, last: request.lastName}, result.name);
       } else {
         this.score = 0

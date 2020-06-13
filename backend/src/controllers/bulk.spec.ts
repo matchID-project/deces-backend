@@ -17,4 +17,18 @@ describe('Process csv', () => {
     expect(result[0].metadata.mapping.lastName).to.equal('lastName')
     expect(result[1].block.minimum_match).to.equal(1);
   });
+
+  it('Passing only first and last name ', async () => {
+    const result = await processCsv(
+      {
+        data: {
+          sep: ',',
+          chunkSize: 5
+        }
+      },
+      {file: ['firstName,lastName', 'jean,pierre', 'georges,michel'].join('\r\n')}
+    )
+    expect(result[1].name.last).to.equal('Pierre')
+    expect(result[2].name.last).to.equal('Michel')
+  });
 });
