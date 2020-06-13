@@ -359,7 +359,7 @@ router.get('/:format(csv|json)/:id?', async (req: any, res: express.Response) =>
         }
       }
     } else if (job && job.status === 'failed') {
-      res.send({status: job.status, msg: job.options.stacktraces.join(' ')});
+      res.status(400).send({status: job.status, msg: job.options.stacktraces.join(' ')});
     } else if (job) {
       res.send({status: job.status, id: req.params.id, progress: job.progress});
     } else {
