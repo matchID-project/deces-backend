@@ -22,7 +22,7 @@ const uncertainDateScore = 0.7;
 const datePenalty = 3
 
 const minLocationScore = 0.2;
-const minDepScore = 0.6;
+const minDepScore = 0.8;
 const minNotFrCityScore = 0.4;
 
 const boostSoundex = 1.5;
@@ -312,7 +312,9 @@ const scoreLocation = (locA: Location, locB: Location): any => {
         }
     }
     if (locA.departmentCode && locB.departmentCode) {
-        score.department = (locA.departmentCode === locB.departmentCode) ? 1 : minDepScore;
+        if (locB.country && (scoreCountry('FRANCE', locB.country as string|string[]) === 1)) {
+            score.department = (locA.departmentCode === locB.departmentCode) ? 1 : minDepScore;
+        }
     }
     if (locA.country && locB.country) {
         score.country = scoreCountry(locA.country, tokenize(locB.country as string) as string|string[]);
