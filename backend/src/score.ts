@@ -1,6 +1,7 @@
 import { RequestBody } from './models/requestInput';
 import { Person, Location, Name, RequestField } from './models/entities';
 import levenshtein from 'js-levenshtein';
+import moment from 'moment';
 import { dateTransformMask, isDateRange } from './masks';
 import soundex from '@thejellyfish/soundex-fr';
 
@@ -21,7 +22,7 @@ const uncertainDateScore = 0.7;
 const datePenalty = 3
 
 const minLocationScore = 0.2;
-const minDepScore = 0.6;
+const minDepScore = 0.8;
 const minNotFrCityScore = 0.4;
 
 const boostSoundex = 1.5;
@@ -107,12 +108,12 @@ const scoreReduce = (score:any):number => {
     }
 }
 
-export const scoreResults = (request: RequestBody, results: Person[]): Person[] => {
+export const scoreResults = (request: RequestBody, results: Person[], dateFormat: string): Person[] => {
     return results
             .filter((result:any) => result.score > 0)
             .map((result:any) => {
                 try {
-                    result.scores = new ScoreResult(request, result);
+                    result.scores = new ScoreResult(request, result, dateFormat);
                     result.scores.score = scoreReduce(result.scores) ** (3/(Object.keys(result.scores).length || 1));
                 } catch(err) {
                     result.scores = {};
@@ -133,12 +134,12 @@ export class ScoreResult {
   sex?: number;
   location?: number;
 
-  constructor(request: RequestBody, result: Person) {
+  constructor(request: RequestBody, result: Person, dateFormat?: string) {
     if (request.birthDate) {
-      this.date = scoreDate(request.birthDate, result.birth.date);
+      this.date = scoreDate(request.birthDate, result.birth.date, dateFormat);
     }
     if (request.firstName || request.lastName) {
-      if (pruneScore < scoreReduce(this)) {
+      if (pruneScore < scoreReduce(this) || !this.date) {
         this.name = scoreName({first: request.firstName, last: request.lastName}, result.name);
       } else {
         this.score = 0
@@ -311,7 +312,9 @@ const scoreLocation = (locA: Location, locB: Location): any => {
         }
     }
     if (locA.departmentCode && locB.departmentCode) {
-        score.department = (locA.departmentCode === locB.departmentCode) ? 1 : minDepScore;
+        if (locB.country && (scoreCountry('FRANCE', locB.country as string|string[]) === 1)) {
+            score.department = (locA.departmentCode === locB.departmentCode) ? 1 : minDepScore;
+        }
     }
     if (locA.country && locB.country) {
         score.country = scoreCountry(locA.country, tokenize(locB.country as string) as string|string[]);
@@ -320,8 +323,11 @@ const scoreLocation = (locA: Location, locB: Location): any => {
     return score;
 }
 
-const scoreDate= (dateRangeA: any, dateStringB: string): number => {
-    return 0.01 * Math.round((scoreDateRaw(dateRangeA, dateStringB) ** datePenalty) * 100);
+const scoreDate = (dateRangeA: any, dateStringB: string, dateFormat: string): number => {
+  if (dateFormat) {
+    dateRangeA = moment(dateRangeA.toString(), dateFormat).format("YYYYMMDD");
+  }
+  return 0.01 * Math.round((scoreDateRaw(dateRangeA, dateStringB) ** datePenalty) * 100);
 }
 
 const scoreDateRaw = (dateRangeA: any, dateStringB: string): number => {

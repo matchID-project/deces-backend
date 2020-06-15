@@ -54,7 +54,7 @@ const parseStream = async (readable: any, job: any, totalRows: number, headers: 
     chunk.push(request)
 
     if (chunk.length >= chunkSize) {
-      const result = await processChunk(chunk)
+      const result = await processChunk(chunk, job.data.dateFormat)
       totalResult = [...totalResult, ...result]
       chunk.length = 0;
       job.reportProgress({rows: totalResult.length, percentage: totalResult.length / totalRows * 100})
@@ -63,7 +63,7 @@ const parseStream = async (readable: any, job: any, totalRows: number, headers: 
   }
   stopJob = false;
   if (chunk.length > 0) {
-    const result = await processChunk(chunk)
+    const result = await processChunk(chunk, job.data.dateFormat)
     return [...totalResult, ...result]
   } else {
     return totalResult
@@ -117,9 +117,9 @@ export const processCsv =  async (job: any, jobFile: any): Promise<any> => {
   return [...heading, ...totalResult]
 }
 
-const processChunk = async (chunk: any) => {
+const processChunk = async (chunk: any, dateFormat: string) => {
   const bulkRequest = chunk.map((row: any) => { // TODO: type
-    const requestInput = new RequestInput(row.q, row.firstName, row.lastName, row.sex, row.birthDate, row.birthCity, row.birthDepartment, row.birthCountry, row.birthGeoPoint, row.deathDate, row.deathCity, row.deathDepartment, row.deathCountry, row.deathGeoPoint, row.deathAge, row.scroll, row.scrollId, row.size, row.page, row.fuzzy, row.sort, row.block);
+    const requestInput = new RequestInput(row.q, row.firstName, row.lastName, row.sex, row.birthDate, row.birthCity, row.birthDepartment, row.birthCountry, row.birthGeoPoint, row.deathDate, row.deathCity, row.deathDepartment, row.deathCountry, row.deathGeoPoint, row.deathAge, row.scroll, row.scrollId, row.size, row.page, row.fuzzy, row.sort, row.block, dateFormat);
     return [JSON.stringify({index: "deces"}), JSON.stringify(buildRequest(requestInput))];
   })
   const msearchRequest = bulkRequest.map((x: any) => x.join('\n\r')).join('\n\r') + '\n';
@@ -127,7 +127,7 @@ const processChunk = async (chunk: any) => {
   if (result.data.responses.length > 0) {
     return result.data.responses.map((item: ResultRawES, idx: number) => {
       if (item.hits.hits.length > 0) {
-        const scoredResults = scoreResults(chunk[idx], item.hits.hits.map(hit => buildResultSingle(hit)))
+        const scoredResults = scoreResults(chunk[idx], item.hits.hits.map(hit => buildResultSingle(hit)), dateFormat)
         if (scoredResults && scoredResults.length > 0) {
           return {...chunk[idx], ...scoredResults[0]}
         } else {
@@ -359,7 +359,7 @@ router.get('/:format(csv|json)/:id?', async (req: any, res: express.Response) =>
         }
       }
     } else if (job && job.status === 'failed') {
-      res.send({status: job.status, msg: job.options.stacktraces.join(' ')});
+      res.status(400).send({status: job.status, msg: job.options.stacktraces.join(' ')});
     } else if (job) {
       res.send({status: job.status, id: req.params.id, progress: job.progress});
     } else {
@@ -402,12 +402,13 @@ export const jsonPath = (json: any, path: string): any => {
 
 export const resultsHeader = [
   'score', 'source', 'id', 'name.last', 'name.first', 'sex',
-  'birth.date', 'birth.location.city', 'birth.location.departmentCode',
-  'birth.location.country', 'birth.location.countryCode', 'birth.location.latitude',
-  'birth.location.longitude',
-  'death.date', 'death.certificateId', 'death.age', 'death.location.city',
-  'death.location.cityCode', 'death.location.departmentCode', 'death.location.country',
-  'death.location.countryCode', 'death.location.latitude', 'death.location.longitude']
+  'birth.date', 'birth.location.city', 'birth.location.cityCode',
+  'birth.location.departmentCode', 'birth.location.country', 'birth.location.countryCode',
+  'birth.location.latitude', 'birth.location.longitude',
+  'death.certificateId', 'death.age',
+  'death.date', 'death.location.city', 'death.location.cityCode',
+  'death.location.departmentCode', 'death.location.country', 'death.location.countryCode',
+  'death.location.latitude', 'death.location.longitude']
 
 interface JobInput {
   id: string;
