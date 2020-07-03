@@ -142,7 +142,7 @@ const processChunk = async (chunk: any, dateFormat: string) => {
   }
 }
 
-queue.process(async (job: Queue.Job) => {
+queue.process(Number(process.env.BACKEND_CONCURRENCY), async (job: Queue.Job) => {
   const jobIndex = inputsArray.findIndex(x => x.id === job.id)
   const jobFile = inputsArray.splice(jobIndex, 1).pop()
   return processCsv(job, jobFile)
