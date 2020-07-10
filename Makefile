@@ -42,6 +42,7 @@ export NPM_REGISTRY = $(shell echo $$NPM_REGISTRY )
 export NPM_VERBOSE ?= 1
 export REDIS_DATA=${APP_PATH}/redisdata
 export BULK_TIMEOUT = 600
+export BACKEND_CONCURRENCY = 1
 
 # Backupdir
 export BACKUP_DIR = ${APP_PATH}/backup
