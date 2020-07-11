@@ -322,7 +322,9 @@ router.get('/:format(csv|json)/:id?', async (req: any, res: express.Response) =>
   if (req.params.id) {
     const md = forge.md.sha256.create();
     md.update(req.params.id);
-    const job: Queue.Job|any = await queue.getJob(md.digest().toHex())
+    const jobId = md.digest().toHex();
+    const job: Queue.Job|any = await queue.getJob(jobId);
+    const jobsActive = await queue.getJobs('active', {start: 0, end: 25})
     if (job && job.status === 'succeeded') {
       const jobResult = resultsArray.find(x => x.id === md.digest().toHex())
       if (jobResult == null) {
@@ -364,13 +366,12 @@ router.get('/:format(csv|json)/:id?', async (req: any, res: express.Response) =>
       }
     } else if (job && job.status === 'failed') {
       res.status(400).send({status: job.status, msg: job.options.stacktraces.join(' ')});
-    } else if (job && job.status === 'active') {
-      res.send({status: job.status, id: req.params.id, progress: job.progress});
+    } else if (job && jobsActive.some(j => j.id === jobId)) {
+      res.send({status: 'active', id: req.params.id, progress: job.progress});
     } else if (job) {
       const jobsWaiting = await queue.getJobs('waiting', {start: 0, end: 25})
-      const jobsActive = await queue.getJobs('active', {start: 0, end: 25})
       const remainingRowsActive = jobsActive.reduce((acc: number, val: any) => {
-        return acc + ((100.0 - val.progress.percentage) * val.progress.rows) / val.progress.percentage
+        return Math.round(acc + ((100.0 - val.progress.percentage) * val.progress.rows) / val.progress.percentage)
       }, 0)
       const jobsWaitingBefore = jobsWaiting.reduce((acc: number, val: any) => {
         if (val.options.timestamp < job.options.timestamp) {
@@ -388,7 +389,7 @@ router.get('/:format(csv|json)/:id?', async (req: any, res: express.Response) =>
           return acc
         }
       }, 0)
-      res.send({status: job.status, id: req.params.id, remainingRowsActive, remainingRowsWaiting, activeJobs: jobsActive.length, waitingJobs: jobsWaitingBefore});
+      res.send({status: 'waiting', id: req.params.id, remainingRowsActive, remainingRowsWaiting, activeJobs: jobsActive.length, waitingJobs: jobsWaitingBefore});
     } else {
       res.send({msg: 'job doesn\'t exists'});
     }
