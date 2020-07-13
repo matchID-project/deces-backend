@@ -355,7 +355,7 @@ router.get('/:format(csv|json)/:id?', async (req: any, res: express.Response) =>
           decryptedResult.forEach((result: any) => {
             csvStream.write([
               ...sourceHeader.map((key: string) => result.metadata.source[key]),
-              ...resultsHeader.map(key => jsonPath(result, key))
+              ...resultsHeader.map(key => prettyString(jsonPath(result, key)))
             ])
           });
           // end stream write
@@ -428,8 +428,22 @@ export const jsonPath = (json: any, path: string): any => {
   }
 }
 
+export const prettyString = (json: any): string => {
+  if ((json === undefined) || (json === null)) {
+    return '';
+  }
+  if (typeof(json) === 'object') {
+    if (Array.isArray(json)) {
+      return json.join(', ');
+    }
+    return JSON.stringify(json);
+  } else {
+    return json.toString();
+  }
+}
+
 export const resultsHeader = [
-  'score', 'source', 'id', 'name.last', 'name.first', 'sex',
+  'score', 'scores', 'source', 'id', 'name.last', 'name.first', 'sex',
   'birth.date', 'birth.location.city', 'birth.location.cityCode',
   'birth.location.departmentCode', 'birth.location.country', 'birth.location.countryCode',
   'birth.location.latitude', 'birth.location.longitude',
