@@ -25,7 +25,7 @@ const minLocationScore = 0.2;
 const minDepScore = 0.8;
 const minNotFrCityScore = 0.5;
 const minNotFrCountryScore = 0.5;
-const blindNotFrLocationScore = 0.7;
+const blindLocationScore = 0.7;
 
 const boostSoundex = 1.5;
 
@@ -311,29 +311,32 @@ const scoreCountry = (countryA: string|string[]|RequestField, countryB: string|s
 const scoreLocation = (locA: Location, locB: Location): any => {
     const score: any = {};
     if (locB.country && (scoreCountry('FRANCE', locB.country as string|string[]) === 1)) {
-        if (locA.city && locB.city) {
-            score.city = scoreCity(locA.city, locB.city as string|string[])
+        if (normalize(locA.country as string|string[])) {
+            score.country = scoreCountry(locA.country, tokenize(locB.country as string) as string|string[]);
         }
-        if (locA.departmentCode && locB.departmentCode) {
+        if (normalize(locA.city as string|string[]) && locB.city) {
+            score.city = scoreCity(locA.city, locB.city as string|string[]);
+        }
+        if (normalize(locA.departmentCode as string|string[]) && locB.departmentCode) {
             if (locB.country && (scoreCountry('FRANCE', locB.country as string|string[]) === 1)) {
                 score.department = (locA.departmentCode === locB.departmentCode) ? 1 : minDepScore;
             }
         }
-        score.score = Math.max(minLocationScore, scoreReduce(score));
+        score.score = (score.country || score.city || score.department) ? Math.max(minLocationScore, scoreReduce(score)) : blindLocationScore;
     } else {
-        if (locA.country) {
+        if (normalize(locA.country as string|string[])) {
             score.country = scoreCountry(locA.country, tokenize(locB.country as string) as string|string[]);
         } else {
-            if (locA.city) {
+            if (normalize(locA.city as string|string[])) {
                 const sCountry = scoreCountry(locA.city, tokenize(locB.country as string) as string|string[]);
                 if (sCountry > minNotFrCountryScore) {
                     score.country = sCountry;
                 }
             } else {
-                score.country = blindNotFrLocationScore;
+                score.country = blindLocationScore;
             }
         }
-        if (locA.city && locB.city) {
+        if (normalize(locA.city as string|string[]) && locB.city) {
             const sCity = scoreCity(locA.city, tokenize(locB.city) as string|string[]);
             if (sCity > minNotFrCityScore) { score.city = sCity; }
         }
