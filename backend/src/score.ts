@@ -92,16 +92,15 @@ const tokenize = (sentence: string|string[]|RequestField, tokenizeArray?: boolea
     }
 }
 
-
 const scoreReduce = (score:any):number => {
     if (score.score) {
         return score.score;
     } else {
         const r:any = Object.keys(score).map(k => {
             if (typeof(score[k]) === 'number') {
-                return score[k];
+                return  0.01 * Math.round(100 * score[k]);
             } else {
-                return score[k].score || scoreReduce(score[k]);
+                return  0.01 * Math.round(100 * score[k].score) || scoreReduce(score[k]);
             }
         });
         return r.length ? 0.01 * Math.round(100 * r.reduce(multyiply)) : 0;
@@ -114,12 +113,12 @@ export const scoreResults = (request: RequestBody, results: Person[], dateFormat
             .map((result:any) => {
                 try {
                     result.scores = new ScoreResult(request, result, dateFormat);
-                    result.scores.score = scoreReduce(result.scores) ** (3/(Object.keys(result.scores).length || 1));
+                    result.scores.score =  0.01 * Math.round(100 * scoreReduce(result.scores) ** (3/(Object.keys(result.scores).length || 1)));
                 } catch(err) {
                     result.scores = {};
                 }
                 result.scores.es = 0.005 * Math.round(Math.min(200, result.score));
-                result.score = (result.scores.score !== undefined) ? result.scores.score : result.scores.es;
+                result.score = (result.scores.score !== undefined) ?  0.01 * Math.round(100 * result.scores.score) : result.scores.es;
                 return result;
             })
             .filter((result: any) => result.score >= pruneScore)
