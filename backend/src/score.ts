@@ -172,7 +172,9 @@ export class ScoreResult {
 }
 
 export const stopNames = [
-    [/(^|\s)(le|du|de|de la|l|d|de los|dos|del|el)\s/, '$1 $2'],
+    [/(^|\s*)de (los|la)\s+/,'de$2'],
+    [/(^|\s*)(du|de|l|d|dos|del|le|el)\s+/, '$2'],
+    [/\s+(du|de la|des|de|le|aux|de los|del|l|d)\s+/,' '],
     [/st/, 'saint']
 ];
 
@@ -183,9 +185,9 @@ const filterStopNames = (name: string|string[]): string|string[] => {
 const scoreName = (nameA: Name, nameB: Name): number => {
     if ((!nameA.first && !nameA.last) || (!nameB.first && !nameB.last)) { return blindNameScore }
     const firstA = tokenize(normalize(nameA.first as string|string[]), true);
-    const lastA = tokenize(filterStopNames(nameA.last as string|string[]));
+    const lastA = tokenize(filterStopNames(normalize(nameA.last as string|string[])));
     const firstB = tokenize(normalize(nameB.first as string|string[]), true);
-    const lastB = tokenize(filterStopNames(nameB.last as string|string[]));
+    const lastB = tokenize(filterStopNames(normalize(nameB.last as string|string[])));
 
     return (0.01 * Math.round(100*
         Math.max(
