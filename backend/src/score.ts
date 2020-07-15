@@ -23,7 +23,9 @@ const datePenalty = 3
 
 const minLocationScore = 0.2;
 const minDepScore = 0.8;
-const minNotFrCityScore = 0.4;
+const minNotFrCityScore = 0.5;
+const minNotFrCountryScore = 0.5;
+const blindLocationScore = 0.7;
 
 const boostSoundex = 1.5;
 
@@ -35,8 +37,11 @@ const sum = (a:number, b: number): number => a+b;
 const mean = (table: number[]): number => (table.length ? table.reduce(sum)/table.length : 0);
 
 const normalize = (token: string|string[]): string|string[] => {
+    if ((token === undefined) || (token === null)) {
+        return '';
+    }
     if (typeof(token) === 'string') {
-        return token.normalize('NFKD').replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase().replace(/[^a-z0-9]+/g, ' ');
+        return token.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase().replace(/[^a-z0-9]+/g, ' ').replace(/\s+/g,' ').replace(/^\s*$/,'');
     } else {
         return token.map(t => normalize(t) as string);
     }
@@ -92,16 +97,15 @@ const tokenize = (sentence: string|string[]|RequestField, tokenizeArray?: boolea
     }
 }
 
-
 const scoreReduce = (score:any):number => {
     if (score.score) {
-        return score.score;
+        return 0.01 * Math.round(100 * score.score);
     } else {
         const r:any = Object.keys(score).map(k => {
             if (typeof(score[k]) === 'number') {
-                return score[k];
+                return  0.01 * Math.round(100 * score[k]);
             } else {
-                return score[k].score || scoreReduce(score[k]);
+                return  0.01 * Math.round(100 * score[k].score) || scoreReduce(score[k]);
             }
         });
         return r.length ? 0.01 * Math.round(100 * r.reduce(multyiply)) : 0;
@@ -114,12 +118,12 @@ export const scoreResults = (request: RequestBody, results: Person[], dateFormat
             .map((result:any) => {
                 try {
                     result.scores = new ScoreResult(request, result, dateFormat);
-                    result.scores.score = scoreReduce(result.scores) ** (3/(Object.keys(result.scores).length || 1));
+                    result.scores.score =  0.01 * Math.round(100 * scoreReduce(result.scores) ** (3/(Object.keys(result.scores).length || 1)));
                 } catch(err) {
                     result.scores = {};
                 }
                 result.scores.es = 0.005 * Math.round(Math.min(200, result.score));
-                result.score = (result.scores.score !== undefined) ? result.scores.score : result.scores.es;
+                result.score = (result.scores.score !== undefined) ?  0.01 * Math.round(100 * result.scores.score) : result.scores.es;
                 return result;
             })
             .filter((result: any) => result.score >= pruneScore)
@@ -173,7 +177,9 @@ export class ScoreResult {
 }
 
 export const stopNames = [
-    [/(^|\s)(le|du|de|de la|l|d|de los|dos|del|el)\s/, '$1 $2'],
+    [/(^|\s*)de (los|la)\s+/,'de$2'],
+    [/(^|\s*)(du|de|l|d|dos|del|le|el)\s+/, '$2'],
+    [/\s+(du|de la|des|de|le|aux|de los|del|l|d)\s+/,' '],
     [/st/, 'saint']
 ];
 
@@ -184,9 +190,9 @@ const filterStopNames = (name: string|string[]): string|string[] => {
 const scoreName = (nameA: Name, nameB: Name): number => {
     if ((!nameA.first && !nameA.last) || (!nameB.first && !nameB.last)) { return blindNameScore }
     const firstA = tokenize(normalize(nameA.first as string|string[]), true);
-    const lastA = tokenize(filterStopNames(nameA.last as string|string[]));
+    const lastA = tokenize(filterStopNames(normalize(nameA.last as string|string[])));
     const firstB = tokenize(normalize(nameB.first as string|string[]), true);
-    const lastB = tokenize(filterStopNames(nameB.last as string|string[]));
+    const lastB = tokenize(filterStopNames(normalize(nameB.last as string|string[])));
 
     return (0.01 * Math.round(100*
         Math.max(
@@ -304,22 +310,38 @@ const scoreCountry = (countryA: string|string[]|RequestField, countryB: string|s
 
 const scoreLocation = (locA: Location, locB: Location): any => {
     const score: any = {};
-    if (locA.city && locB.city) {
-        if (locB.country && (scoreCountry('FRANCE', locB.country as string|string[]) === 1)) {
-            score.city = scoreCity(locA.city, locB.city as string|string[])
+    if (locB.country && (scoreCountry('FRANCE', locB.country as string|string[]) === 1)) {
+        if (normalize(locA.country as string|string[])) {
+            score.country = scoreCountry(locA.country, tokenize(locB.country as string) as string|string[]);
+        }
+        if (normalize(locA.city as string|string[]) && locB.city) {
+            score.city = scoreCity(locA.city, locB.city as string|string[]);
+        }
+        if (normalize(locA.departmentCode as string|string[]) && locB.departmentCode) {
+            if (locB.country && (scoreCountry('FRANCE', locB.country as string|string[]) === 1)) {
+                score.department = (locA.departmentCode === locB.departmentCode) ? 1 : minDepScore;
+            }
+        }
+        score.score = (score.country || score.city || score.department) ? Math.max(minLocationScore, scoreReduce(score)) : blindLocationScore;
+    } else {
+        if (normalize(locA.country as string|string[])) {
+            score.country = scoreCountry(locA.country, tokenize(locB.country as string) as string|string[]);
         } else {
-            score.city = Math.max(minNotFrCityScore, scoreCity(locA.city, tokenize(locB.city) as string|string[]));
+            if (normalize(locA.city as string|string[])) {
+                const sCountry = scoreCountry(locA.city, tokenize(locB.country as string) as string|string[]);
+                if (sCountry > minNotFrCountryScore) {
+                    score.country = sCountry;
+                }
+            } else {
+                score.country = blindLocationScore;
+            }
         }
-    }
-    if (locA.departmentCode && locB.departmentCode) {
-        if (locB.country && (scoreCountry('FRANCE', locB.country as string|string[]) === 1)) {
-            score.department = (locA.departmentCode === locB.departmentCode) ? 1 : minDepScore;
+        if (normalize(locA.city as string|string[]) && locB.city) {
+            const sCity = scoreCity(locA.city, tokenize(locB.city) as string|string[]);
+            if (sCity > minNotFrCityScore) { score.city = sCity; }
         }
+        score.score = Math.max(minNotFrCountryScore, score.country, scoreReduce(score));
     }
-    if (locA.country && locB.country) {
-        score.country = scoreCountry(locA.country, tokenize(locB.country as string) as string|string[]);
-    }
-    score.score = Math.max(minLocationScore, scoreReduce(score));
     return score;
 }
 
