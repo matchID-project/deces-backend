@@ -142,7 +142,7 @@ const processChunk = async (chunk: any, dateFormat: string) => {
   }
 }
 
-queue.process(async (job: Queue.Job) => {
+queue.process(Number(process.env.BACKEND_CONCURRENCY), async (job: Queue.Job) => {
   const jobIndex = inputsArray.findIndex(x => x.id === job.id)
   const jobFile = inputsArray.splice(jobIndex, 1).pop()
   return processCsv(job, jobFile)
@@ -206,6 +206,10 @@ const decryptFile = (encryptedData: forge.util.ByteStringBuffer, password: strin
  *                  type: number
  *                  description: Taille du lot pour le  traitement
  *                  example: 20
+ *                dateFormat:
+ *                  type: string
+ *                  description: Format to parse birthdate
+ *                  example: YYYY-MM-DD
  *                fileName:
  *                  type: string
  *                  description: Fichier CSV contenant le noms des identités à comparer
@@ -318,7 +322,9 @@ router.get('/:format(csv|json)/:id?', async (req: any, res: express.Response) =>
   if (req.params.id) {
     const md = forge.md.sha256.create();
     md.update(req.params.id);
-    const job: Queue.Job|any = await queue.getJob(md.digest().toHex())
+    const jobId = md.digest().toHex();
+    const job: Queue.Job|any = await queue.getJob(jobId);
+    const jobsActive = await queue.getJobs('active', {start: 0, end: 25})
     if (job && job.status === 'succeeded') {
       const jobResult = resultsArray.find(x => x.id === md.digest().toHex())
       if (jobResult == null) {
@@ -349,7 +355,7 @@ router.get('/:format(csv|json)/:id?', async (req: any, res: express.Response) =>
           decryptedResult.forEach((result: any) => {
             csvStream.write([
               ...sourceHeader.map((key: string) => result.metadata.source[key]),
-              ...resultsHeader.map(key => jsonPath(result, key))
+              ...resultsHeader.map(key => prettyString(jsonPath(result, key)))
             ])
           });
           // end stream write
@@ -360,8 +366,30 @@ router.get('/:format(csv|json)/:id?', async (req: any, res: express.Response) =>
       }
     } else if (job && job.status === 'failed') {
       res.status(400).send({status: job.status, msg: job.options.stacktraces.join(' ')});
+    } else if (job && jobsActive.some(j => j.id === jobId)) {
+      res.send({status: 'active', id: req.params.id, progress: job.progress});
     } else if (job) {
-      res.send({status: job.status, id: req.params.id, progress: job.progress});
+      const jobsWaiting = await queue.getJobs('waiting', {start: 0, end: 25})
+      const remainingRowsActive = jobsActive.reduce((acc: number, val: any) => {
+        return Math.round(acc + ((100.0 - val.progress.percentage) * val.progress.rows) / val.progress.percentage)
+      }, 0)
+      const jobsWaitingBefore = jobsWaiting.reduce((acc: number, val: any) => {
+        if (val.options.timestamp < job.options.timestamp) {
+          return acc + 1
+        } else {
+          return acc
+        }
+      }, 0)
+      const remainingRowsWaiting = jobsWaiting.reduce((acc: number, val: any) => {
+        if (val.options.timestamp < job.options.timestamp) {
+          const jobIndex = inputsArray.findIndex(x => x.id === val.id)
+          const fileSize = inputsArray[jobIndex].file.split(/\r\n|\r|\n/).length
+          return acc + fileSize
+        } else {
+          return acc
+        }
+      }, 0)
+      res.send({status: 'waiting', id: req.params.id, remainingRowsActive, remainingRowsWaiting, activeJobs: jobsActive.length, waitingJobs: jobsWaitingBefore});
     } else {
       res.send({msg: 'job doesn\'t exists'});
     }
@@ -400,8 +428,22 @@ export const jsonPath = (json: any, path: string): any => {
   }
 }
 
+export const prettyString = (json: any): string => {
+  if ((json === undefined) || (json === null)) {
+    return '';
+  }
+  if (typeof(json) === 'object') {
+    if (Array.isArray(json)) {
+      return json.join(', ');
+    }
+    return JSON.stringify(json);
+  } else {
+    return json.toString();
+  }
+}
+
 export const resultsHeader = [
-  'score', 'source', 'id', 'name.last', 'name.first', 'sex',
+  'score', 'scores', 'source', 'id', 'name.last', 'name.first', 'sex',
   'birth.date', 'birth.location.city', 'birth.location.cityCode',
   'birth.location.departmentCode', 'birth.location.country', 'birth.location.countryCode',
   'birth.location.latitude', 'birth.location.longitude',

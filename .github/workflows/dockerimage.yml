@@ -58,7 +58,7 @@ jobs:
           export jobId2=$(echo $msg2 | grep -Po '(?<=id":")[0-9a-z]+' )
           echo "JobID $jobId2"
           docker exec -i deces-backend curl -s --fail -X DELETE "http://localhost:8080/deces/api/v1/search/csv/$jobId1"
-          until docker exec -i deces-backend curl -s --fail -X GET "http://localhost:8080/deces/api/v1/search/csv/$jobId2" | tee log.log | grep --invert-match created > /dev/null ; do cat log.log ; sleep 5 ; done ;
+          until docker exec -i deces-backend curl -s --fail -X GET "http://localhost:8080/deces/api/v1/search/csv/$jobId2" | tee log.log | egrep --invert-match 'created|active|waiting' > /dev/null ; do cat log.log ; sleep 5 ; done ;
           docker exec -i deces-backend curl -s --fail -X GET "http://localhost:8080/deces/api/v1/search/csv/$jobId2" > results.csv
       - name: 📦 Upload results as job artifact
         uses: actions/upload-artifact@v1
