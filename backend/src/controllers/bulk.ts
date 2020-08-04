@@ -2,6 +2,7 @@ import multer from 'multer';
 import express from 'express';
 import Queue from 'bee-queue';
 import forge from 'node-forge';
+import { promises as fs } from "fs";
 import { parse } from '@fast-csv/parse';
 import { format } from '@fast-csv/format';
 import { Router } from 'express';
@@ -19,7 +20,6 @@ const multerSingle = multer().any();
 
 let stopJob = false;
 const inputsArray: JobInput[]= []
-const resultsArray: JobResult[]= []
 const queue = new Queue('example',  {
   redis: {
     host: 'redis'
@@ -252,10 +252,9 @@ router.post('/csv', multerSingle, async (req: any, res: express.Response) => {
       .save()
     job.on('succeeded', (result: any) => {
       const encryptedResult = encryptFile(Buffer.from(JSON.stringify(result)), randomKey)
-      resultsArray.push({id: job.id, result: encryptedResult})
+      fs.writeFile(`${job.id}.hex`, encryptedResult.toHex(), 'hex');
       setTimeout(() => {
-        const jobIndex = resultsArray.findIndex(x => x.id === job.id)
-        resultsArray.splice(jobIndex, 1)
+        fs.unlink(`${job.id}.hex`)
       }, 3600000) // Delete results after 1 hour
     });
     res.send({msg: 'started', id: randomKey});
@@ -326,12 +325,11 @@ router.get('/:format(csv|json)/:id?', async (req: any, res: express.Response) =>
     const job: Queue.Job|any = await queue.getJob(jobId);
     const jobsActive = await queue.getJobs('active', {start: 0, end: 25})
     if (job && job.status === 'succeeded') {
-      const jobResult = resultsArray.find(x => x.id === md.digest().toHex())
-      if (jobResult == null) {
-        res.send({msg: 'No results'})
-      } else {
-        const clone = Object.assign( Object.create( Object.getPrototypeOf(jobResult.result)), jobResult.result) // Clone to avoid problems with shift and original object
-        const initialCopy =  decryptFile(clone, req.params.id)
+      try {
+        fs.access(`${jobId}.hex`)
+        const data = await fs.readFile(`${jobId}.hex`)
+        const forgeBuffer = forge.util.createBuffer(data.toString('binary'));
+        const initialCopy =  decryptFile(forgeBuffer, req.params.id)
         const decryptedResult = JSON.parse(initialCopy)
         if (decryptedResult == null || decryptedResult.length === 0) {
           res.send({msg: 'Empty results'})
@@ -363,10 +361,12 @@ router.get('/:format(csv|json)/:id?', async (req: any, res: express.Response) =>
         } else {
           res.send({msg: 'Not available format'})
         }
+      } catch {
+        res.send({msg: 'Job succeeded but results expired'})
       }
     } else if (job && job.status === 'failed') {
       res.status(400).send({status: job.status, msg: job.options.stacktraces.join(' ')});
-    } else if (job && jobsActive.some(j => j.id === jobId)) {
+    } else if (job && jobsActive.some((j: any) => j.id === jobId)) {
       res.send({status: 'active', id: req.params.id, progress: job.progress});
     } else if (job) {
       const jobsWaiting = await queue.getJobs('waiting', {start: 0, end: 25})
