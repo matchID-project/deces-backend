@@ -30,6 +30,8 @@ export const dateValidationMask = (dateString: string) => {
 export const dateRangeValidationMask = (dateRangeString: string) => {
     if (isDateRange(dateRangeString)) {
         return dateRangeString.toString().split('-').every(d => dateValidationMask(d));
+    } else if (isDateLimit(dateRangeString)) {
+        return dateValidationMask(dateRangeString.toString().substr(1));
     } else {
         return dateValidationMask(dateRangeString.toString());
     }
@@ -40,7 +42,7 @@ export const isDateRange = (dateRangeString: string) => {
 }
 
 export const isDateLimit = (dateRangeString: string) => {
-    return (/\>[0-9\/]+/.test(dateRangeString))
+    return (/(\<[0-9\/]+|\>[0-9\/]+)/.test(dateRangeString))
 }
 
 export const dateTransformMask = (dateString: string|number): string => {
@@ -57,6 +59,10 @@ export const dateRangeTransformMask = (dateRangeString: string, dateFormat?: str
   } else {
     if (/[0-9\/]+\-[0-9\/]+/.test(dateRangeString) && dateRangeString.toString().split('-').length === 2) {
       return dateRangeString.toString().split('-').map(d => dateTransformMask(d));
+    } else if (/\>[0-9\/]+/.test(dateRangeString)) {
+      return [dateTransformMask(dateRangeString.substr(1)), null];
+    } else if (/\<[0-9\/]+/.test(dateRangeString)) {
+      return [null, dateTransformMask(dateRangeString.substr(1))];
     } else {
       return dateTransformMask(dateRangeString);
     }

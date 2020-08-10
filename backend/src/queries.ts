@@ -148,8 +148,27 @@ export const firstNameQuery = (field: string[], value: string, fuzzy: boolean, m
 };
 
 
-export const dateRangeStringQuery = (field: string, value: string, fuzzy: boolean, must: boolean) => {
+export const dateRangeStringQuery = (field: string, value: string|string[], fuzzy: boolean, must: boolean) => {
     if (Array.isArray(value) && (value.length === 2)) {
+      if (value[0] === null) {
+        const max = value[1].padEnd(8,'9');
+        return {
+            range: {
+                [field]: {
+                    lt: max
+                }
+            }
+        };
+      } else if (value[1] === null) {
+        const min = value[0].padEnd(8,'0');
+        return {
+            range: {
+                [field]: {
+                    gt: min
+                }
+            }
+        };
+      } else {
         let min = (value[0] <= value[1]) ? value[0] : value[1];
         min = min.padEnd(8,'0');
         let max = (value[0] <= value[1]) ? value[1] : value[0];
@@ -162,9 +181,10 @@ export const dateRangeStringQuery = (field: string, value: string, fuzzy: boolea
                 }
             }
         };
-    } else if (value.length < 8){
+      }
+    } else if ((typeof(value) === 'string') && value.length < 8){
         return prefixQuery(field, value, false, must);
-    } else {
+    } else if ((typeof(value) === 'string')) {
         return fuzzyShouldTermQuery(field, value, fuzzy, must);
     }
 };
