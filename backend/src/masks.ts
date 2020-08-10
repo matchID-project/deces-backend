@@ -39,6 +39,10 @@ export const isDateRange = (dateRangeString: string) => {
     return (/[0-9\/]+\-[0-9\/]+/.test(dateRangeString))
 }
 
+export const isDateLimit = (dateRangeString: string) => {
+    return (/\>[0-9\/]+/.test(dateRangeString))
+}
+
 export const dateTransformMask = (dateString: string|number): string => {
   if (typeof(dateString) === 'string') {
     return dateString.replace(/(\d{2})\/(\d{2})\/(\d{4})/,'$3$2$1');
@@ -60,11 +64,11 @@ export const dateRangeTransformMask = (dateRangeString: string, dateFormat?: str
 }
 
 export const sexValidationMask = (sex: string) => {
-    return /^(F|M)?$/.test(sex);
+    return /^(F|M|H)?$/.test(sex);
 }
 
 export const sexTransformMask = (sex: string) => {
-    return sex.replace(/^(F|M).*$/,'$1');
+    return sex.replace(/^(H).*$/,'M').replace(/^(F|M).*$/,'$1');
 }
 
 export const sortValidationMask = (sort: string|Sort[]) => {
