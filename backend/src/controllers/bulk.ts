@@ -10,7 +10,6 @@ import { createGzip, createGunzip } from 'zlib';
 import { promisify } from 'util';
 import { parse } from '@fast-csv/parse';
 import { format } from '@fast-csv/format';
-import { fromStream } from 'fast-csv';
 import { Router } from 'express';
 import { RequestInput } from '../models/requestInput';
 import { buildRequest } from '../buildRequest';
@@ -24,7 +23,7 @@ const salt = crypto.randomBytes(128);
 export const router = Router();
 const multerSingle = multer().any();
 
-let stopJob = false;
+const stopJob: any = [];
 const stopJobError = 'job has been stopped';
 const inputsArray: JobInput[]= []
 const queue = new Queue('example',  {
@@ -79,7 +78,10 @@ class ProcessStream<I extends any, O extends any> extends Transform {
   }
 
   _transform(record: any, encoding: string, callback: any) {
-    if (stopJob) { return callback(stopJobError) }
+    if (stopJob.includes(this.job.id)) {
+      this.push(null);
+      return;
+    }
     if (! this.inputHeaders) {
       this.inputHeaders = Object.keys(record);
       this.outputHeaders = {
@@ -254,11 +256,7 @@ export const processCsv =  async (job: any, jobFile: any): Promise<any> => {
       .pipe(csvStream)
       .on('error', (e: any) => log({csvProcessingError: e, jobId}))
       .pipe(processStream)
-      .on('error', (e: any) => {
-        if (e !== stopJobError) {
-          log({matchingProcessingError: e, jobId})
-        }
-      })
+      .on('error', (e: any) => log({matchingProcessingError: e, jobId}))
       .pipe(jsonStringStream)
       .on('error', (e: any) => log({stringifyProcessingError: e, jobId}))
       .pipe(gzipStream)
@@ -269,11 +267,16 @@ export const processCsv =  async (job: any, jobFile: any): Promise<any> => {
       .on('error', (e: any) => log({writeProcessingError: e, jobId}));
     setTimeout(() => {
         // lazily removes inputfile index as soon as pipline begins
-        fs.unlink(jobFile.file, (e) => log({unlinkInputProcessingError: e, jobId}));
+        fs.unlink(jobFile.file, (e: any) => { if (e) log({unlinkInputProcessingError: e, jobId}) });
     }, 1000);
     await finishedAsync(writeStream);
   } catch(e) {
     throw(e);
+  }
+  if (stopJob === job.id) {
+    return stopJobError;
+  } else {
+    return;
   }
 }
 
@@ -410,9 +413,11 @@ router.post('/csv', multerSingle, async (req: any, res: express.Response) => {
       // .reportProgress({rows: 0, percentage: 0}) TODO: add for bee-queue version 1.2.4
       .save()
     job.on('succeeded', (result: any) => {
-      setTimeout(() => {
-        fs.unlink(`${job.id}.out.enc`, (err) => {if (err) throw err;});
-      }, 3600000) // Delete results after 1 hour
+      if (!stopJob.includes(job.id)) {
+        setTimeout(() => {
+          fs.unlink(`${job.id}.out.enc`, (err: any) => {if (err) log({unlinkOutputDeleteError: err, id: randomKey});});
+        }, 3600000) // Delete results after 1 hour
+      }
     });
     res.send({msg: 'started', id: randomKey});
   } else {
@@ -483,6 +488,10 @@ router.get('/:format(csv|json)/:id?', async (req: any, res: express.Response) =>
     const jobsActive = await queue.getJobs('active', {start: 0, end: 25})
     if (job && job.status === 'succeeded') {
       try {
+        if (stopJob.includes(job.id)) {
+          res.send({msg: `Job ${req.params.id} was cancelled`});
+          return;
+        }
         const size = fs.statSync(`${jobId}.out.enc`).size;
         let sourceHeader: any;
         const decryptStream = crypto.createDecipheriv('aes-256-cbc', pbkdf2(req.params.id), encryptioniv);
@@ -576,7 +585,7 @@ router.delete('/:format(csv|json)/:id?', async (req: any, res: express.Response)
     const jobId = md.digest().toHex()
     const job: Queue.Job|any= await queue.getJob(jobId)
     if (job && job.status === 'created') {
-      stopJob = true;
+      stopJob.push(job.id);
       setTimeout(() => {
         // lazily remove encrypted files
         fs.unlink(`${jobId}.out.enc`, (e) => {
@@ -592,7 +601,11 @@ router.delete('/:format(csv|json)/:id?', async (req: any, res: express.Response)
       }, 2000);
       res.send({msg: `Job ${req.params.id} cancelled`})
     } else if (job) {
-      res.send({msg: `job is ${job.status}`})
+      if (stopJob.includes(job.id)) {
+        res.send({msg: `Job ${req.params.id} already cancelled`})
+      } else {
+        res.send({msg: `job is ${job.status}`})
+      }
     } else {
       res.send({msg: 'no job found'})
     }
