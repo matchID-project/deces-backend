@@ -72,7 +72,7 @@ export interface RequestBody {
  /**
   * Sexe
   */
- sex?: 'M'|'F';
+ sex?: 'M'|'F'|'H';
  /**
   * Date de naissance au format\: JJ/MM/AAAA<br>  <li> Pour une date inconnue les valeurs sont 0000 pour AAAA; 00 pour MM et JJ</li><br> <li> Une recherche par tranche de date est également possible sous la forme: JJ/MM/AAAA - JJ/MM/AAAA</li>
   */

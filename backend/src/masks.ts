@@ -30,6 +30,8 @@ export const dateValidationMask = (dateString: string) => {
 export const dateRangeValidationMask = (dateRangeString: string) => {
     if (isDateRange(dateRangeString)) {
         return dateRangeString.toString().split('-').every(d => dateValidationMask(d));
+    } else if (isDateLimit(dateRangeString)) {
+        return dateValidationMask(dateRangeString.toString().substr(1));
     } else {
         return dateValidationMask(dateRangeString.toString());
     }
@@ -37,6 +39,10 @@ export const dateRangeValidationMask = (dateRangeString: string) => {
 
 export const isDateRange = (dateRangeString: string) => {
     return (/[0-9\/]+\-[0-9\/]+/.test(dateRangeString))
+}
+
+export const isDateLimit = (dateRangeString: string) => {
+    return (/(\<[0-9\/]+|\>[0-9\/]+)/.test(dateRangeString))
 }
 
 export const dateTransformMask = (dateString: string|number): string => {
@@ -53,6 +59,10 @@ export const dateRangeTransformMask = (dateRangeString: string, dateFormat?: str
   } else {
     if (/[0-9\/]+\-[0-9\/]+/.test(dateRangeString) && dateRangeString.toString().split('-').length === 2) {
       return dateRangeString.toString().split('-').map(d => dateTransformMask(d));
+    } else if (/\>[0-9\/]+/.test(dateRangeString)) {
+      return [dateTransformMask(dateRangeString.substr(1)), null];
+    } else if (/\<[0-9\/]+/.test(dateRangeString)) {
+      return [null, dateTransformMask(dateRangeString.substr(1))];
     } else {
       return dateTransformMask(dateRangeString);
     }
@@ -60,11 +70,11 @@ export const dateRangeTransformMask = (dateRangeString: string, dateFormat?: str
 }
 
 export const sexValidationMask = (sex: string) => {
-    return /^(F|M)?$/.test(sex);
+    return /^(F|M|H)?$/.test(sex);
 }
 
 export const sexTransformMask = (sex: string) => {
-    return sex.replace(/^(F|M).*$/,'$1');
+    return sex.replace(/^(H).*$/,'M').replace(/^(F|M).*$/,'$1');
 }
 
 export const sortValidationMask = (sort: string|Sort[]) => {

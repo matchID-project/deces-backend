@@ -35,6 +35,7 @@ services:
       - API_EMAIL=${API_EMAIL}
       - ES_URL=${ES_HOST}:${ES_PORT}
       - ES_INDEX=${ES_INDEX}
+    restart: always
   redis:
     image: redis:alpine
     container_name: ${APP}-redis
