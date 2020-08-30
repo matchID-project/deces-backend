@@ -26,7 +26,13 @@ const multerSingle = multer().any();
 const stopJob: any = [];
 const stopJobError = 'job has been stopped';
 const inputsArray: JobInput[]= []
-const queue = new Queue('example',  {
+const jobQueue = new Queue('jobs',  {
+  redis: {
+    host: 'redis'
+  }
+});
+
+const chunkQueue = new Queue('chunks',  {
   redis: {
     host: 'redis'
   }
@@ -59,6 +65,7 @@ class ProcessStream<I extends any, O extends any> extends Transform {
   batchSize: number;
   batchNumber: number;
   processedRows: number;
+  jobs: any[];
   totalRows: number;
   dateFormat: string;
 
@@ -75,6 +82,7 @@ class ProcessStream<I extends any, O extends any> extends Transform {
     this.processedRows = 0;
     this.totalRows = this.job.data.totalRows;
     this.dateFormat = this.job.data.dateFormat;
+    this.jobs = [];
   }
 
   _transform(record: any, encoding: string, callback: any) {
@@ -94,17 +102,17 @@ class ProcessStream<I extends any, O extends any> extends Transform {
 
     this.batch.push(record);
     if (this.shouldProcessBatch) {
-        this.processRecords()
-        .then(() => callback())
-        .catch(err => callback(err));
-        return;
+      this.processRecords(this.batchNumber - Number(process.env.BACKEND_CHUNK_CONCURRENCY))
+      .then(() => callback())
+      .catch(err => callback(err));
+      return;
     }
     callback();
 }
 
   _flush(callback: any) {
       if (this.batch.length) {
-          this.processRecords()
+          this.processRecords(this.batchNumber)
               .then(() => callback())
               .catch(err => callback(err));
           return;
@@ -113,35 +121,51 @@ class ProcessStream<I extends any, O extends any> extends Transform {
   }
 
   pushRecords(records: any) {
-      if (this.outputHeaders !== undefined) {
-        // add header to stream
-        this.push(this.outputHeaders);
-        this.outputHeaders = undefined;
-      }
-      this.batchNumber++;
-      records.forEach((r: any) => {
-        this.processedRows++;
-        this.push(r);
-      });
-      this.job.reportProgress({rows: this.processedRows, percentage: this.processedRows / this.totalRows * 100})
+    if (this.outputHeaders !== undefined) {
+      // add header to stream
+      this.push(this.outputHeaders);
+      this.outputHeaders = undefined;
+    }
+    records.forEach((r: any) => {
+      this.processedRows++;
+      this.push(r);
+    });
+    this.job.reportProgress({rows: this.processedRows, percentage: this.processedRows / this.totalRows * 100})
   }
 
   get shouldProcessBatch() {
       return this.batch.length >= this.batchSize;
   }
 
-  async processRecords() {
-      const records = await this.processBatch();
+  async processRecords(batchNumber: number) {
+    await this.processBatch();
+    await this.flushRecords(batchNumber);
+  }
+
+  async flushRecords(batchNumber: number) {
+    while((this.jobs.length > 0) && (Number(this.jobs[0].id) <= batchNumber)) {
+      const job = this.jobs.shift();
+      const records = await job.result;
       this.pushRecords(records);
-      return records;
+    }
   }
 
   async processBatch() {
-      const records = await processChunk(this.batch.map((r: any) => this.toRequest(r)), this.dateFormat);
-      this.batch = [];
-      return records;
+    const jobId = `${this.batchNumber++}`;
+    const job = await chunkQueue
+      .createJob({
+        chunk: this.batch.map((r: any) => this.toRequest(r)),
+        dateFormat: this.dateFormat
+      })
+      .timeout(30000)
+      .retries(2)
+      .save();
+    const jobResult = new Promise((resolve, reject) => {
+      job.on('succeeded', (result: any) => { resolve(result) });
+    });
+    this.jobs.push({id: jobId, result: jobResult})
+    this.batch = [];
   }
-
 
   toRequest(record: any) {
     const request: any = {
@@ -305,7 +329,11 @@ const processChunk = async (chunk: any, dateFormat: string) => {
   }
 }
 
-queue.process(Number(process.env.BACKEND_CONCURRENCY), async (job: Queue.Job) => {
+chunkQueue.process(Number(process.env.BACKEND_CHUNK_CONCURRENCY), async (chunkJob: Queue.Job) => {
+  return await processChunk(chunkJob.data.chunk, chunkJob.data.dateFormat);
+})
+
+jobQueue.process(Number(process.env.BACKEND_JOB_CONCURRENCY), async (job: Queue.Job) => {
   const jobIndex = inputsArray.findIndex(x => x.id === job.id);
   const jobFile = inputsArray.splice(jobIndex, 1).pop();
   return processCsv(job, jobFile);
@@ -407,7 +435,7 @@ router.post('/csv', multerSingle, async (req: any, res: express.Response) => {
     readStream.push(null);
     await finishedAsync(writeStream);
     inputsArray.push({id: md.digest().toHex(), file: `${md.digest().toHex()}.in.enc`, size: options.totalRows}) // Use key hash as job identifier
-    const job = await queue
+    const job = await jobQueue
       .createJob({...options})
       .setId(md.digest().toHex())
       // .reportProgress({rows: 0, percentage: 0}) TODO: add for bee-queue version 1.2.4
@@ -484,8 +512,8 @@ router.get('/:format(csv|json)/:id?', async (req: any, res: express.Response) =>
     const md = forge.md.sha256.create();
     md.update(req.params.id);
     const jobId = md.digest().toHex();
-    const job: Queue.Job|any = await queue.getJob(jobId);
-    const jobsActive = await queue.getJobs('active', {start: 0, end: 25})
+    const job: Queue.Job|any = await jobQueue.getJob(jobId);
+    const jobsActive = await jobQueue.getJobs('active', {start: 0, end: 25})
     if (job && job.status === 'succeeded') {
       try {
         if (stopJob.includes(job.id)) {
@@ -550,7 +578,7 @@ router.get('/:format(csv|json)/:id?', async (req: any, res: express.Response) =>
     } else if (job && jobsActive.some((j: any) => j.id === jobId)) {
       res.send({status: 'active', id: req.params.id, progress: job.progress});
     } else if (job) {
-      const jobsWaiting = await queue.getJobs('waiting', {start: 0, end: 25})
+      const jobsWaiting = await jobQueue.getJobs('waiting', {start: 0, end: 25})
       const remainingRowsActive = jobsActive.reduce((acc: number, val: any) => {
         return Math.round(acc + ((100.0 - val.progress.percentage) * val.progress.rows) / val.progress.percentage)
       }, 0)
@@ -583,7 +611,7 @@ router.delete('/:format(csv|json)/:id?', async (req: any, res: express.Response)
     const md = forge.md.sha256.create();
     md.update(req.params.id);
     const jobId = md.digest().toHex()
-    const job: Queue.Job|any= await queue.getJob(jobId)
+    const job: Queue.Job|any= await jobQueue.getJob(jobId)
     if (job && job.status === 'created') {
       stopJob.push(job.id);
       setTimeout(() => {

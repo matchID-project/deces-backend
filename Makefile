@@ -43,7 +43,8 @@ export NPM_VERBOSE ?= 1
 export REDIS_DATA=${APP_PATH}/redisdata
 export BULK_TIMEOUT = 600
 export BACKEND_TIMEOUT = 30
-export BACKEND_CONCURRENCY = 1
+export BACKEND_JOB_CONCURRENCY = 2
+export BACKEND_CHUNK_CONCURRENCY = 4
 
 # Backupdir
 export BACKUP_DIR = ${APP_PATH}/backup
@@ -238,7 +239,7 @@ backend-start:
 			(docker exec -i ${USE_TTY} ${APP} curl -s --fail -X GET http://localhost:${BACKEND_PORT}/deces/api/v1/version > /dev/null) ;\
 			ret=$$? ;\
 			if [ "$$ret" -ne "0" ] ; then\
-				echo -e "try still $$timeout seconds to start backend before tiemout" ;\
+				echo -e "try still $$timeout seconds to start backend before timeout" ;\
 			fi ;\
 			((timeout--)); sleep 1 ;\
 		done ;\
