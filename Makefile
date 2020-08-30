@@ -42,6 +42,7 @@ export NPM_REGISTRY = $(shell echo $$NPM_REGISTRY )
 export NPM_VERBOSE ?= 1
 export REDIS_DATA=${APP_PATH}/redisdata
 export BULK_TIMEOUT = 600
+export BACKEND_TIMEOUT = 30
 export BACKEND_CONCURRENCY = 1
 
 # Backupdir
@@ -232,6 +233,16 @@ backend-build-all: network backend-dist backend-build-image
 backend-start:
 	@echo docker-compose up backend for production ${VERSION}
 	@export EXEC_ENV=production; ${DC} -f ${DC_FILE}.yml up -d 2>&1 | grep -v orphan
+	@timeout=${BACKEND_TIMEOUT} ; ret=1 ;\
+		until [ "$$timeout" -le 0 -o "$$ret" -eq "0"  ] ; do\
+			(docker exec -i ${USE_TTY} ${APP} curl -s --fail -X GET http://localhost:${BACKEND_PORT}/deces/api/v1/version > /dev/null) ;\
+			ret=$$? ;\
+			if [ "$$ret" -ne "0" ] ; then\
+				echo -e "try still $$timeout seconds to start backend before tiemout" ;\
+			fi ;\
+			((timeout--)); sleep 1 ;\
+		done ;\
+	echo -e "backend started in $$((BACKEND_TIMEOUT - timeout)) seconds"; exit $$ret
 
 backend-stop:
 	@echo docker-compose down backend for production ${VERSION}
