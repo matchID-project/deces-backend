@@ -383,6 +383,10 @@ jobQueue.process(Number(process.env.BACKEND_JOB_CONCURRENCY), async (job: Queue.
  *                  type: string
  *                  description: Format to parse birthdate
  *                  example: YYYY-MM-DD
+ *                candidateNumber:
+ *                  type: number
+ *                  description: Maximum number of matchs candidates to return per identity
+ *                  example: 1
  *                fileName:
  *                  type: string
  *                  description: Fichier CSV contenant le noms des identités à comparer
