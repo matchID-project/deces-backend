@@ -1,3 +1,5 @@
+import { ScoreResult } from '../score';
+
 export interface Sort {
  [key: string]: 'asc'|'desc';
 }
@@ -48,6 +50,7 @@ export interface Person {
     id: string;
     name: Name;
     sex: 'M'|'F';
+    scores: ScoreResult;
     birth: {
       date: string;
       location: Location;

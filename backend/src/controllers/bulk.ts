@@ -316,7 +316,7 @@ export const processChunk = async (chunk: any, dateFormat: string, candidateNumb
   if (result.data.responses.length > 0) {
     return result.data.responses.map((item: ResultRawES, idx: number) => {
       if (item.hits.hits.length > 0) {
-        const scoredResults = scoreResults(chunk[idx], item.hits.hits.map(hit => buildResultSingle(hit)), dateFormat)
+        const scoredResults = scoreResults(chunk[idx], item.hits.hits.map(buildResultSingle), dateFormat)
         if (scoredResults && scoredResults.length > 0) {
           const selectedCanditates = scoredResults.slice(0, candidateNumber)
           return selectedCanditates.map((selectedCanditate: any) => {

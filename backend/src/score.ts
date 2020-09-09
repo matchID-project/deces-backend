@@ -133,7 +133,7 @@ export const scoreResults = (request: RequestBody, results: Person[], dateFormat
 
 export class ScoreResult {
   score: number;
-  date: number
+  date?: number
   name?: number;
   sex?: number;
   location?: number;
