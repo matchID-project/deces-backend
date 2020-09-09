@@ -1,5 +1,6 @@
 import { Person } from './entities';
 import { RequestInput } from './requestInput';
+import { scoreResults } from '../score';
 
 interface RequestType {
   [key: string]: any; // Index signature
@@ -18,6 +19,7 @@ interface RequestType {
   page?: number;
   fuzzy?: string;
   sort?: string;
+  dateFormat?: string;
 }
 
 interface ResType {
@@ -163,6 +165,7 @@ export const buildResult = (result: ResultRawES, requestInput: RequestInput): Re
     }
   })
   const filteredResults = result.hits.hits.map(buildResultSingle)
+  scoreResults(filteredRequest, filteredResults, filteredRequest.dateFormat)
   const composedResult: Result =  {
     request: filteredRequest,
     response: {
@@ -186,6 +189,7 @@ export const buildResultSingle = (item: ResultRawHits): Person => {
     score: item._score,
     // source: dataCatalog[item._source.SOURCE],
     source: item._source.SOURCE,
+    scores: {score: 0},
     id: item._id,
     name: {
       first: item._source.PRENOMS ? item._source.PRENOMS.split(' ') : [''],
