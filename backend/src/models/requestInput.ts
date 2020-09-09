@@ -1,3 +1,4 @@
+import moment from 'moment'
 import {
   fullTextWithQuery,
   nameWithQuery,
@@ -154,6 +155,8 @@ export class RequestInput {
     this.sort = sort ? sortWithQuery(sort) : {value: [{score: 'desc'}]}
     this.block = block;
     this.dateFormat = dateFormat;
+    const birthDateTransformed = birthDate && dateFormat ? moment(birthDate.toString(), dateFormat).format("YYYYMMDD"): birthDate;
+    const deathDateTransformed = deathDate && dateFormat ? moment(deathDate.toString(), dateFormat).format("YYYYMMDD"): deathDate;
 
     this.fullText = fullTextWithQuery(q, fuzzy);
     this.name = nameWithQuery({
@@ -161,12 +164,12 @@ export class RequestInput {
       last: lastName
     }, fuzzy);
     this.sex = sexWithQuery(sex, fuzzy);
-    this.birthDate = birthDateWithQuery(birthDate, fuzzy);
+    this.birthDate = birthDateWithQuery(birthDateTransformed, fuzzy);
     this.birthCity = birthCityWithQuery(birthCity, fuzzy);
     this.birthDepartment = birthDepartmentWithQuery(birthDepartment, fuzzy);
     this.birthCountry = birthCountryWithQuery(birthCountry, fuzzy);
     this.birthGeoPoint = birthGeoPointWithQuery(birthGeoPoint, fuzzy);
-    this.deathDate = deathDateWithQuery(deathDate, fuzzy);
+    this.deathDate = deathDateWithQuery(deathDateTransformed, fuzzy);
     this.deathAge = deathAgeWithQuery(deathAge, fuzzy);
     this.deathCity = deathCityWithQuery(deathCity, fuzzy);
     this.deathDepartment = deathDepartmentWithQuery(deathDepartment, fuzzy);

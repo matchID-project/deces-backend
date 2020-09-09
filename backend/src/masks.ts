@@ -1,4 +1,3 @@
-import moment from 'moment'
 import { Sort } from './models/entities'
 
 export const ageValidationMask = (ageString: string) => {
@@ -38,7 +37,7 @@ export const dateRangeValidationMask = (dateRangeString: string) => {
 }
 
 export const isDateRange = (dateRangeString: string) => {
-    return (/[0-9\/]+\-[0-9\/]+/.test(dateRangeString))
+    return (/^[0-9\/]+\-[0-9\/]+$/.test(dateRangeString))
 }
 
 export const isDateLimit = (dateRangeString: string) => {
@@ -53,19 +52,15 @@ export const dateTransformMask = (dateString: string|number): string => {
   }
 }
 
-export const dateRangeTransformMask = (dateRangeString: string, dateFormat?: string) => {
-  if (dateFormat) {
-    return moment(dateRangeString.toString(), dateFormat).format("YYYYMMDD");
+export const dateRangeTransformMask = (dateRangeString: string) => {
+  if (/[0-9\/]+\-[0-9\/]+/.test(dateRangeString) && dateRangeString.toString().split('-').length === 2) {
+    return dateRangeString.toString().split('-').map(d => dateTransformMask(d));
+  } else if (/\>[0-9\/]+/.test(dateRangeString)) {
+    return [dateTransformMask(dateRangeString.substr(1)), null];
+  } else if (/\<[0-9\/]+/.test(dateRangeString)) {
+    return [null, dateTransformMask(dateRangeString.substr(1))];
   } else {
-    if (/[0-9\/]+\-[0-9\/]+/.test(dateRangeString) && dateRangeString.toString().split('-').length === 2) {
-      return dateRangeString.toString().split('-').map(d => dateTransformMask(d));
-    } else if (/\>[0-9\/]+/.test(dateRangeString)) {
-      return [dateTransformMask(dateRangeString.substr(1)), null];
-    } else if (/\<[0-9\/]+/.test(dateRangeString)) {
-      return [null, dateTransformMask(dateRangeString.substr(1))];
-    } else {
-      return dateTransformMask(dateRangeString);
-    }
+    return dateTransformMask(dateRangeString);
   }
 }
 
