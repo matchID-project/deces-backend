@@ -1,51 +1,38 @@
-import { processCsv } from './bulk';
+import { processChunk } from './bulk';
 import { expect } from 'chai';
 import 'mocha';
 
-describe('Process csv', () => {
-  it('Return json', async () => {
-    const result = await processCsv(
-      {
-        data: {
-          sep: ',',
-          chunkSize: 5
-        }
-      },
-      {file: ['firstName,lastName,birthDate', 'jean,pierre,04/08/1933', 'georges,michel,12/03/1939'].join('\r\n')}
+describe('bulk.ts - Process chunk', () => {
+  it('Precise request should return only one result', async () => {
+    const result = await processChunk(
+      [{firstName: 'jean', lastName: 'pierre', birthDate: '04/08/1933'}, {firstName: 'georges', lastName: 'michel', birthDate: '12/03/1939'}],
+      'DD/MM/YYYY',
+      5
     )
-    expect(result[0].metadata.mapping.firstName).to.equal('firstName')
-    expect(result[0].metadata.mapping.lastName).to.equal('lastName')
-    expect(result[1].block.minimum_match).to.equal(1);
+    expect(result.length).to.equal(2)
+    expect(result[0][0].name.first).to.contain('Jean')
+    expect(result[0][0].name.last).to.equal('Pierre')
   });
 
-  it('Passing only first and last name ', async () => {
-    const result = await processCsv(
-      {
-        data: {
-          sep: ',',
-          chunkSize: 5
-        }
-      },
-      {file: ['firstName,lastName', 'jean,pierre', 'georges,michel'].join('\r\n')}
+  it('Passing only first and last name', async () => {
+    const result = await processChunk(
+      [{firstName: 'jean', lastName: 'pierre'}, {firstName: 'georges', lastName: 'michel'}],
+      'DD/MM/YYYY',
+      5
     )
-    expect(result[1].name.last).to.equal('Pierre')
-    expect(result[2].name.last).to.equal('Michel')
+    expect(result[0]).to.contain.all.keys(['0','1','2','3','4'])
+    expect(result[0][0].name.first).to.contain('Jean')
+    expect(result[0][0].name.last).to.equal('Pierre')
   });
 
-  it('Passing alternative date format', async () => {
-    const result = await processCsv(
-      {
-        data: {
-          sep: ',',
-          chunkSize: 5,
-          dateFormat: 'YYYY-MM-DD'
-        }
-      },
-      {file: ['firstName,lastName,birthDate', 'jean,pierre,1933-08-04', 'georges,michel,1939-03-12'].join('\r\n')}
+  it('Alternative date format', async () => {
+    const result = await processChunk(
+      [{firstName: 'jean', lastName: 'pierre', birthDate: '1933-08-04'}, {firstName: 'georges', lastName: 'michel', birthDate: '1939-03-12'}],
+      'YYYY-MM-DD',
+      1
     )
-    expect(result[1]).to.have.property('name')
-    expect(result[2]).to.have.property('name')
-    expect(result[1].name.last).to.equal('Pierre')
-    expect(result[2].name.last).to.equal('Michel')
+    expect(result.length).to.equal(2)
+    expect(result[0][0].name.first).to.contain('Jean')
+    expect(result[0][0].name.last).to.equal('Pierre')
   });
 });
