@@ -23,6 +23,8 @@ jobs:
           FILES_TO_PROCESS: deces-2020-m01.txt.gz
           STORAGE_ACCESS_KEY: ${{ secrets.aws_access_key_id }}
           STORAGE_SECRET_KEY: ${{ secrets.aws_secret_access_key }}
+      - name: ✅ Execute mocha tests
+        run: make backend-test-mocha
       - name: 🚀 Push the docker image
         if: steps.extract_branch.outputs.branch == 'master' || steps.extract_branch.outputs.branch == 'dev'
         run: make docker-push GIT_BRANCH="$GIT_BRANCH"

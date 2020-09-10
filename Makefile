@@ -253,6 +253,14 @@ backend-test:
 	@echo Testing API parameters
 	@docker exec -i ${USE_TTY} ${APP} bash /deces-backend/tests/test_query_params.sh
 
+backend-test-mocha:
+	docker run --rm \
+		-v ${BACKEND}/src:/${APP}/src/ \
+		-v ${BACKEND}/tests:/${APP}/tests/ \
+		--network='${DC_NETWORK}' \
+		 -i ${DOCKER_USERNAME}/deces-backend-development:${APP_VERSION} \
+		npm run test
+
 backend/tests/clients_test.csv:
 	curl -L https://github.com/matchID-project/examples/raw/master/data/clients_test.csv -o backend/tests/clients_test.csv
 
@@ -282,7 +290,7 @@ backend-dev-bulk: backend/tests/clients_test.csv
 	@$(eval jobId1 = $(shell echo $(msg1) | grep -Po '(?<=id:)[0-9a-z]+' ))
 	@echo "JobID $(jobId1)"
 	# second job
-	@$(eval msg2 = $(shell docker exec -i ${USE_TTY} ${APP}-development curl  -X POST -H "Content-Type: multipart/form-data" -F "csv=@tests/clients_test.csv" -F "sep=;" -F "firstName=Prenom" -F "lastName=Nom" -F "birthDate=Date" -F "chunkSize=20" http://localhost:${BACKEND_PORT}/deces/api/v1/search/csv ))
+	@$(eval msg2 = $(shell docker exec -i ${USE_TTY} ${APP}-development curl  -X POST -H "Content-Type: multipart/form-data" -F "csv=@tests/clients_test.csv" -F "sep=;" -F "firstName=Prenom" -F "candidateNumber=4" -F "lastName=Nom" -F "birthDate=Date" -F "chunkSize=20" http://localhost:${BACKEND_PORT}/deces/api/v1/search/csv ))
 	@echo "Result $(msg2)"
 	@$(eval jobId2 = $(shell echo $(msg2) | grep -Po '(?<=id:)[0-9a-z]+' )) 
 	@echo "JobID $(jobId2)"
