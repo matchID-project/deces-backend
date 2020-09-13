@@ -5,10 +5,11 @@ import moment from 'moment';
 import { dateTransformMask, isDateRange } from './masks';
 import soundex from '@thejellyfish/soundex-fr';
 
-const decreaseTokenPlace = 0.7;
+const tokenPlacePenalty = 0.7;
 const blindTokenScore = 0.5;
 
-const decreaseNameInversion = 0.7;
+const nameInversionPenalty = 0.7;
+const stopNamePenalty = 0.8;
 const minNameScore = 0.1;
 const blindNameScore = 0.5;
 const lastNamePenalty = 3
@@ -177,8 +178,8 @@ export class ScoreResult {
 }
 
 export const stopNames = [
-    [/(^|\s*)de (los|la)\s+/,'de$2'],
-    [/(^|\s*)(du|de|l|d|dos|del|le|el)\s+/, '$2'],
+    [/(^|\s*)de (los|la)\s+/,''],
+    [/(^|\s*)(du|de|l|d|dos|del|le|el)\s+/, ''],
     [/\s+(du|de la|des|de|le|aux|de los|del|l|d)\s+/,' '],
     [/st/, 'saint']
 ];
@@ -189,19 +190,36 @@ const filterStopNames = (name: string|string[]): string|string[] => {
 
 const scoreName = (nameA: Name, nameB: Name): number => {
     if ((!nameA.first && !nameA.last) || (!nameB.first && !nameB.last)) { return blindNameScore }
+    let score = 0;
     const firstA = tokenize(normalize(nameA.first as string|string[]), true);
-    const lastA = tokenize(filterStopNames(normalize(nameA.last as string|string[])));
+    let lastA = tokenize(normalize(nameA.last as string|string[]));
     const firstB = tokenize(normalize(nameB.first as string|string[]), true);
-    const lastB = tokenize(filterStopNames(normalize(nameB.last as string|string[])));
+    let lastB = tokenize(normalize(nameB.last as string|string[]));
 
-    return (0.01 * Math.round(100*
+    const scoreFirst = scoreToken(firstA, firstB as string|string[]);
+    score = 0.01 * Math.round(100*
         Math.max(
             Math.max(
-                (scoreToken(firstA, firstB as string|string[])) * (scoreToken(lastA, lastB as string) ** lastNamePenalty),
-                decreaseNameInversion * (scoreToken(firstA, lastB as string) ** lastNamePenalty) * scoreToken(lastA, firstB as string|string[]) ** lastNamePenalty
+                scoreFirst * (scoreToken(lastA, lastB as string) ** lastNamePenalty),
+                nameInversionPenalty * (scoreToken(firstA, lastB as string) ** lastNamePenalty) * scoreToken(lastA, firstB as string|string[]) ** lastNamePenalty
             ),
         minNameScore
-    )));
+    ));
+
+    lastA = tokenize(filterStopNames(normalize(nameA.last as string|string[])));
+    lastB = tokenize(filterStopNames(normalize(nameB.last as string|string[])));
+
+    return Math.max(
+        score,
+        stopNamePenalty * (0.01 * Math.round(100*
+            Math.max(
+                Math.max(
+                    scoreFirst * (scoreToken(lastA, lastB as string) ** lastNamePenalty),
+                    nameInversionPenalty * (scoreToken(firstA, lastB as string) ** lastNamePenalty) * scoreToken(lastA, firstB as string|string[]) ** lastNamePenalty
+                ),
+            minNameScore
+        )))
+    );
 }
 
 const scoreToken = (tokenA: string|string[]|RequestField, tokenB: string|string[], option?: string): number => {
@@ -217,7 +235,7 @@ const scoreToken = (tokenA: string|string[]|RequestField, tokenB: string|string[
                     s = Math.max(
                         fuzzyScore(tokenA, tokenB[0]),
                         ( tokenB.length > 1 )
-                            ? (option === 'any' ? 1 : decreaseTokenPlace) * tokenB.slice(1, tokenB.length).map(token => fuzzyScore(tokenA, token)).reduce(max) : 0
+                            ? (option === 'any' ? 1 : tokenPlacePenalty) * tokenB.slice(1, tokenB.length).map(token => fuzzyScore(tokenA, token)).reduce(max) : 0
                     );
                 }
             } else {
