@@ -178,10 +178,10 @@ export class ScoreResult {
 }
 
 export const stopNames = [
-    [/(^|\s*)de (los|la)\s+/,''],
-    [/(^|\s*)(du|de|l|d|dos|del|le|el)\s+/, ''],
+    [/(^|\s)de (los|la)\s+/,'$1'],
+    [/(^|\s)(du|de|l|d|dos|del|le|el)\s+/, '$1'],
     [/\s+(du|de la|des|de|le|aux|de los|del|l|d)\s+/,' '],
-    [/st/, 'saint']
+    [/(^|\s)st\s+/, '$1saint ']
 ];
 
 const filterStopNames = (name: string|string[]): string|string[] => {
