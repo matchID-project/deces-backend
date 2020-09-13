@@ -161,7 +161,12 @@ export const buildResult = (result: ResultRawES, requestInput: RequestInput): Re
   const filteredRequest: RequestType = {}
   Object.keys(requestInput).forEach((item: any) => {
     if (requestInput[item] && requestInput[item].value) {
-      return filteredRequest[item] = requestInput[item].value
+      if (item === 'name') {
+        filteredRequest.firstName = requestInput.name.value && requestInput.name.value.first;
+        filteredRequest.lastName = requestInput.name.value && requestInput.name.value.last;
+      } else {
+        filteredRequest[item] = requestInput[item].value
+      }
     }
   })
   const filteredResults = result.hits.hits.map(buildResultSingle)
