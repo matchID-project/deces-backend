@@ -143,7 +143,7 @@ export class ScoreResult {
       this.date = scoreDate(request.birthDate, result.birth.date, dateFormat);
     }
     if (request.firstName || request.lastName) {
-      if (pruneScore < scoreReduce(this) || !this.date) {
+      if ((pruneScore < scoreReduce(this)) || !this.date) {
         this.name = scoreName({first: request.firstName, last: request.lastName}, result.name);
       } else {
         this.score = 0
@@ -353,10 +353,13 @@ const scoreDate = (dateRangeA: any, dateStringB: string, dateFormat: string): nu
 }
 
 const scoreDateRaw = (dateRangeA: any, dateStringB: string): number => {
-    if (/^00000000$/.test(dateStringB) || !dateStringB) {
+    if (/^00000000$/.test(dateStringB) || !dateStringB || !dateRangeA) {
         return blindDateScore;
     }
     if (typeof(dateRangeA) === 'string') {
+        if (/^\s*$/.test(dateRangeA)) {
+            return blindDateScore;
+        }
         if (isDateRange(dateRangeA)) {
             const dateArrayA = dateRangeA.split(/-/);
             if (dateArrayA[0] === dateArrayA[1]) {
