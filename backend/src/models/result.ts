@@ -31,7 +31,7 @@ interface ResType {
  /**
   * score maximum obtenu lors de la recherche
   */
- maxScore: number;
+ maxScoreES: number;
  /**
   * nombre d'identité présent dans la réponse
   */
@@ -182,7 +182,7 @@ export const buildResult = (result: ResultRawES, requestInput: RequestInput): Re
     request: filteredRequest,
     response: {
       total: result.hits.total.value,
-      maxScore: result.hits.max_score,
+      maxScoreES: result.hits.max_score,
       size: requestInput.size,
       page: requestInput.page,
       delay: result.took,
