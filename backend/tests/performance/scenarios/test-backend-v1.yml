@@ -1,0 +1,12 @@
+config:
+  environments:
+    api-perf:
+      target: "http://backend:8080"
+      phases:
+        - duration: 30
+          arrivalRate: 2
+scenarios:
+  - name: backend-v1
+    flow:
+    - post:
+        url: /deces/api/v1/healthcheck
