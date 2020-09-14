@@ -30,6 +30,20 @@ describe('index.ts - POST request', () => {
     expect(result.response.persons.length).to.greaterThan(0);
   });
 
+  it('Sort and order by score asc', async () => {
+    const controller = new IndexController()
+    const result = await controller.searchpost({firstName: 'jean', lastName: 'dupont', sort: [{score: "asc"}]}, {} as express.Request)
+    expect(result.response.persons.every((x, i) => i === 0 || x.score >= result.response.persons[i - 1].score)).to.equal(true)
+    expect(result.response.persons.length).to.greaterThan(0);
+  });
+
+  it('Sort and order by score desc', async () => {
+    const controller = new IndexController()
+    const result = await controller.searchpost({firstName: 'jean', lastName: 'dupont', sort: [{score: "desc"}]}, {} as express.Request)
+    expect(result.response.persons.every((x, i) => i === 0 || x.score <= result.response.persons[i - 1].score)).to.equal(true)
+    expect(result.response.persons.length).to.greaterThan(0);
+  });
+
   // TODO: a  debugger
   // it('Single request - should return more than 0 results', async () => {
   //   const controller = new IndexController()
