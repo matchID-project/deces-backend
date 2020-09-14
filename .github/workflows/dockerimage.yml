@@ -29,6 +29,8 @@ jobs:
         env:
           GIT_BRANCH: ${{ steps.extract_branch.outputs.branch }}
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+      - name: ⚗ Run artillery tests
+        run: make test-perf-v1
   bulk:
     name: Test bulk mode
     runs-on: ubuntu-latest
