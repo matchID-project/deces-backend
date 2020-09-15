@@ -71,11 +71,10 @@ export DATAGOUV_CATALOG_URL = https://www.data.gouv.fr/api/1/datasets/${DATASET}
 export DATAGOUV_RESOURCES_URL = https://static.data.gouv.fr/resources/${DATASET}
 export DATAGOUV_PROXY_PATH = /${API_PATH}/api/v0/getDataGouvFile
 
-# performance test confs
+# test artillery
 export PERF=${BACKEND}/tests/performance
-export PERF_SCENARIO=${PERF}/scenarios/test-backend-v1.yml
+export PERF_SCENARIO_V1=${PERF}/scenarios/test-backend-v1.yml
 export PERF_REPORTS=${PERF}/reports/
-export PERF_IDS=${PERF}/ids.csv
 
 dummy		    := $(shell touch artifacts)
 include ./artifacts
@@ -274,14 +273,7 @@ backend-test-bulk: backend/tests/clients_test.csv
 
 # test artillery
 test-perf-v1:
-	@export PERF_SCENARIO=${PERF_SCENARIO_V1};\
-		export PERF_TEST_ENV=api-perf;\
-		make test-api-generic
-
-test-api-generic:
-	export report=reports/`basename ${PERF_SCENARIO} .yml`-${PERF_TEST_ENV}.json ;\
-		${DC} -f ${DC_FILE}-artillery.yml run artillery run -e ${PERF_TEST_ENV} -o $${report} scenario.yml; \
-		${DC} -f ${DC_FILE}-artillery.yml run artillery report $${report}
+	make -C ${APP_PATH}/${GIT_TOOLS} test-api-generic PERF_SCENARIO=${PERF_SCENARIO_V1} PERF_TEST_ENV=api-perf PERF_REPORTS=${PERF_REPORTS} DC_NETWORK=${DC_NETWORK};
 
 # development mode
 backend-dev:
