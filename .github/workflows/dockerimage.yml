@@ -31,6 +31,11 @@ jobs:
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
       - name: ⚗ Run artillery tests
         run: make test-perf-v1
+      - name: 📦 Upload artillery report as job artifact
+        uses: actions/upload-artifact@v1
+        with:
+          name: artillery-report
+          path: backend/tests/performance/reports/test-backend-v1-api-perf.json.html
   bulk:
     name: Test bulk mode
     runs-on: ubuntu-latest
