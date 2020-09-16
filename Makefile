@@ -75,6 +75,7 @@ export DATAGOUV_PROXY_PATH = /${API_PATH}/api/v0/getDataGouvFile
 export PERF=${BACKEND}/tests/performance
 export PERF_SCENARIO_V1=${PERF}/scenarios/test-backend-v1.yml
 export PERF_REPORTS=${PERF}/reports/
+export PERF_NAMES=${BACKEND}/tests/clients_test.csv
 
 dummy		    := $(shell touch artifacts)
 include ./artifacts
@@ -273,7 +274,7 @@ backend-test-bulk: backend/tests/clients_test.csv
 
 # test artillery
 test-perf-v1:
-	make -C ${APP_PATH}/${GIT_TOOLS} test-api-generic PERF_SCENARIO=${PERF_SCENARIO_V1} PERF_TEST_ENV=api-perf PERF_REPORTS=${PERF_REPORTS} DC_NETWORK=${DC_NETWORK};
+	make -C ${APP_PATH}/${GIT_TOOLS} test-api-generic PERF_SCENARIO=${PERF_SCENARIO_V1} PERF_TEST_ENV=api-perf PERF_REPORTS=${PERF_REPORTS} DC_NETWORK=${DC_NETWORK} PERF_NAMES=${PERF_NAMES};
 
 # development mode
 backend-dev:
