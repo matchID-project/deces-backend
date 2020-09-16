@@ -11,8 +11,10 @@ deces-dataprep
 .data.sha1.list
 .dataprep.sha1
 redisdata
+clients_test.csv
 
 # backup
+data
 esdata
 backup
 *.tar.gz
