@@ -274,6 +274,7 @@ backend-test-bulk: backend/tests/clients_test.csv
 
 # test artillery
 test-perf-v1:
+	sed -i -E "s/;/,/g"  backend/tests/clients_test.csv
 	make -C ${APP_PATH}/${GIT_TOOLS} test-api-generic PERF_SCENARIO=${PERF_SCENARIO_V1} PERF_TEST_ENV=api-perf PERF_REPORTS=${PERF_REPORTS} DC_NETWORK=${DC_NETWORK} PERF_NAMES=${PERF_NAMES};
 
 # development mode

@@ -32,7 +32,7 @@ scenarios:
   - name: backend-v1
     flow:
     - get:
-        url: "/deces/api/v1/search?firstName={{ firstName }}&lastName={{ lastName }}&birthDate={{ birthDate }}"
+        url: "/deces/api/v1/search?firstName={{ firstName }}&lastName={{ lastName }}&birthDate={{ birthDate }}&fuzzy=false"
     - post:
         url: /deces/api/v1/search
         json:
