@@ -118,6 +118,10 @@ export interface RequestBody {
   * Age du décès
   */
  deathAge?: string|number;
+ /**
+  * Age du décès
+  */
+ lastSeenAliveDate?: string;
 };
 
 export class RequestInput {
@@ -156,7 +160,13 @@ export class RequestInput {
     this.block = requestBody.block;
     this.dateFormat = requestBody.dateFormat;
     const birthDateTransformed = requestBody.birthDate && requestBody.dateFormat ? moment(requestBody.birthDate.toString(), requestBody.dateFormat).format("YYYYMMDD"): requestBody.birthDate;
-    const deathDateTransformed = requestBody.deathDate && requestBody.dateFormat ? moment(requestBody.deathDate.toString(), requestBody.dateFormat).format("YYYYMMDD"): requestBody.deathDate;
+    let deathDateTransformed
+    if (requestBody.lastSeenAliveDate) {
+      deathDateTransformed = requestBody.dateFormat ? `>${moment(requestBody.lastSeenAliveDate.toString(), requestBody.dateFormat).format("YYYYMMDD")}`: `>${requestBody.lastSeenAliveDate}`;
+    } else {
+      deathDateTransformed = requestBody.deathDate && requestBody.dateFormat ? moment(requestBody.deathDate.toString(), requestBody.dateFormat).format("YYYYMMDD"): requestBody.deathDate;
+    }
+
 
     this.fullText = fullTextWithQuery(requestBody.q, requestBody.fuzzy);
     this.name = nameWithQuery({
