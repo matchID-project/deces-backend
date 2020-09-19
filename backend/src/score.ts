@@ -15,6 +15,7 @@ const blindNameScore = 0.5;
 const lastNamePenalty = 3
 
 const minSexScore = 0.5;
+const firstNameSexPenalty = 0.75;
 const blindSexScore = 1;
 
 const minDateScore = 0.2;
@@ -156,6 +157,8 @@ export class ScoreResult {
       } else {
         this.score = 0
       }
+    } else if (request.firstName && firstNameSexMismatch(request.firstName, result.name.first as string)) {
+        this.sex = firstNameSexPenalty;
     }
     if (request.birthCity || request.birthCityCode || request.birthDepartment || request.latitude || request.longitude) {
       if (pruneScore < scoreReduce(this)) {
@@ -186,6 +189,14 @@ export const stopNames = [
 
 const filterStopNames = (name: string|string[]): string|string[] => {
     return applyRegex(name, stopNames);
+}
+
+const firstNameSexMismatch = (firstNameA: string, firstNameB: string): boolean => {
+    let firstA = tokenize(normalize(firstNameA as string|string[]), true);
+    firstA = typeof(firstA) === 'string' ? firstA : (firstA as string[])[0];
+    let firstB = tokenize(normalize(firstNameB as string|string[]), true);
+    firstB = typeof(firstB) === 'string' ? firstB : (firstB as string[])[0];
+    return /.?e/.test(firstA.replace(firstB, '')) || /.?e/.test(firstB.replace(firstA, ''));
 }
 
 const scoreName = (nameA: Name, nameB: Name): number => {
