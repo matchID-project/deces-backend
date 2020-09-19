@@ -168,23 +168,23 @@ export class RequestInput {
       deathDateTransformed = deathDate && dateFormat ? moment(deathDate.toString(), dateFormat).format("DD/MM/YYYY") : deathDate;
     }
 
-    this.fullText = fullTextWithQuery(q, fuzzy);
+    this.fullText = fullTextWithQuery(requestBody.q, requestBody.fuzzy);
     this.name = nameWithQuery({
-      first: firstName,
-      last: lastName
-    }, fuzzy);
-    this.sex = sexWithQuery(sex, fuzzy);
-    this.birthDate = birthDateWithQuery(birthDateTransformed, fuzzy);
-    this.birthCity = birthCityWithQuery(birthCity, fuzzy);
-    this.birthDepartment = birthDepartmentWithQuery(birthDepartment, fuzzy);
-    this.birthCountry = birthCountryWithQuery(birthCountry, fuzzy);
-    this.birthGeoPoint = birthGeoPointWithQuery(birthGeoPoint, fuzzy);
-    this.deathDate = deathDateWithQuery(deathDateTransformed, fuzzy);
-    this.deathAge = deathAgeWithQuery(deathAge, fuzzy);
-    this.deathCity = deathCityWithQuery(deathCity, fuzzy);
-    this.deathDepartment = deathDepartmentWithQuery(deathDepartment, fuzzy);
-    this.deathCountry = deathCountryWithQuery(deathCountry, fuzzy);
-    this.deathGeoPoint = deathGeoPointWithQuery(deathGeoPoint, fuzzy);
+      first: requestBody.firstName,
+      last: requestBody.lastName
+    }, requestBody.fuzzy);
+    this.sex = sexWithQuery(requestBody.sex, requestBody.fuzzy);
+    this.birthDate = birthDateWithQuery(birthDateTransformed, requestBody.fuzzy);
+    this.birthCity = birthCityWithQuery(requestBody.birthCity, requestBody.fuzzy);
+    this.birthDepartment = birthDepartmentWithQuery(requestBody.birthDepartment, requestBody.fuzzy);
+    this.birthCountry = birthCountryWithQuery(requestBody.birthCountry, requestBody.fuzzy);
+    this.birthGeoPoint = birthGeoPointWithQuery(requestBody.birthGeoPoint, requestBody.fuzzy);
+    this.deathDate = deathDateWithQuery(deathDateTransformed, requestBody.fuzzy);
+    this.deathAge = deathAgeWithQuery(requestBody.deathAge, requestBody.fuzzy);
+    this.deathCity = deathCityWithQuery(requestBody.deathCity, requestBody.fuzzy);
+    this.deathDepartment = deathDepartmentWithQuery(requestBody.deathDepartment, requestBody.fuzzy);
+    this.deathCountry = deathCountryWithQuery(requestBody.deathCountry, requestBody.fuzzy);
+    this.deathGeoPoint = deathGeoPointWithQuery(requestBody.deathGeoPoint, requestBody.fuzzy);
 
     Object.keys(this).map(field => {
       if (this[field] && this[field].mask && this[field].mask.validation) {
