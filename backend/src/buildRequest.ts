@@ -1,7 +1,8 @@
 import { RequestInput } from './models/requestInput';
 import { BodyResponse, ScrolledResponse } from './models/body';
 import { buildRequestFilter } from "./buildRequestFilter";
-import { fuzzyTermQuery, matchQuery } from './queries';
+import { fuzzyTermQuery, matchQuery, dateRangeStringQuery } from './queries';
+import { isDateRange, isDateLimit } from './masks';
 
 const buildMatch = (requestInput: RequestInput) => {
   if (requestInput.block) {
@@ -23,8 +24,26 @@ const buildAdaptativeBlockMatch = (searchInput: RequestInput) => {
     let queryMust = [fuzzyTermQuery('PRENOMS_NOM', [searchInput.name.value.last, searchInput.name.value.first].filter(x => x).join(" "), "auto", false)]
     let queryShould = [matchQuery('NOM', searchInput.name.value.last as string, false, false)]
     if (searchInput.birthDate && searchInput.birthDate.value) {
-      queryMust = [...queryMust, fuzzyTermQuery('DATE_NAISSANCE', searchInput.birthDate.mask.transform(searchInput.birthDate.value, searchInput.dateFormat) as string, "auto", false)]
-      queryShould = [...queryShould, matchQuery('DATE_NAISSANCE', searchInput.birthDate.mask.transform(searchInput.birthDate.value, searchInput.dateFormat) as string, false, false)]
+      if (isDateRange(searchInput.birthDate.value as string) || isDateLimit(searchInput.birthDate.value as string)) {
+        queryMust = [
+          ...queryMust,
+          searchInput.birthDate.query(searchInput.birthDate.field, searchInput.birthDate.mask.transform(searchInput.birthDate.value, searchInput.dateFormat) as string, false, true)
+        ];
+      } else {
+        queryMust = [...queryMust, fuzzyTermQuery(searchInput.birthDate.field as string, searchInput.birthDate.mask.transform(searchInput.birthDate.value, searchInput.dateFormat) as string, "auto", false)]
+        queryShould = [...queryShould, matchQuery(searchInput.birthDate.field as string, searchInput.birthDate.mask.transform(searchInput.birthDate.value, searchInput.dateFormat) as string, false, false)]
+      }
+    }
+    if (searchInput.deathDate && searchInput.deathDate.value) {
+      if (isDateRange(searchInput.deathDate.value as string) || isDateLimit(searchInput.deathDate.value as string)) {
+        queryMust = [
+          ...queryMust,
+          searchInput.deathDate.query(searchInput.deathDate.field, searchInput.deathDate.mask.transform(searchInput.deathDate.value, searchInput.dateFormat) as string, false, true)
+        ];
+      } else {
+        /* dont add must query for death date as it will slow down query, but rank first strict matching*/
+        queryShould = [...queryShould, matchQuery(searchInput.deathDate.field as string, searchInput.deathDate.mask.transform(searchInput.deathDate.value, searchInput.dateFormat) as string, false, false)]
+      }
     }
     return {
         function_score : {

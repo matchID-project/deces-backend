@@ -51,7 +51,7 @@ const log = (json:any) => {
 }
 
 const validFields: string[] = ['q', 'firstName', 'lastName', 'sex', 'birthDate', 'birthCity', 'birthDepartment', 'birthCountry',
-'birthGeoPoint', 'deathDate', 'deathCity', 'deathDepartment', 'deathCountry', 'deathGeoPoint', 'deathAge',
+'birthGeoPoint', 'deathDate', 'deathCity', 'deathDepartment', 'deathCountry', 'deathGeoPoint', 'deathAge', 'lastSeenAliveDate',
 'size', 'fuzzy', 'block'];
 
 const jsonFields: string[] = ['birthGeoPoint','deathGeoPoint','block'];

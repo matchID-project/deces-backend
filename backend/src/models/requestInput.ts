@@ -159,14 +159,13 @@ export class RequestInput {
     this.sort = requestBody.sort ? sortWithQuery(requestBody.sort) : {value: [{score: 'desc'}]}
     this.block = requestBody.block;
     this.dateFormat = requestBody.dateFormat;
-    const birthDateTransformed = requestBody.birthDate && requestBody.dateFormat ? moment(requestBody.birthDate.toString(), requestBody.dateFormat).format("YYYYMMDD"): requestBody.birthDate;
+    const birthDateTransformed = requestBody.birthDate && requestBody.dateFormat ? moment(requestBody.birthDate.toString(), requestBody.dateFormat).format("DD/MM/YYYY"): requestBody.birthDate;
     let deathDateTransformed
     if (requestBody.lastSeenAliveDate) {
-      deathDateTransformed = requestBody.dateFormat ? `>${moment(requestBody.lastSeenAliveDate.toString(), requestBody.dateFormat).format("YYYYMMDD")}`: `>${requestBody.lastSeenAliveDate}`;
+      deathDateTransformed = requestBody.dateFormat ? `>${moment(requestBody.lastSeenAliveDate.toString(), requestBody.dateFormat).format("DD/MM/YYYY")}`: `>${requestBody.lastSeenAliveDate}`;
     } else {
-      deathDateTransformed = requestBody.deathDate && requestBody.dateFormat ? moment(requestBody.deathDate.toString(), requestBody.dateFormat).format("YYYYMMDD"): requestBody.deathDate;
+      deathDateTransformed = requestBody.deathDate && requestBody.dateFormat ? moment(requestBody.deathDate.toString(), requestBody.dateFormat).format("DD/MM/YYYY"): requestBody.deathDate;
     }
-
 
     this.fullText = fullTextWithQuery(requestBody.q, requestBody.fuzzy);
     this.name = nameWithQuery({
