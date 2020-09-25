@@ -263,6 +263,7 @@ backend-test-mocha:
 	docker run --rm \
 		-v ${BACKEND}/src:/${APP}/src/ \
 		-v ${BACKEND}/tests:/${APP}/tests/ \
+		-e "BACKEND_PROXY_PATH=${BACKEND_PROXY_PATH}" \
 		--network='${DC_NETWORK}' \
 		 -i ${DOCKER_USERNAME}/deces-backend-development:${APP_VERSION} \
 		npm run test

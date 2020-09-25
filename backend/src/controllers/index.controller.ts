@@ -1,11 +1,12 @@
 import { Controller, Get, Post, Body, Route, Query, Response, Tags, Header, Request } from 'tsoa';
 import express from 'express';
-import { resultsHeader, jsonPath } from './bulk';
+import { resultsHeader, jsonPath, prettyString } from './bulk';
 import { runRequest } from '../runRequest';
 import { buildRequest } from '../buildRequest';
 import { RequestInput, RequestBody } from '../models/requestInput';
 import { buildResult } from '../models/result';
 import { Result, ErrorResponse, HealthcheckResponse } from '../models/result';
+import fs from 'fs';
 // import getDataGouvCatalog from '../getDataGouvCatalog';
 
 @Route('')
@@ -109,20 +110,37 @@ export class IndexController extends Controller {
         return  { msg: requestInput.errors };
       }
       const requestBuild = buildRequest(requestInput);
-      const result = await runRequest(requestBuild, requestInput.scroll);
-      const builtResult = buildResult(result.data, requestInput)
-      if (accept === 'application/csv') {
+      if (accept === 'text/csv') requestInput.scroll = '1m'
+      let result = await runRequest(requestBuild, requestInput.scroll);
+      let builtResult = buildResult(result.data, requestInput)
+      if (accept === 'text/csv') {
+        const writeStream: any = fs.createWriteStream(`sample.txt`);
+        response.setHeader('Content-disposition', 'attachment; filename=download.csv');
         response.setHeader('Content-Type', 'text/csv');
+        // response.setHeader('Content-Length', builtResult.response.total * 184);
+        response.setHeader('Total-results', builtResult.response.total);
+        // response.setHeader('Content-Type', 'text/plain');
         response.write([
           ...resultsHeader.map(h => h.replace(/\.location/, '').replace(/\./,' '))
         ].join(',') + '\r\n'
         );
+        writeStream.pipe(response)
         builtResult.response.persons.forEach((row: any) => {
           response.write([
-            ...resultsHeader.map(key => jsonPath(row, key))
+            ...resultsHeader.map(key => prettyString(jsonPath(row, key)))
           ].join(',') + '\r\n')
         });
-        response.end();
+        while ((requestInput.page - 1) * requestInput.size < builtResult.response.total) {
+          requestInput.scroll_id = builtResult.response.scrollId
+          // requestInput.page += 1;
+          result = await runRequest(requestBuild, requestInput.scroll);
+          builtResult = buildResult(result.data, requestInput)
+          builtResult.response.persons.forEach((row: any) => {
+            response.write([
+              ...resultsHeader.map(key => prettyString(jsonPath(row, key)))
+            ].join(',') + '\r\n')
+          });
+        }
       } else {
         return builtResult;
       }
