@@ -112,11 +112,11 @@ export interface ResultRawES {
       value: number;
     }
     'max_score': number;
-    hits:  ResultRawHits[]
+    hits:  ResultRawHit[]
   }
 }
 
-export interface ResultRawHits {
+export interface ResultRawHit {
   _score: number;
   _id: string;
   _source: {
@@ -196,7 +196,7 @@ export const buildResult = (result: ResultRawES, requestInput: RequestInput): Re
 
 }
 
-export const buildResultSingle = (item: ResultRawHits): Person => {
+export const buildResultSingle = (item: ResultRawHit): Person => {
   return {
     score: item._score,
     // source: dataCatalog[item._source.SOURCE],
