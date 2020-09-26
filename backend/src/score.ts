@@ -5,6 +5,10 @@ import moment from 'moment';
 import { dateTransformMask, isDateRange } from './masks';
 import soundex from '@thejellyfish/soundex-fr';
 
+const perfectScoreThreshold = 0.95;
+const multiplePerfectScorePenalty = 0.8;
+const secondaryCandidatePenaltyPow = 1.5;
+
 const tokenPlacePenalty = 0.7;
 const blindTokenScore = 0.5;
 
@@ -115,7 +119,9 @@ const scoreReduce = (score:any):number => {
 }
 
 export const scoreResults = (request: RequestBody, results: Person[], dateFormat: string): Person[] => {
-    return results
+    let maxScore = 0;
+    let perfectScoreNumber = 0;
+    const resultsWithScores: any = results
             .filter((result:any) => result.score > 0)
             .map((result:any) => {
                 try {
@@ -126,11 +132,27 @@ export const scoreResults = (request: RequestBody, results: Person[], dateFormat
                 }
                 result.scores.es = 0.005 * Math.round(Math.min(200, result.score));
                 result.score = (result.scores.score !== undefined) ?  0.01 * Math.round(100 * result.scores.score) : result.scores.es;
+                if (result.score > maxScore) { maxScore = result.score }
+                if (result.score >= perfectScoreThreshold) { perfectScoreNumber++ }
                 return result;
             })
             .filter((result: any) => result.score >= pruneScore)
             .sort((a: any, b: any) => (a.score < b.score) ? 1 : ( (a.score > b.score) ? -1 : 0 ))
-            // .map(r =>y, b: any) => (a.score < b.score) ? 1 : ( (a.score > b.score) ? -1 : 0 ))
+            .map((result: any) => {
+                if (perfectScoreNumber) {
+                    if (result.score < perfectScoreThreshold) {
+                        result.score = 0.01 * Math.round(100 * (
+                            ((perfectScoreNumber > 1) ? multiplePerfectScorePenalty : 1) * result.score ** secondaryCandidatePenaltyPow)
+                        );
+                    } else {
+                        if (perfectScoreNumber > 1) {
+                            result.score = result.score * multiplePerfectScorePenalty;
+                        }
+                    }
+                }
+                return result;
+            });
+    return resultsWithScores;
 }
 
 export class ScoreResult {
