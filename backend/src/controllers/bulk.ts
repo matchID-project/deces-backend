@@ -65,6 +65,7 @@ class ProcessStream<I extends any, O extends any> extends Transform {
   batchSize: number;
   batchNumber: number;
   processedRows: number;
+  sourceLineNumber: number;
   jobs: any[];
   totalRows: number;
   dateFormat: string;
@@ -80,6 +81,7 @@ class ProcessStream<I extends any, O extends any> extends Transform {
     this.batchNumber = 0;
     this.batchSize = 50;
     this.processedRows = 0;
+    this.sourceLineNumber = 1;
     this.totalRows = this.job.data.totalRows;
     this.dateFormat = this.job.data.dateFormat;
     this.candidateNumber = this.job.data.candidateNumber;
@@ -101,7 +103,7 @@ class ProcessStream<I extends any, O extends any> extends Transform {
       };
     }
 
-    this.batch.push(record);
+    this.batch.push({source: record, sourceLineNumber: this.sourceLineNumber++});
     if (this.shouldProcessBatch) {
       this.processRecords(this.batchNumber - Number(process.env.BACKEND_CHUNK_CONCURRENCY))
         .then(() => callback())
@@ -172,10 +174,11 @@ class ProcessStream<I extends any, O extends any> extends Transform {
   toRequest(record: any) {
     const request: any = {
       metadata: {
-        source: {}
+        source: {},
+        sourceLineNumber: record.sourceLineNumber
       }
     }
-    Object.values(record).forEach((value: string, idx: number) => {
+    Object.values(record.source).forEach((value: string, idx: number) => {
       if (this.mapField[this.inputHeaders[idx]]) {
         request[this.mapField[this.inputHeaders[idx]]] = jsonFields.includes(this.inputHeaders[idx]) ? JSON.parse(value) : value;
       }
@@ -559,9 +562,10 @@ router.get('/:format(csv|json)/:id?', async (req: any, res: express.Response) =>
                 if (sourceHeader === undefined) {
                   sourceHeader = row.metadata.header;
                   // write header, bypassing fast-csv methods
-                  this.push([...sourceHeader,...resultsHeader.map(h => h.replace(/\.location/, ''))])
+                  this.push([...sourceHeader,'sourceLineNumber',...resultsHeader.map(h => h.replace(/\.location/, ''))])
                 } else {
                   this.push([...sourceHeader.map((key: string) => row.metadata.source[key]),
+                    row.metadata.sourceLineNumber,
                     ...resultsHeader.map(key => prettyString(jsonPath(row, key)))]);
                 }
                 cb();
