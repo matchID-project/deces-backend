@@ -110,38 +110,44 @@ export class IndexController extends Controller {
         return  { msg: requestInput.errors };
       }
       if (accept === 'text/csv') requestInput.scroll = '1m'
-      let requestBuild = buildRequest(requestInput);
-      let result = await runRequest(requestBuild, requestInput.scroll);
-      let builtResult = buildResult(result.data, requestInput)
+      const requestBuild = buildRequest(requestInput);
+      const result = await runRequest(requestBuild, requestInput.scroll);
+      const builtResult = buildResult(result.data, requestInput)
       if (accept === 'text/csv') {
-        response.setHeader('Content-disposition', 'attachment; filename=download.csv');
-        response.setHeader('Content-Type', 'text/csv');
-        response.write([
-          ...resultsHeader.map(h => h.replace(/\.location/, '').replace(/\./,' '))
-        ].join(',') + '\r\n'
-        );
-        builtResult.response.persons.forEach((row: any) => {
-          response.write([
-            ...resultsHeader.map(key => prettyString(jsonPath(row, key)))
-          ].join(',') + '\r\n')
-        });
-        while ( builtResult.response.persons.length > 0 ) {
-          requestInput.scrollId = builtResult.response.scrollId
-          requestBuild = buildRequest(requestInput);
-          result = await runRequest(requestBuild, requestInput.scroll);
-          builtResult = buildResult(result.data, requestInput)
-          builtResult.response.persons.forEach((row: any) => {
-            response.write([
-              ...resultsHeader.map(key => prettyString(jsonPath(row, key)))
-            ].join(',') + '\r\n')
-          });
-        }
+        await this.responseJson2Csv(response, builtResult, requestInput)
       } else {
         return builtResult;
       }
     } else {
       this.setStatus(400);
       return  { msg: "error - empty request" };
+    }
+  }
+
+  private async responseJson2Csv(response: express.Response, builtResult: Result, requestInput: RequestInput): Promise<void> {
+    let requestBuild;
+    let result;
+    response.setHeader('Content-disposition', 'attachment; filename=download.csv');
+    response.setHeader('Content-Type', 'text/csv');
+    response.write([
+      ...resultsHeader.map(h => h.replace(/\.location/, '').replace(/\./,' '))
+    ].join(',') + '\r\n'
+    );
+    builtResult.response.persons.forEach((row: any) => {
+      response.write([
+        ...resultsHeader.map(key => prettyString(jsonPath(row, key)))
+      ].join(',') + '\r\n')
+    });
+    while ( builtResult.response.persons.length > 0 ) {
+      requestInput.scrollId = builtResult.response.scrollId
+      requestBuild = buildRequest(requestInput);
+      result = await runRequest(requestBuild, requestInput.scroll);
+      builtResult = buildResult(result.data, requestInput)
+      builtResult.response.persons.forEach((row: any) => {
+        response.write([
+          ...resultsHeader.map(key => prettyString(jsonPath(row, key)))
+        ].join(',') + '\r\n')
+      });
     }
   }
 
