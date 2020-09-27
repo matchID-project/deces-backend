@@ -109,30 +109,25 @@ export class IndexController extends Controller {
         this.setStatus(400);
         return  { msg: requestInput.errors };
       }
-      const requestBuild = buildRequest(requestInput);
       if (accept === 'text/csv') requestInput.scroll = '1m'
+      let requestBuild = buildRequest(requestInput);
       let result = await runRequest(requestBuild, requestInput.scroll);
       let builtResult = buildResult(result.data, requestInput)
       if (accept === 'text/csv') {
-        const writeStream: any = fs.createWriteStream(`sample.txt`);
         response.setHeader('Content-disposition', 'attachment; filename=download.csv');
         response.setHeader('Content-Type', 'text/csv');
-        // response.setHeader('Content-Length', builtResult.response.total * 184);
-        response.setHeader('Total-results', builtResult.response.total);
-        // response.setHeader('Content-Type', 'text/plain');
         response.write([
           ...resultsHeader.map(h => h.replace(/\.location/, '').replace(/\./,' '))
         ].join(',') + '\r\n'
         );
-        writeStream.pipe(response)
         builtResult.response.persons.forEach((row: any) => {
           response.write([
             ...resultsHeader.map(key => prettyString(jsonPath(row, key)))
           ].join(',') + '\r\n')
         });
-        while ((requestInput.page - 1) * requestInput.size < builtResult.response.total) {
-          requestInput.scroll_id = builtResult.response.scrollId
-          // requestInput.page += 1;
+        while ( builtResult.response.persons.length > 0 ) {
+          requestInput.scrollId = builtResult.response.scrollId
+          requestBuild = buildRequest(requestInput);
           result = await runRequest(requestBuild, requestInput.scroll);
           builtResult = buildResult(result.data, requestInput)
           builtResult.response.persons.forEach((row: any) => {
