@@ -31,6 +31,23 @@ describe('index.ts - Express application', () => {
     expect(totalPersons).to.eql(res.body.response.total);
   });
 
+  it('/search - POST - pagination', async () => {
+    let actualPage = 1;
+    let res = await chai.request(app)
+      .post(`${process.env.BACKEND_PROXY_PATH}/search`)
+      .send({ firstName: 'Alban', page: actualPage })
+    totalPersons = res.body.response.persons.length;
+    while (res.body.response.persons.length > 0) {
+      actualPage += 1;
+      res = await chai.request(app)
+        .post(`${process.env.BACKEND_PROXY_PATH}/search`)
+        .send({ firstName: 'Alban', page: actualPage })
+      totalPersons += res.body.response.persons.length;
+    }
+    expect(res).to.have.status(200);
+    expect(totalPersons).to.eql(res.body.response.total);
+  });
+
   it('/search - POST - text/csv', async () => {
     const res = await chai.request(app)
       .post(`${process.env.BACKEND_PROXY_PATH}/search`)
