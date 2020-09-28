@@ -71,6 +71,12 @@ export DATAGOUV_CATALOG_URL = https://www.data.gouv.fr/api/1/datasets/${DATASET}
 export DATAGOUV_RESOURCES_URL = https://static.data.gouv.fr/resources/${DATASET}
 export DATAGOUV_PROXY_PATH = /${API_PATH}/api/v0/getDataGouvFile
 
+# test artillery
+export PERF=${BACKEND}/tests/performance
+export PERF_SCENARIO_V1=${PERF}/scenarios/test-backend-v1.yml
+export PERF_REPORTS=${PERF}/reports/
+export PERF_NAMES=${BACKEND}/tests/clients_test.csv
+
 dummy		    := $(shell touch artifacts)
 include ./artifacts
 
@@ -264,6 +270,12 @@ backend-test-bulk: backend/tests/clients_test.csv
 	@$(eval jobId = $(shell echo $(msg) | grep -Po '(?<=id:)[0-9a-z]+' )) 
 	@echo "JobID $(jobId)"
 	@timeout=${BULK_TIMEOUT} ; ret=1 ; until [ "$$timeout" -le 0 -o "$$ret" -eq "0"  ] ; do (docker exec -i ${USE_TTY} ${APP} curl -s --fail -X GET http://localhost:${BACKEND_PORT}/deces/api/v1/search/csv/$(jobId) | tee log.log | grep --invert-match progress > /dev/null ) ; ret=$$? ; cat log.log; if [ "$$ret" -ne "0" ] ; then echo -e ", still $$timeout seconds until killing" ; fi ; timeout=$$((timeout-10)); sleep 10 ; done ; echo -e "Done in $$((BULK_TIMEOUT - timeout)) seconds"; exit $$ret
+
+
+# test artillery
+test-perf-v1:
+	sed -i -E "s/;/,/g"  backend/tests/clients_test.csv
+	make -C ${APP_PATH}/${GIT_TOOLS} test-api-generic PERF_SCENARIO=${PERF_SCENARIO_V1} PERF_TEST_ENV=api-perf PERF_REPORTS=${PERF_REPORTS} DC_NETWORK=${DC_NETWORK} PERF_NAMES=${PERF_NAMES};
 
 # development mode
 backend-dev:
