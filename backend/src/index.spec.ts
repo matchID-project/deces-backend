@@ -55,6 +55,6 @@ describe('index.ts - Express application', () => {
       .send({ firstName: 'Alban' })
     expect(res).to.have.status(200);
     // remove header and last line
-    expect(res.text.split('\n').length).to.eql(totalPersons + 2);
+    expect(res.text.split('\n').length).to.eql(totalPersons + 1);
   });
 });

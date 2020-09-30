@@ -6,6 +6,7 @@ import { buildRequest } from '../buildRequest';
 import { RequestInput, RequestBody } from '../models/requestInput';
 import { buildResult } from '../models/result';
 import { Result, ErrorResponse, HealthcheckResponse } from '../models/result';
+import { format } from '@fast-csv/format';
 import fs from 'fs';
 // import getDataGouvCatalog from '../getDataGouvCatalog';
 
@@ -128,15 +129,26 @@ export class IndexController extends Controller {
     let requestBuild;
     let result;
     response.setHeader('Content-disposition', 'attachment; filename=download.csv');
+    response.setHeader('total-results', builtResult.response.total);
     response.setHeader('Content-Type', 'text/csv');
-    response.write([
+
+    const csvStream = format({
+      headers: false,
+      writeHeaders: true,
+      delimiter: ','
+    });
+
+    // pipe csvstream write to response
+    csvStream.pipe(response)
+
+    csvStream.write([
       ...resultsHeader.map(h => h.replace(/\.location/, '').replace(/\./,' '))
-    ].join(',') + '\r\n'
+    ]
     );
     builtResult.response.persons.forEach((row: any) => {
-      response.write([
+      csvStream.write([
         ...resultsHeader.map(key => prettyString(jsonPath(row, key)))
-      ].join(',') + '\r\n')
+      ])
     });
     while ( builtResult.response.persons.length > 0 ) {
       requestInput.scrollId = builtResult.response.scrollId
@@ -144,9 +156,9 @@ export class IndexController extends Controller {
       result = await runRequest(requestBuild, requestInput.scroll);
       builtResult = buildResult(result.data, requestInput)
       builtResult.response.persons.forEach((row: any) => {
-        response.write([
+        csvStream.write([
           ...resultsHeader.map(key => prettyString(jsonPath(row, key)))
-        ].join(',') + '\r\n')
+        ])
       });
     }
   }
