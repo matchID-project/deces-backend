@@ -162,7 +162,7 @@ export class RequestInput {
     const birthDateTransformed = birthDate && dateFormat ? moment(birthDate.toString(), dateFormat).format("DD/MM/YYYY"): birthDate;
     const deathDateTransformed = deathDate && dateFormat ? moment(deathDate.toString(), dateFormat).format("DD/MM/YYYY"): deathDate;
 
-    this.fullText = fullTextWithQuery(requestBody.q, requestBody.fuzzy);
+    this.fullText = fullTextWithQuery(q, fuzzy);
     this.name = nameWithQuery({
       first: firstName,
       last: lastName
