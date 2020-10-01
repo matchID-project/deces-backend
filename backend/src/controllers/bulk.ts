@@ -249,7 +249,7 @@ const pbkdf2 = (key: string) => {
   // return crypto.pbkdf2Sync(key, salt, 16, 16, 'sha256');
 };
 
-export const processCsv =  async (job: any, jobFile: any): Promise<any> => {
+export const processCsv =  async (job: Queue.Job, jobFile: any): Promise<any> => {
   try {
     // const inputHeaders: string[] = [];
     // let outputHeaders: any;
@@ -535,6 +535,7 @@ router.get('/:format(csv|json)/:id?', async (req: any, res: express.Response) =>
         }
         const size = fs.statSync(`${jobId}.out.enc`).size;
         let sourceHeader: any;
+        let mapping: any;
         const decryptStream = crypto.createDecipheriv('aes-256-cbc', pbkdf2(req.params.id), encryptioniv);
         const dataStream = fs.createReadStream(`${jobId}.out.enc`)
           .pipe(decryptStream)
@@ -561,12 +562,26 @@ router.get('/:format(csv|json)/:id?', async (req: any, res: express.Response) =>
               transform(row: any, encoding: string, cb: any) {
                 if (sourceHeader === undefined) {
                   sourceHeader = row.metadata.header;
+                  mapping = resultsHeader.map((el, start) => {
+                    if (el.id && row.metadata.header.some((x:any) => (row.metadata.mapping[x] && row.metadata.mapping[x] === el.id))) {
+                      return { start, end: row.metadata.header.findIndex((x:any) => (row.metadata.mapping[x] && row.metadata.mapping[x] === el.id)) }
+                    }
+                  }).filter((x:any) => x)
                   // write header, bypassing fast-csv methods
-                  this.push([...sourceHeader,'sourceLineNumber',...resultsHeader.map(h => h.replace(/\.location/, ''))])
+                  const mapped = [...sourceHeader,...resultsHeader.map(h => h.label.replace(/\.location/, ''))]
+                  mapping.forEach((item: any, initial: number) => {
+                    mapped.splice(item.end + initial, 0, mapped[sourceHeader.length + item.start])
+                    mapped.splice(sourceHeader.length + item.start + 1, 1)
+                  })
+                  this.push(mapped)
                 } else {
-                  this.push([...sourceHeader.map((key: string) => row.metadata.source[key]),
-                    row.metadata.sourceLineNumber,
-                    ...resultsHeader.map(key => prettyString(jsonPath(row, key)))]);
+                  const mapped = [...sourceHeader.map((key: string) => row.metadata.source[key]),
+                    ...resultsHeader.map(key => prettyString(jsonPath(row, key.label)))];
+                  mapping.forEach((item: any, initial: number) => {
+                    mapped.splice(item.end + initial, 0, mapped[sourceHeader.length + item.start])
+                    mapped.splice(sourceHeader.length + item.start + 1, 1)
+                  })
+                  this.push(mapped);
                 }
                 cb();
               }
@@ -683,14 +698,32 @@ export const prettyString = (json: any): string => {
 }
 
 export const resultsHeader = [
-  'score', 'scores', 'source', 'id', 'name.last', 'name.first', 'sex',
-  'birth.date', 'birth.location.city', 'birth.location.cityCode',
-  'birth.location.departmentCode', 'birth.location.country', 'birth.location.countryCode',
-  'birth.location.latitude', 'birth.location.longitude',
-  'death.certificateId', 'death.age',
-  'death.date', 'death.location.city', 'death.location.cityCode',
-  'death.location.departmentCode', 'death.location.country', 'death.location.countryCode',
-  'death.location.latitude', 'death.location.longitude']
+  {label: 'score'},
+  {label: 'scores'},
+  {label: 'source'},
+  {label: 'id'},
+  {label: 'name.last', id: 'lastName'},
+  {label: 'name.first', id: 'firstName'},
+  {label: 'sex', id: 'sex'},
+  {label: 'birth.date', id: 'birthDate'},
+  {label: 'birth.location.city', id: 'birthCity'},
+  {label: 'birth.location.cityCode'},
+  {label: 'birth.location.departmentCode', id: 'birthDepartment'},
+  {label: 'birth.location.country', id: 'birthCountry'},
+  {label: 'birth.location.countryCode'},
+  {label: 'birth.location.latitude'},
+  {label: 'birth.location.longitude'},
+  {label: 'death.certificateId'},
+  {label: 'death.age', id: 'deathAge'},
+  {label: 'death.date', id: 'deathDate'},
+  {label: 'death.location.city', id: 'deathCity'},
+  {label: 'death.location.cityCode'},
+  {label: 'death.location.departmentCode', id: 'deathDepartment'},
+  {label: 'death.location.country', id: 'deathCountry'},
+  {label: 'death.location.countryCode'},
+  {label: 'death.location.latitude'},
+  {label: 'death.location.longitude'}
+]
 
 interface JobInput {
   id: string;

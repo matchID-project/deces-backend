@@ -150,12 +150,12 @@ export class IndexController extends Controller {
     csvStream.pipe(response)
 
     csvStream.write([
-      ...resultsHeader.map(h => h.replace(/\.location/, '').replace(/\./,' '))
+      ...resultsHeader.map(h => h.label.replace(/\.location/, '').replace(/\./,' '))
     ]
     );
     builtResult.response.persons.forEach((row: any) => {
       csvStream.write([
-        ...resultsHeader.map(key => prettyString(jsonPath(row, key)))
+        ...resultsHeader.map(key => prettyString(jsonPath(row, key.label)))
       ])
     });
     while ( builtResult.response.persons.length > 0 ) {
@@ -165,7 +165,7 @@ export class IndexController extends Controller {
       builtResult = buildResult(result.data, requestInput)
       builtResult.response.persons.forEach((row: any) => {
         csvStream.write([
-          ...resultsHeader.map(key => prettyString(jsonPath(row, key)))
+          ...resultsHeader.map(key => prettyString(jsonPath(row, key.label)))
         ])
       });
     }
