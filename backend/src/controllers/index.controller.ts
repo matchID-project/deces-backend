@@ -61,7 +61,7 @@ export class IndexController extends Controller {
     @Query() sort?: string
   ): Promise<Result> {
     if (q || firstName || lastName || sex || birthDate || birthCity || birthDepartment || birthCountry || deathDate || deathCity || deathDepartment || deathCountry || deathAge || lastSeenAliveDate || scroll) {
-      const requestInput = new RequestInput(q, firstName, lastName, sex, birthDate, birthCity, birthDepartment, birthCountry, null, deathDate, deathCity, deathDepartment, deathCountry, null, deathAge, scroll, scrollId, size, page, fuzzy, sort);
+      const requestInput = new RequestInput(q, firstName, lastName, sex, birthDate, birthCity, birthDepartment, birthCountry, null, deathDate, deathCity, deathDepartment, deathCountry, null, deathAge, lastSeenAliveDate, scroll, scrollId, size, page, fuzzy, sort);
       if (requestInput.errors.length) {
         this.setStatus(400);
         return  { msg: requestInput.errors };
@@ -103,7 +103,7 @@ export class IndexController extends Controller {
         this.setStatus(400);
         return  { msg: "error - simple and complex request at the same time" };
       }
-      const requestInput = new RequestInput(requestBody.q, requestBody.firstName, requestBody.lastName, requestBody.sex, requestBody.birthDate, requestBody.birthCity, requestBody.birthDepartment, requestBody.birthCountry, requestBody.birthGeoPoint, requestBody.deathDate, requestBody.deathCity, requestBody.deathDepartment, requestBody.deathCountry, requestBody.deathGeoPoint, requestBody.deathAge, requestBody.scroll, requestBody.scrollId, requestBody.size, requestBody.page, requestBody.fuzzy, requestBody.sort);
+      const requestInput = new RequestInput(requestBody.q, requestBody.firstName, requestBody.lastName, requestBody.sex, requestBody.birthDate, requestBody.birthCity, requestBody.birthDepartment, requestBody.birthCountry, requestBody.birthGeoPoint, requestBody.deathDate, requestBody.deathCity, requestBody.deathDepartment, requestBody.deathCountry, requestBody.deathGeoPoint, requestBody.deathAge, requestBody.lastSeenAliveDate, requestBody.scroll, requestBody.scrollId, requestBody.size, requestBody.page, requestBody.fuzzy, requestBody.sort);
       if (requestInput.errors.length) {
         this.setStatus(400);
         return  { msg: requestInput.errors };
