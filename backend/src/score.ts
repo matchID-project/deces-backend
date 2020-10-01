@@ -8,6 +8,7 @@ import soundex from '@thejellyfish/soundex-fr';
 const perfectScoreThreshold = 0.95;
 const multiplePerfectScorePenalty = 0.8;
 const secondaryCandidatePenaltyPow = 1.5;
+const secondaryCandidateThreshold = 0.5;
 
 const tokenPlacePenalty = 0.7;
 const blindTokenScore = 0.5;
@@ -144,6 +145,9 @@ export const scoreResults = (request: RequestBody, results: Person[], dateFormat
                         result.score = 0.01 * Math.round(100 * (
                             ((perfectScoreNumber > 1) ? multiplePerfectScorePenalty : 1) * result.score ** secondaryCandidatePenaltyPow)
                         );
+                        if (result.score < secondaryCandidateThreshold) {
+                            result.score = 0;
+                        };
                     } else {
                         if (perfectScoreNumber > 1) {
                             result.score = result.score * multiplePerfectScorePenalty;
@@ -151,7 +155,8 @@ export const scoreResults = (request: RequestBody, results: Person[], dateFormat
                     }
                 }
                 return result;
-            });
+            })
+            .filter((result: any) => result.score >= pruneScore);
     return resultsWithScores;
 }
 
