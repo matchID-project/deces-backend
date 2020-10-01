@@ -20,7 +20,7 @@ describe('bulk.ts - Process chunk', () => {
       'DD/MM/YYYY',
       5
     )
-    expect(result[0]).to.contain.all.keys(['0','1','2','3','4'])
+    expect(result[0]).to.contain.all.keys(['0','1'])
     expect(result[0][0].name.first).to.contain('Jean')
     expect(result[0][0].name.last).to.equal('Pierre')
   });
