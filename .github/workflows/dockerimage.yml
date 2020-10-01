@@ -1,10 +1,10 @@
-name: Docker image build CI
+name: Test & Build
 
 on: [push]
 
 jobs:
   build:
-    name: 🐳 Docker image build CI
+    name: 🐳 Build docker image
     runs-on: ubuntu-latest
 
     steps:
@@ -32,7 +32,7 @@ jobs:
           GIT_BRANCH: ${{ steps.extract_branch.outputs.branch }}
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
   bulk:
-    name: Test bulk mode
+    name: ✅ Test bulk mode and perfs
     runs-on: ubuntu-latest
 
     steps:
@@ -62,8 +62,13 @@ jobs:
           docker exec -i deces-backend curl -s --fail -X DELETE "http://localhost:8080/deces/api/v1/search/csv/$jobId1"
           until docker exec -i deces-backend curl -s --fail -X GET "http://localhost:8080/deces/api/v1/search/csv/$jobId2" | tee log.log | egrep --invert-match 'created|active|waiting' > /dev/null ; do cat log.log ; sleep 5 ; done ;
           docker exec -i deces-backend curl -s --fail -X GET "http://localhost:8080/deces/api/v1/search/csv/$jobId2" > results.csv
+      - run: tail -n 10000 clients_test.csv > backend/tests/clients_test.csv
+      - name: ⚗ Run artillery tests
+        run: make test-perf-v1
       - name: 📦 Upload results as job artifact
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v2
         with:
           name: match-results
-          path: results.csv
+          path: |
+            results.csv
+            backend/tests/performance/reports/*.html

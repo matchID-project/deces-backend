@@ -8,7 +8,6 @@ import soundex from '@thejellyfish/soundex-fr';
 const perfectScoreThreshold = 0.95;
 const multiplePerfectScorePenalty = 0.8;
 const secondaryCandidatePenaltyPow = 1.5;
-const secondaryCandidateThreshold = 0.5;
 
 const tokenPlacePenalty = 0.7;
 const blindTokenScore = 0.5;
