@@ -69,7 +69,7 @@ describe('index.ts - Express application', () => {
     let data = '';
     let pos = 0;
     let index: number;
-    const nrows = 1000;
+    const nrows = 5000;
     const readStream: any = fs.createReadStream('/deces-backend/tests/clients_test.csv',  {encoding: 'utf8'})
     readStream
       .on('data', function (chunk: string) {
@@ -95,19 +95,26 @@ describe('index.ts - Express application', () => {
       .field('chunkSize', 20)
       .attach('csv', buf, 'file.csv')
     const { body : { id: jobId } } = res
-    await sleep(500)
+
+    while (res.body.status === 'created' || res.body.status === 'waiting') {
+      res = await chai.request(app)
+        .get(`${process.env.BACKEND_PROXY_PATH}/search/csv/${jobId}`)
+    }
     res = await chai.request(app)
       .delete(`${process.env.BACKEND_PROXY_PATH}/search/csv/${jobId}`)
     expect(res).to.have.status(200);
     expect(res.body).to.have.all.keys('msg');
     expect(res.body.msg).to.have.string('cancelled');
-    await sleep(500)
     res = await chai.request(app)
        .get(`${process.env.BACKEND_PROXY_PATH}/search/csv/${jobId}`)
+    while (res.body.status === 'created' || res.body.status === 'waiting' || res.body.status === 'active' || res.body.msg === 'started') {
+      res = await chai.request(app)
+        .get(`${process.env.BACKEND_PROXY_PATH}/search/csv/${jobId}`)
+    }
     expect(res).to.have.status(200);
     expect(res.body).to.have.all.keys('msg');
     expect(res.body.msg).to.have.string('cancelled');
-  }).timeout(2000);
+  });
 
   it('/search/csv/ - run bulk job', async () => {
     let res;
@@ -185,7 +192,3 @@ describe('index.ts - Express application', () => {
       });
   });
 });
-
-const sleep = (ms: number) => {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
