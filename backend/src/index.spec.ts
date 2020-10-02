@@ -69,15 +69,22 @@ describe('index.ts - Express application', () => {
     let data = '';
     let pos = 0;
     let index: number;
+    const nrows = 1000;
     const readStream: any = fs.createReadStream('/deces-backend/tests/clients_test.csv',  {encoding: 'utf8'})
     readStream
       .on('data', function (chunk: string) {
         index = chunk.indexOf('\n');
         data += chunk;
-        index > 10 ? readStream.close() : pos += chunk.length;
+        if (index > 10) {
+          readStream.close() 
+        } else {
+          pos += chunk.length;
+        }
       })
-    await finishedAsync(readStream, {}).catch(() => {});
-    const buf = Buffer.from(data.split('\n').slice(0,500).join('\n'), 'utf8');
+    await finishedAsync(readStream, {}).catch(() => {
+      // do nothing: closed stream
+    });
+    const buf = Buffer.from(data.split('\n').slice(0, nrows).join('\n'), 'utf8');
 
     res = await chai.request(app)
       .post(`${process.env.BACKEND_PROXY_PATH}/search/csv`)
@@ -106,17 +113,23 @@ describe('index.ts - Express application', () => {
     let res;
     let data = '';
     let pos = 0;
-    let nrows = 100;
+    const nrows = 100;
     let index: number;
     const readStream: any = fs.createReadStream('/deces-backend/tests/clients_test.csv',  {encoding: 'utf8'})
     readStream
       .on('data', function (chunk: string) {
         index = chunk.indexOf('\n');
         data += chunk;
-        index > 10 ? readStream.close() : pos += chunk.length;
+        if (index > 10) {
+          readStream.close() 
+        } else {
+          pos += chunk.length;
+        }
       })
-    await finishedAsync(readStream, {}).catch(() => {});
-    const buf = Buffer.from(data.split('\n').slice(0,nrows).join('\n'), 'utf8');
+    await finishedAsync(readStream, {}).catch(() => {
+      // do nothing: closed stream
+    });
+    const buf = Buffer.from(data.split('\n').slice(0, nrows).join('\n'), 'utf8');
 
     res = await chai.request(app)
       .post(`${process.env.BACKEND_PROXY_PATH}/search/csv`)
