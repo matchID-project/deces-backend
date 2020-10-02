@@ -110,7 +110,10 @@ export class IndexController extends Controller {
         this.setStatus(400);
         return  { msg: requestInput.errors };
       }
-      if (accept === 'text/csv') requestInput.scroll = '1m'
+      if (accept === 'text/csv') {
+        requestInput.scroll = '1m'
+        requestInput.size = 1000
+      }
       const requestBuild = buildRequest(requestInput);
       const result = await runRequest(requestBuild, requestInput.scroll);
       const builtResult = buildResult(result.data, requestInput)
