@@ -299,9 +299,3 @@ if [ ! -z "$scrollId" ]; then \
 else
     echo -e "\e[31mscroll: KO!\e[0m"
 fi
-if curl -s -X POST -H "Accept: application/csv" -H "Content-Type: application/json" -d '{"deathDate":"2020","lastName": "Pottier"}' http://localhost:${BACKEND_PORT}/deces/api/v1/search | wc -l | grep -q 21; then
-    echo "simple csv response: OK"
-else
-    echo -e "\e[31msimple csv response: KO!\e[0m"
-    exit 1
-fi

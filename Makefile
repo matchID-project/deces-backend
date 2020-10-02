@@ -34,6 +34,7 @@ export PORT=8084
 export BACKEND=${APP_PATH}/backend
 export BACKEND_PORT=8080
 export BACKEND_HOST=backend
+export API_URL?=localhost:${PORT}
 export API_EMAIL?=matchid-project@gmail.com
 export API_SSL?=1
 export BACKEND_PROXY_PATH=/${API_PATH}/api/v1
@@ -260,12 +261,9 @@ backend-test:
 	@docker exec -i ${USE_TTY} ${APP} bash /deces-backend/tests/test_query_params.sh
 
 backend-test-mocha:
-	docker run --rm \
-		-v ${BACKEND}/src:/${APP}/src/ \
-		-v ${BACKEND}/tests:/${APP}/tests/ \
-		--network='${DC_NETWORK}' \
-		 -i ${DOCKER_USERNAME}/deces-backend-development:${APP_VERSION} \
-		npm run test
+	@echo Testing API with mocha tests 
+	@export EXEC_ENV=development; export BACKEND_LOG_LEVEL=error; \
+		${DC} -f ${DC_FILE}-dev-backend.yml run --rm backend npm run test
 
 backend/tests/clients_test.csv:
 	curl -L https://github.com/matchID-project/examples/raw/master/data/clients_test.csv -o backend/tests/clients_test.csv

@@ -3,7 +3,7 @@ import express from 'express';
 import Queue from 'bee-queue';
 import forge from 'node-forge';
 import crypto from 'crypto';
-import { loggerStream } from '../logger';
+import loggerStream from '../logger';
 import { Readable, Transform, pipeline, finished } from 'stream';
 import fs from 'fs';
 import { createGzip, createGunzip } from 'zlib';

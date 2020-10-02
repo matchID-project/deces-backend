@@ -3,7 +3,7 @@ import express from 'express';
 import { expect } from 'chai';
 import 'mocha';
 
-describe('index.ts - GET request', () => {
+describe('index.controller.ts - GET request', () => {
   it('Single request - should return more than 0 results', async () => {
     const controller = new IndexController()
     const result = await controller.search("Georges")
@@ -31,7 +31,7 @@ describe('index.ts - GET request', () => {
 
 });
 
-describe('index.ts - POST request', () => {
+describe('index.controller.ts - POST request', () => {
   it('Query parameter should return more than 0 results', async () => {
     const controller = new IndexController()
     const result = await controller.searchpost({q: 'Georges'}, {} as express.Request)

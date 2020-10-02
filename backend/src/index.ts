@@ -2,11 +2,11 @@ import express from 'express';
 import morgan from 'morgan';
 import bodyParser from 'body-parser';
 import { RegisterRoutes } from './routes/routes';
-import { loggerStream } from './logger';
+import loggerStream from './logger';
 import { router as bulk } from './controllers/bulk';
 import { router as documentation } from './controllers/documentation';
 
-const app = express();
+export const app = express();
 const port = 8080;
 
 morgan.token('fwd-addr', (req: any) => {

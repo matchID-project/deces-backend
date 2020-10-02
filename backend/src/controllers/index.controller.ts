@@ -1,11 +1,13 @@
 import { Controller, Get, Post, Body, Route, Query, Response, Tags, Header, Request } from 'tsoa';
 import express from 'express';
-import { resultsHeader, jsonPath } from './bulk';
+import { resultsHeader, jsonPath, prettyString } from './bulk';
 import { runRequest } from '../runRequest';
 import { buildRequest } from '../buildRequest';
 import { RequestInput, RequestBody } from '../models/requestInput';
 import { buildResult } from '../models/result';
 import { Result, ErrorResponse, HealthcheckResponse } from '../models/result';
+import { format } from '@fast-csv/format';
+import fs from 'fs';
 // import getDataGouvCatalog from '../getDataGouvCatalog';
 
 @Route('')
@@ -108,27 +110,64 @@ export class IndexController extends Controller {
         this.setStatus(400);
         return  { msg: requestInput.errors };
       }
+      if (accept === 'text/csv') {
+        requestInput.scroll = '1m'
+        requestInput.size = 1000
+      }
       const requestBuild = buildRequest(requestInput);
       const result = await runRequest(requestBuild, requestInput.scroll);
       const builtResult = buildResult(result.data, requestInput)
-      if (accept === 'application/csv') {
-        response.setHeader('Content-Type', 'text/csv');
-        response.write([
-          ...resultsHeader.map(h => h.replace(/\.location/, '').replace(/\./,' '))
-        ].join(',') + '\r\n'
-        );
-        builtResult.response.persons.forEach((row: any) => {
-          response.write([
-            ...resultsHeader.map(key => jsonPath(row, key))
-          ].join(',') + '\r\n')
-        });
-        response.end();
+      if (accept === 'text/csv') {
+        if (builtResult.response.total < 500000) {
+          await this.responseJson2Csv(response, builtResult, requestInput)
+        } else {
+          this.setStatus(402);
+          return  { msg: "error - Too large request:  payment required" };
+        }
       } else {
         return builtResult;
       }
     } else {
       this.setStatus(400);
       return  { msg: "error - empty request" };
+    }
+  }
+
+  private async responseJson2Csv(response: express.Response, builtResult: Result, requestInput: RequestInput): Promise<void> {
+    let requestBuild;
+    let result;
+    response.setHeader('Content-disposition', 'attachment; filename=download.csv');
+    response.setHeader('total-results', builtResult.response.total);
+    response.setHeader('Content-Type', 'text/csv');
+
+    const csvStream = format({
+      headers: false,
+      writeHeaders: true,
+      delimiter: ','
+    });
+
+    // pipe csvstream write to response
+    csvStream.pipe(response)
+
+    csvStream.write([
+      ...resultsHeader.map(h => h.replace(/\.location/, '').replace(/\./,' '))
+    ]
+    );
+    builtResult.response.persons.forEach((row: any) => {
+      csvStream.write([
+        ...resultsHeader.map(key => prettyString(jsonPath(row, key)))
+      ])
+    });
+    while ( builtResult.response.persons.length > 0 ) {
+      requestInput.scrollId = builtResult.response.scrollId
+      requestBuild = buildRequest(requestInput);
+      result = await runRequest(requestBuild, requestInput.scroll);
+      builtResult = buildResult(result.data, requestInput)
+      builtResult.response.persons.forEach((row: any) => {
+        csvStream.write([
+          ...resultsHeader.map(key => prettyString(jsonPath(row, key)))
+        ])
+      });
     }
   }
 
