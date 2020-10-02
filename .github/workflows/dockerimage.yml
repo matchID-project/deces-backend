@@ -32,22 +32,20 @@ jobs:
           GIT_BRANCH: ${{ steps.extract_branch.outputs.branch }}
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
   bulk:
-    name: ✅ Test bulk mode and perfs
+    name: ✅ Perfs test with artillery.io
     runs-on: ubuntu-latest
+    needs: build
 
     steps:
       - uses: actions/checkout@v1
       - name: Build the dev docker image
         run: make backend-build-all
       - name: Make deploy local
-        run: make deploy-dependencies
+        run: make deploy-local
         env:
           FILES_TO_PROCESS: deaths.txt.gz
           STORAGE_ACCESS_KEY: ${{ secrets.aws_access_key_id }}
           STORAGE_SECRET_KEY: ${{ secrets.aws_secret_access_key }}
-      - name: Make mocha tests
-        run: make backend-test-mocha 
-      - run: tail -n 10000 backend/tests/clients_test.csv > backend/tests/clients_test.csv
       - name: ⚗ Run artillery tests
         run: make test-perf-v1
       - name: 📦 Upload results as job artifact
