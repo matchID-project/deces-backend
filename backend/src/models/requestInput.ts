@@ -1,3 +1,4 @@
+import moment from 'moment'
 import {
   fullTextWithQuery,
   nameWithQuery,
@@ -117,6 +118,10 @@ export interface RequestBody {
   * Age du décès
   */
  deathAge?: string|number;
+ /**
+  * Age du décès
+  */
+ lastSeenAliveDate?: string;
 };
 
 export class RequestInput {
@@ -136,6 +141,7 @@ export class RequestInput {
   deathCountry?: RequestField;
   deathGeoPoint?: RequestField;
   deathAge?: RequestField;
+  lastSeenAliveDate?: RequestField;
   size?: number;
   scroll?: string;
   scrollId?: string;
@@ -146,7 +152,7 @@ export class RequestInput {
   dateFormat?: string;
   metadata?: any;
   errors: string[] = [];
-  constructor(q?: string, firstName?: string, lastName?: string, sex?: string, birthDate?: string|number, birthCity?: string, birthDepartment?: string, birthCountry?: string, birthGeoPoint?: GeoPoint, deathDate?: string|number, deathCity?: string, deathDepartment?: string, deathCountry?: string, deathGeoPoint?: GeoPoint, deathAge?: string|number, scroll?: string, scrollId?: string, size?: number, page?: number, fuzzy?: string, sort?: string|Sort[], block?: Block, dateFormat?: any, metadata?: any) {
+  constructor(q?: string, firstName?: string, lastName?: string, sex?: string, birthDate?: string|number, birthCity?: string, birthDepartment?: string, birthCountry?: string, birthGeoPoint?: GeoPoint, deathDate?: string|number, deathCity?: string, deathDepartment?: string, deathCountry?: string, deathGeoPoint?: GeoPoint, deathAge?: string|number, lastSeenAliveDate?: string, scroll?: string, scrollId?: string, size?: number, page?: number, fuzzy?: string, sort?: string|Sort[], block?: Block, dateFormat?: any, metadata?: any) {
     this.size = size ? size : 20;
     this.page = page ? page : 1;
     this.scroll = scroll ? scroll : '';
@@ -154,6 +160,13 @@ export class RequestInput {
     this.sort = sort ? sortWithQuery(sort) : {value: [{score: 'desc'}]}
     this.block = block;
     this.dateFormat = dateFormat;
+    const birthDateTransformed = birthDate && dateFormat ? moment(birthDate.toString(), dateFormat).format("DD/MM/YYYY"): birthDate;
+    let deathDateTransformed
+    if (lastSeenAliveDate) {
+      deathDateTransformed = dateFormat ? `>${moment(lastSeenAliveDate.toString(), dateFormat).format("DD/MM/YYYY")}` : `>${lastSeenAliveDate}`;
+    } else {
+      deathDateTransformed = deathDate && dateFormat ? moment(deathDate.toString(), dateFormat).format("DD/MM/YYYY") : deathDate;
+    }
 
     this.fullText = fullTextWithQuery(q, fuzzy);
     this.name = nameWithQuery({
@@ -161,12 +174,12 @@ export class RequestInput {
       last: lastName
     }, fuzzy);
     this.sex = sexWithQuery(sex, fuzzy);
-    this.birthDate = birthDateWithQuery(birthDate, fuzzy);
+    this.birthDate = birthDateWithQuery(birthDateTransformed, fuzzy);
     this.birthCity = birthCityWithQuery(birthCity, fuzzy);
     this.birthDepartment = birthDepartmentWithQuery(birthDepartment, fuzzy);
     this.birthCountry = birthCountryWithQuery(birthCountry, fuzzy);
     this.birthGeoPoint = birthGeoPointWithQuery(birthGeoPoint, fuzzy);
-    this.deathDate = deathDateWithQuery(deathDate, fuzzy);
+    this.deathDate = deathDateWithQuery(deathDateTransformed, fuzzy);
     this.deathAge = deathAgeWithQuery(deathAge, fuzzy);
     this.deathCity = deathCityWithQuery(deathCity, fuzzy);
     this.deathDepartment = deathDepartmentWithQuery(deathDepartment, fuzzy);
@@ -180,6 +193,5 @@ export class RequestInput {
         }
       }
     });
-
   }
 }

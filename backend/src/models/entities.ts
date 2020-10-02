@@ -1,3 +1,5 @@
+import { ScoreResult } from '../score';
+
 export interface Sort {
  [key: string]: 'asc'|'desc';
 }
@@ -33,7 +35,7 @@ export interface GeoPoint {
 };
 
 export interface Location {
-    city?: string|RequestField;
+    city?: string|string[]|RequestField;
     cityCode?: string|RequestField;
     departmentCode?: string|RequestField;
     country?: string|RequestField;
@@ -48,6 +50,7 @@ export interface Person {
     id: string;
     name: Name;
     sex: 'M'|'F';
+    scores: ScoreResult;
     birth: {
       date: string;
       location: Location;

@@ -1,5 +1,6 @@
 import { Person } from './entities';
 import { RequestInput } from './requestInput';
+import { scoreResults } from '../score';
 
 interface RequestType {
   [key: string]: any; // Index signature
@@ -18,6 +19,7 @@ interface RequestType {
   page?: number;
   fuzzy?: string;
   sort?: string;
+  dateFormat?: string;
 }
 
 interface ResType {
@@ -29,7 +31,7 @@ interface ResType {
  /**
   * score maximum obtenu lors de la recherche
   */
- maxScore: number;
+ maxScoreES: number;
  /**
   * nombre d'identité présent dans la réponse
   */
@@ -110,11 +112,11 @@ export interface ResultRawES {
       value: number;
     }
     'max_score': number;
-    hits:  ResultRawHits[]
+    hits:  ResultRawHit[]
   }
 }
 
-export interface ResultRawHits {
+export interface ResultRawHit {
   _score: number;
   _id: string;
   _source: {
@@ -159,15 +161,28 @@ export const buildResult = (result: ResultRawES, requestInput: RequestInput): Re
   const filteredRequest: RequestType = {}
   Object.keys(requestInput).forEach((item: any) => {
     if (requestInput[item] && requestInput[item].value) {
-      return filteredRequest[item] = requestInput[item].value
+      if (item === 'name') {
+        filteredRequest.firstName = requestInput.name.value && requestInput.name.value.first;
+        filteredRequest.lastName = requestInput.name.value && requestInput.name.value.last;
+      } else {
+        filteredRequest[item] = requestInput[item].value
+      }
     }
   })
-  const filteredResults = result.hits.hits.map(buildResultSingle)
+  let filteredResults = result.hits.hits.map(buildResultSingle)
+  scoreResults(filteredRequest, filteredResults, filteredRequest.dateFormat)
+  if (requestInput.sort && Object.values(requestInput.sort.value).map(x => Object.keys(x))[0].includes('score')) {
+    if (Object.values(requestInput.sort.value).find(x => x.score).score === 'asc') {
+      filteredResults = filteredResults.sort((a: Person, b: Person) => a.score - b.score)
+    } else if (Object.values(requestInput.sort.value).find(x => x.score).score === 'desc') {
+      filteredResults = filteredResults.sort((a: Person, b: Person) => b.score - a.score)
+    }
+  }
   const composedResult: Result =  {
     request: filteredRequest,
     response: {
       total: result.hits.total.value,
-      maxScore: result.hits.max_score,
+      maxScoreES: result.hits.max_score,
       size: requestInput.size,
       page: requestInput.page,
       delay: result.took,
@@ -181,11 +196,12 @@ export const buildResult = (result: ResultRawES, requestInput: RequestInput): Re
 
 }
 
-export const buildResultSingle = (item: ResultRawHits): Person => {
+export const buildResultSingle = (item: ResultRawHit): Person => {
   return {
     score: item._score,
     // source: dataCatalog[item._source.SOURCE],
     source: item._source.SOURCE,
+    scores: {score: 0},
     id: item._id,
     name: {
       first: item._source.PRENOMS ? item._source.PRENOMS.split(' ') : [''],

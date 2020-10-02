@@ -51,7 +51,7 @@ const log = (json:any) => {
 }
 
 const validFields: string[] = ['q', 'firstName', 'lastName', 'sex', 'birthDate', 'birthCity', 'birthDepartment', 'birthCountry',
-'birthGeoPoint', 'deathDate', 'deathCity', 'deathDepartment', 'deathCountry', 'deathGeoPoint', 'deathAge',
+'birthGeoPoint', 'deathDate', 'deathCity', 'deathDepartment', 'deathCountry', 'deathGeoPoint', 'deathAge', 'lastSeenAliveDate',
 'size', 'fuzzy', 'block'];
 
 const jsonFields: string[] = ['birthGeoPoint','deathGeoPoint','block'];
@@ -65,13 +65,14 @@ class ProcessStream<I extends any, O extends any> extends Transform {
   batchSize: number;
   batchNumber: number;
   processedRows: number;
+  sourceLineNumber: number;
   jobs: any[];
   totalRows: number;
   dateFormat: string;
+  candidateNumber: number;
 
-  constructor(job: any, mapField: any, options: any) {
+  constructor(job: any, mapField: any, options: any = {}) {
     // init Transform
-    if (!options) options = {}; // ensure object
     options.objectMode = true; // forcing object mode
     super({ objectMode: true, ...(options || {}) });
     this.job = job;
@@ -80,8 +81,10 @@ class ProcessStream<I extends any, O extends any> extends Transform {
     this.batchNumber = 0;
     this.batchSize = 50;
     this.processedRows = 0;
+    this.sourceLineNumber = 1;
     this.totalRows = this.job.data.totalRows;
     this.dateFormat = this.job.data.dateFormat;
+    this.candidateNumber = this.job.data.candidateNumber;
     this.jobs = [];
   }
 
@@ -100,15 +103,15 @@ class ProcessStream<I extends any, O extends any> extends Transform {
       };
     }
 
-    this.batch.push(record);
+    this.batch.push({source: record, sourceLineNumber: this.sourceLineNumber++});
     if (this.shouldProcessBatch) {
       this.processRecords(this.batchNumber - Number(process.env.BACKEND_CHUNK_CONCURRENCY))
-      .then(() => callback())
-      .catch(err => callback(err));
+        .then(() => callback())
+        .catch(err => callback(err));
       return;
     }
     callback();
-}
+  }
 
   _flush(callback: any) {
       if (this.batch.length) {
@@ -126,7 +129,7 @@ class ProcessStream<I extends any, O extends any> extends Transform {
       this.push(this.outputHeaders);
       this.outputHeaders = undefined;
     }
-    records.forEach((r: any) => {
+    records.flat(1).forEach((r: any) => {
       this.processedRows++;
       this.push(r);
     });
@@ -155,7 +158,8 @@ class ProcessStream<I extends any, O extends any> extends Transform {
     const job = await chunkQueue
       .createJob({
         chunk: this.batch.map((r: any) => this.toRequest(r)),
-        dateFormat: this.dateFormat
+        dateFormat: this.dateFormat,
+        candidateNumber: this.candidateNumber
       })
       .timeout(30000)
       .retries(2)
@@ -170,10 +174,11 @@ class ProcessStream<I extends any, O extends any> extends Transform {
   toRequest(record: any) {
     const request: any = {
       metadata: {
-        source: {}
+        source: {},
+        sourceLineNumber: record.sourceLineNumber
       }
     }
-    Object.values(record).forEach((value: string, idx: number) => {
+    Object.values(record.source).forEach((value: string, idx: number) => {
       if (this.mapField[this.inputHeaders[idx]]) {
         request[this.mapField[this.inputHeaders[idx]]] = jsonFields.includes(this.inputHeaders[idx]) ? JSON.parse(value) : value;
       }
@@ -246,8 +251,8 @@ const pbkdf2 = (key: string) => {
 
 export const processCsv =  async (job: any, jobFile: any): Promise<any> => {
   try {
-    const inputHeaders: string[] = [];
-    let outputHeaders: any;
+    // const inputHeaders: string[] = [];
+    // let outputHeaders: any;
     const mapField:any = {};
     const md = forge.md.sha256.create();
     md.update(job.data.randomKey);
@@ -304,9 +309,9 @@ export const processCsv =  async (job: any, jobFile: any): Promise<any> => {
   }
 }
 
-const processChunk = async (chunk: any, dateFormat: string) => {
+export const processChunk = async (chunk: any, dateFormat: string, candidateNumber: number) => {
   const bulkRequest = chunk.map((row: any) => { // TODO: type
-    const requestInput = new RequestInput(row.q, row.firstName, row.lastName, row.sex, row.birthDate, row.birthCity, row.birthDepartment, row.birthCountry, row.birthGeoPoint, row.deathDate, row.deathCity, row.deathDepartment, row.deathCountry, row.deathGeoPoint, row.deathAge, row.scroll, row.scrollId, row.size, row.page, row.fuzzy, row.sort, row.block, dateFormat);
+    const requestInput = new RequestInput(row.q, row.firstName, row.lastName, row.sex, row.birthDate, row.birthCity, row.birthDepartment, row.birthCountry, row.birthGeoPoint, row.deathDate, row.deathCity, row.deathDepartment, row.deathCountry, row.deathGeoPoint, row.deathAge, row.lastSeenAliveDate, row.scroll, row.scrollId, row.size, row.page, row.fuzzy, row.sort, row.block, dateFormat);
     return [JSON.stringify({index: "deces"}), JSON.stringify(buildRequest(requestInput))];
   })
   const msearchRequest = bulkRequest.map((x: any) => x.join('\n\r')).join('\n\r') + '\n';
@@ -314,14 +319,17 @@ const processChunk = async (chunk: any, dateFormat: string) => {
   if (result.data.responses.length > 0) {
     return result.data.responses.map((item: ResultRawES, idx: number) => {
       if (item.hits.hits.length > 0) {
-        const scoredResults = scoreResults(chunk[idx], item.hits.hits.map(hit => buildResultSingle(hit)), dateFormat)
+        const scoredResults = scoreResults(chunk[idx], item.hits.hits.map(buildResultSingle), dateFormat)
         if (scoredResults && scoredResults.length > 0) {
-          return {...chunk[idx], ...scoredResults[0]}
+          const selectedCanditates = scoredResults.slice(0, candidateNumber)
+          return selectedCanditates.map((selectedCanditate: any) => {
+            return {...chunk[idx], ...selectedCanditate}
+          })
         } else {
-          return {...chunk[idx]}
+          return [{...chunk[idx]}]
         }
       } else {
-        return {...chunk[idx]}
+        return [{...chunk[idx]}]
       }
     })
   } else {
@@ -330,7 +338,7 @@ const processChunk = async (chunk: any, dateFormat: string) => {
 }
 
 chunkQueue.process(Number(process.env.BACKEND_CHUNK_CONCURRENCY), async (chunkJob: Queue.Job) => {
-  return await processChunk(chunkJob.data.chunk, chunkJob.data.dateFormat);
+  return await processChunk(chunkJob.data.chunk, chunkJob.data.dateFormat, chunkJob.data.candidateNumber);
 })
 
 jobQueue.process(Number(process.env.BACKEND_JOB_CONCURRENCY), async (job: Queue.Job) => {
@@ -378,6 +386,10 @@ jobQueue.process(Number(process.env.BACKEND_JOB_CONCURRENCY), async (job: Queue.
  *                  type: string
  *                  description: Format to parse birthdate
  *                  example: YYYY-MM-DD
+ *                candidateNumber:
+ *                  type: number
+ *                  description: Maximum number of matchs candidates to return per identity
+ *                  example: 1
  *                fileName:
  *                  type: string
  *                  description: Fichier CSV contenant le noms des identités à comparer
@@ -412,6 +424,7 @@ router.post('/csv', multerSingle, async (req: any, res: express.Response) => {
     options.totalRows = 0;
     options.inputHeaders = [];
     options.outputHeaders = {};
+    options.candidateNumber = options.candidateNumber || 1;
     options.mapField = {};
     validFields.forEach(key => options.mapField[options[key] || key] = key );
 
@@ -549,9 +562,10 @@ router.get('/:format(csv|json)/:id?', async (req: any, res: express.Response) =>
                 if (sourceHeader === undefined) {
                   sourceHeader = row.metadata.header;
                   // write header, bypassing fast-csv methods
-                  this.push([...sourceHeader,...resultsHeader.map(h => h.replace(/\.location/, ''))])
+                  this.push([...sourceHeader,'sourceLineNumber',...resultsHeader.map(h => h.replace(/\.location/, ''))])
                 } else {
                   this.push([...sourceHeader.map((key: string) => row.metadata.source[key]),
+                    row.metadata.sourceLineNumber,
                     ...resultsHeader.map(key => prettyString(jsonPath(row, key)))]);
                 }
                 cb();

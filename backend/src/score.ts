@@ -5,15 +5,22 @@ import moment from 'moment';
 import { dateTransformMask, isDateRange } from './masks';
 import soundex from '@thejellyfish/soundex-fr';
 
-const decreaseTokenPlace = 0.7;
+const perfectScoreThreshold = 0.95;
+const multiplePerfectScorePenalty = 0.8;
+const secondaryCandidatePenaltyPow = 1.5;
+const secondaryCandidateThreshold = 0.5;
+
+const tokenPlacePenalty = 0.7;
 const blindTokenScore = 0.5;
 
-const decreaseNameInversion = 0.7;
+const nameInversionPenalty = 0.7;
+const stopNamePenalty = 0.8;
 const minNameScore = 0.1;
 const blindNameScore = 0.5;
 const lastNamePenalty = 3
 
 const minSexScore = 0.5;
+const firstNameSexPenalty = 0.75;
 const blindSexScore = 1;
 
 const minDateScore = 0.2;
@@ -113,7 +120,9 @@ const scoreReduce = (score:any):number => {
 }
 
 export const scoreResults = (request: RequestBody, results: Person[], dateFormat: string): Person[] => {
-    return results
+    let maxScore = 0;
+    let perfectScoreNumber = 0;
+    const resultsWithScores: any = results
             .filter((result:any) => result.score > 0)
             .map((result:any) => {
                 try {
@@ -124,16 +133,36 @@ export const scoreResults = (request: RequestBody, results: Person[], dateFormat
                 }
                 result.scores.es = 0.005 * Math.round(Math.min(200, result.score));
                 result.score = (result.scores.score !== undefined) ?  0.01 * Math.round(100 * result.scores.score) : result.scores.es;
+                if (result.score > maxScore) { maxScore = result.score }
+                if (result.score >= perfectScoreThreshold) { perfectScoreNumber++ }
                 return result;
             })
             .filter((result: any) => result.score >= pruneScore)
             .sort((a: any, b: any) => (a.score < b.score) ? 1 : ( (a.score > b.score) ? -1 : 0 ))
-            // .map(r =>y, b: any) => (a.score < b.score) ? 1 : ( (a.score > b.score) ? -1 : 0 ))
+            .map((result: any) => {
+                if (perfectScoreNumber) {
+                    if (result.score < perfectScoreThreshold) {
+                        result.score = 0.01 * Math.round(100 * (
+                            ((perfectScoreNumber > 1) ? multiplePerfectScorePenalty : 1) * result.score ** secondaryCandidatePenaltyPow)
+                        );
+                        if (result.score < secondaryCandidateThreshold) {
+                            result.score = 0;
+                        };
+                    } else {
+                        if (perfectScoreNumber > 1) {
+                            result.score = result.score * multiplePerfectScorePenalty;
+                        }
+                    }
+                }
+                return result;
+            })
+            .filter((result: any) => result.score >= pruneScore);
+    return resultsWithScores;
 }
 
 export class ScoreResult {
   score: number;
-  date: number
+  date?: number
   name?: number;
   sex?: number;
   location?: number;
@@ -143,7 +172,7 @@ export class ScoreResult {
       this.date = scoreDate(request.birthDate, result.birth.date, dateFormat);
     }
     if (request.firstName || request.lastName) {
-      if (pruneScore < scoreReduce(this) || !this.date) {
+      if ((pruneScore < scoreReduce(this)) || !this.date) {
         this.name = scoreName({first: request.firstName, last: request.lastName}, result.name);
       } else {
         this.score = 0
@@ -155,6 +184,8 @@ export class ScoreResult {
       } else {
         this.score = 0
       }
+    } else if (request.firstName && firstNameSexMismatch(request.firstName, result.name.first as string)) {
+        this.sex = firstNameSexPenalty;
     }
     if (request.birthCity || request.birthCityCode || request.birthDepartment || request.latitude || request.longitude) {
       if (pruneScore < scoreReduce(this)) {
@@ -177,31 +208,58 @@ export class ScoreResult {
 }
 
 export const stopNames = [
-    [/(^|\s*)de (los|la)\s+/,'de$2'],
-    [/(^|\s*)(du|de|l|d|dos|del|le|el)\s+/, '$2'],
+    [/(^|\s)de (los|la)\s+/,'$1'],
+    [/(^|\s)(du|de|l|d|dos|del|le|el)\s+/, '$1'],
     [/\s+(du|de la|des|de|le|aux|de los|del|l|d)\s+/,' '],
-    [/st/, 'saint']
+    [/(^|\s)st\s+/, '$1saint ']
 ];
 
 const filterStopNames = (name: string|string[]): string|string[] => {
     return applyRegex(name, stopNames);
 }
 
+const firstNameSexMismatch = (firstNameA: string, firstNameB: string): boolean => {
+    let firstA = tokenize(normalize(firstNameA as string|string[]), true);
+    firstA = typeof(firstA) === 'string' ? firstA : (firstA as string[])[0];
+    let firstB = tokenize(normalize(firstNameB as string|string[]), true);
+    firstB = typeof(firstB) === 'string' ? firstB : (firstB as string[])[0];
+    return /.?e/.test(firstA.replace(firstB, '')) || /.?e/.test(firstB.replace(firstA, ''));
+}
+
 const scoreName = (nameA: Name, nameB: Name): number => {
     if ((!nameA.first && !nameA.last) || (!nameB.first && !nameB.last)) { return blindNameScore }
+    let score = 0;
     const firstA = tokenize(normalize(nameA.first as string|string[]), true);
-    const lastA = tokenize(filterStopNames(normalize(nameA.last as string|string[])));
+    let lastA = tokenize(normalize(nameA.last as string|string[]));
     const firstB = tokenize(normalize(nameB.first as string|string[]), true);
-    const lastB = tokenize(filterStopNames(normalize(nameB.last as string|string[])));
+    let lastB = tokenize(normalize(nameB.last as string|string[]));
 
-    return (0.01 * Math.round(100*
+    const scoreFirst = scoreToken(firstA, firstB as string|string[]);
+    score = 0.01 * Math.round(100*
         Math.max(
             Math.max(
-                (scoreToken(firstA, firstB as string|string[])) * (scoreToken(lastA, lastB as string) ** lastNamePenalty),
-                decreaseNameInversion * (scoreToken(firstA, lastB as string) ** lastNamePenalty) * scoreToken(lastA, firstB as string|string[]) ** lastNamePenalty
+                scoreFirst * (scoreToken(lastA, lastB as string) ** lastNamePenalty),
+                nameInversionPenalty * (scoreToken(firstA, lastB as string) ** lastNamePenalty) * scoreToken(lastA, firstB as string|string[]) ** lastNamePenalty
             ),
         minNameScore
-    )));
+    ));
+
+    if (score === 1) return 1;
+
+    lastA = tokenize(filterStopNames(normalize(nameA.last as string|string[])));
+    lastB = tokenize(filterStopNames(normalize(nameB.last as string|string[])));
+
+    return Math.max(
+        score,
+        stopNamePenalty * (0.01 * Math.round(100*
+            Math.max(
+                Math.max(
+                    scoreFirst * (scoreToken(lastA, lastB as string) ** lastNamePenalty),
+                    nameInversionPenalty * (scoreToken(firstA, lastB as string) ** lastNamePenalty) * scoreToken(lastA, firstB as string|string[]) ** lastNamePenalty
+                ),
+            minNameScore
+        )))
+    );
 }
 
 const scoreToken = (tokenA: string|string[]|RequestField, tokenB: string|string[], option?: string): number => {
@@ -217,7 +275,7 @@ const scoreToken = (tokenA: string|string[]|RequestField, tokenB: string|string[
                     s = Math.max(
                         fuzzyScore(tokenA, tokenB[0]),
                         ( tokenB.length > 1 )
-                            ? (option === 'any' ? 1 : decreaseTokenPlace) * tokenB.slice(1, tokenB.length).map(token => fuzzyScore(tokenA, token)).reduce(max) : 0
+                            ? (option === 'any' ? 1 : tokenPlacePenalty) * tokenB.slice(1, tokenB.length).map(token => fuzzyScore(tokenA, token)).reduce(max) : 0
                     );
                 }
             } else {
@@ -353,10 +411,13 @@ const scoreDate = (dateRangeA: any, dateStringB: string, dateFormat: string): nu
 }
 
 const scoreDateRaw = (dateRangeA: any, dateStringB: string): number => {
-    if (/^00000000$/.test(dateStringB) || !dateStringB) {
+    if (/^00000000$/.test(dateStringB) || !dateStringB || !dateRangeA) {
         return blindDateScore;
     }
     if (typeof(dateRangeA) === 'string') {
+        if (/^\s*$/.test(dateRangeA)) {
+            return blindDateScore;
+        }
         if (isDateRange(dateRangeA)) {
             const dateArrayA = dateRangeA.split(/-/);
             if (dateArrayA[0] === dateArrayA[1]) {
