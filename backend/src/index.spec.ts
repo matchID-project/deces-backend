@@ -348,7 +348,7 @@ describe('index.ts - Express application', () => {
     expect(res).to.have.status(200);
     parseString(res.text, { headers: true})
       .on('data', (row: any) => {
-        expect(Object.keys(row).slice(0,8)).to.include.members(['Prenom', 'name.first', 'Nom', 'name.last']);
+        expect(Object.keys(row).slice(0,8)).to.have.ordered.members(['name.first', 'Prenom', 'name.last', 'Nom', 'birth.date', 'Date', 'sex', 'Sex']);
       })
       .on('end', (rowCount: number) => {
         expect(rowCount).to.eql(inputArray.length - 1);
