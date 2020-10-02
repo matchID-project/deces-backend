@@ -7,7 +7,6 @@ import { RequestInput, RequestBody } from '../models/requestInput';
 import { buildResult } from '../models/result';
 import { Result, ErrorResponse, HealthcheckResponse } from '../models/result';
 import { format } from '@fast-csv/format';
-import fs from 'fs';
 // import getDataGouvCatalog from '../getDataGouvCatalog';
 
 @Route('')
