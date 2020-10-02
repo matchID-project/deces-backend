@@ -2,7 +2,7 @@ import { ScoreResult } from './score';
 import { expect } from 'chai';
 import 'mocha';
 
-describe('Score function', () => {
+describe('score.ts - Score function', () => {
 
   it('should return 0.8 as global score', () => {
     const score = new ScoreResult({
@@ -11,6 +11,7 @@ describe('Score function', () => {
       birthDate: "19691101"
     }, {
       score: 0.7,
+      scores: {score: 0},
       source: '',
       id: "13",
       name: {
@@ -45,6 +46,7 @@ describe('Score function', () => {
         }
       }
     });
+    expect(score).to.contain.all.keys(['score', 'date', 'name'])
     expect(score.score).to.equal(0.8);
   });
 

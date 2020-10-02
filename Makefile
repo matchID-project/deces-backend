@@ -34,6 +34,7 @@ export PORT=8084
 export BACKEND=${APP_PATH}/backend
 export BACKEND_PORT=8080
 export BACKEND_HOST=backend
+export API_URL?=localhost:${PORT}
 export API_EMAIL?=matchid-project@gmail.com
 export API_SSL?=1
 export BACKEND_PROXY_PATH=/${API_PATH}/api/v1
@@ -70,6 +71,12 @@ export AWS=${APP_PATH}/aws
 export DATAGOUV_CATALOG_URL = https://www.data.gouv.fr/api/1/datasets/${DATASET}/
 export DATAGOUV_RESOURCES_URL = https://static.data.gouv.fr/resources/${DATASET}
 export DATAGOUV_PROXY_PATH = /${API_PATH}/api/v0/getDataGouvFile
+
+# test artillery
+export PERF=${BACKEND}/tests/performance
+export PERF_SCENARIO_V1=${PERF}/scenarios/test-backend-v1.yml
+export PERF_REPORTS=${PERF}/reports/
+export PERF_NAMES=${BACKEND}/tests/clients_test.csv
 
 dummy		    := $(shell touch artifacts)
 include ./artifacts
@@ -253,6 +260,11 @@ backend-test:
 	@echo Testing API parameters
 	@docker exec -i ${USE_TTY} ${APP} bash /deces-backend/tests/test_query_params.sh
 
+backend-test-mocha:
+	@echo Testing API with mocha tests 
+	@export EXEC_ENV=development; export BACKEND_LOG_LEVEL=error; \
+		${DC} -f ${DC_FILE}-dev-backend.yml run --rm backend npm run test
+
 backend/tests/clients_test.csv:
 	curl -L https://github.com/matchID-project/examples/raw/master/data/clients_test.csv -o backend/tests/clients_test.csv
 
@@ -261,9 +273,15 @@ backend-test-bulk: backend/tests/clients_test.csv
 	@docker exec -i ${USE_TTY} ${APP} ls /deces-backend/tests/clients_test.csv
 	@$(eval msg = $(shell docker exec -i ${USE_TTY} ${APP} curl  -X POST -H "Content-Type: multipart/form-data" -F "csv=@/deces-backend/tests/clients_test.csv" -F "sep=;" -F "firstName=Prenom" -F "lastName=Nom" -F "birthDate=Date" -F "chunkSize=20" http://localhost:${BACKEND_PORT}/deces/api/v1/search/csv ))
 	@echo "Result $(msg)"
-	@$(eval jobId = $(shell echo $(msg) | grep -Po '(?<=id:)[0-9a-z]+' )) 
+	@$(eval jobId = $(shell echo $(msg) | grep -Po '(?<=id:)[0-9a-z]+' ))
 	@echo "JobID $(jobId)"
-	@timeout=${BULK_TIMEOUT} ; ret=1 ; until [ "$$timeout" -le 0 -o "$$ret" -eq "0"  ] ; do (docker exec -i ${USE_TTY} ${APP} curl -s --fail -X GET http://localhost:${BACKEND_PORT}/deces/api/v1/search/csv/$(jobId) | tee log.log | grep --invert-match progress > /dev/null ) ; ret=$$? ; cat log.log; if [ "$$ret" -ne "0" ] ; then echo -e ", still $$timeout seconds until killing" ; fi ; timeout=$$((timeout-10)); sleep 10 ; done ; echo -e "Done in $$((BULK_TIMEOUT - timeout)) seconds"; exit $$ret
+	@timeout=${BULK_TIMEOUT} ; ret=1 ; until [ "$$timeout" -le 0 -o "$$ret" -eq "0"  ] ; do (docker exec -i ${USE_TTY} ${APP} curl -s --fail -X GET http://localhost:${BACKEND_PORT}/deces/api/v1/search/csv/$(jobId) | tee log.log | egrep --invert-match 'created|active|waiting' > /dev/null ) ; ret=$$? ; cat log.log; if [ "$$ret" -ne "0" ] ; then echo -e ", still $$timeout seconds until killing" ; fi ; timeout=$$((timeout-10)); sleep 10 ; done ; echo -e "Done in $$((BULK_TIMEOUT - timeout)) seconds"; exit $$ret
+
+
+# test artillery
+test-perf-v1:
+	sed -i -E "s/;/,/g"  backend/tests/clients_test.csv
+	make -C ${APP_PATH}/${GIT_TOOLS} test-api-generic PERF_SCENARIO=${PERF_SCENARIO_V1} PERF_TEST_ENV=api-perf PERF_REPORTS=${PERF_REPORTS} DC_NETWORK=${DC_NETWORK} PERF_NAMES=${PERF_NAMES};
 
 # development mode
 backend-dev:
@@ -279,16 +297,16 @@ backend-dev-bulk: backend/tests/clients_test.csv
 	# first job to cancel
 	@$(eval msg1 = $(shell docker exec -i ${USE_TTY} ${APP}-development curl  -X POST -H "Content-Type: multipart/form-data" -F "csv=@tests/clients_test.csv" -F "sep=;" -F "firstName=Prenom" -F "lastName=Nom" -F "birthDate=Date" -F "chunkSize=20" http://localhost:${BACKEND_PORT}/deces/api/v1/search/csv ))
 	@echo "Result $(msg1)"
-	@$(eval jobId1 = $(shell echo $(msg1) | grep -Po '(?<=id:)[0-9a-z]+' )) 
+	@$(eval jobId1 = $(shell echo $(msg1) | grep -Po '(?<=id:)[0-9a-z]+' ))
 	@echo "JobID $(jobId1)"
 	# second job
-	@$(eval msg2 = $(shell docker exec -i ${USE_TTY} ${APP}-development curl  -X POST -H "Content-Type: multipart/form-data" -F "csv=@tests/clients_test.csv" -F "sep=;" -F "firstName=Prenom" -F "lastName=Nom" -F "birthDate=Date" -F "chunkSize=20" http://localhost:${BACKEND_PORT}/deces/api/v1/search/csv ))
+	@$(eval msg2 = $(shell docker exec -i ${USE_TTY} ${APP}-development curl  -X POST -H "Content-Type: multipart/form-data" -F "csv=@tests/clients_test.csv" -F "sep=;" -F "firstName=Prenom" -F "candidateNumber=4" -F "lastName=Nom" -F "birthDate=Date" -F "chunkSize=20" http://localhost:${BACKEND_PORT}/deces/api/v1/search/csv ))
 	@echo "Result $(msg2)"
-	@$(eval jobId2 = $(shell echo $(msg2) | grep -Po '(?<=id:)[0-9a-z]+' )) 
+	@$(eval jobId2 = $(shell echo $(msg2) | grep -Po '(?<=id:)[0-9a-z]+' ))
 	@echo "JobID $(jobId2)"
 	sleep 3
 	@docker exec -i ${USE_TTY} ${APP}-development curl -s --fail -X DELETE http://localhost:${BACKEND_PORT}/deces/api/v1/search/csv/$(jobId1)
-	@timeout=${BULK_TIMEOUT} ; ret=1 ; until [ "$$timeout" -le 0 -o "$$ret" -eq "0"  ] ; do (docker exec -i ${USE_TTY} ${APP}-development curl -s --fail -X GET http://localhost:${BACKEND_PORT}/deces/api/v1/search/csv/$(jobId2) | tee /dev/tty | grep --invert-match created > /dev/null ) ; ret=$$? ; if [ "$$ret" -ne "0" ] ; then echo -e "\nWaiting $$timeout seconds until the end of the job" ; fi ; timeout=$$((timeout-1)); sleep 1 ; done ; echo -e "Done in $$((BULK_TIMEOUT - timeout)) seconds"; exit $$ret
+	@timeout=${BULK_TIMEOUT} ; ret=1 ; until [ "$$timeout" -le 0 -o "$$ret" -eq "0"  ] ; do (docker exec -i ${USE_TTY} ${APP}-development curl -s --fail -X GET http://localhost:${BACKEND_PORT}/deces/api/v1/search/csv/$(jobId2) | tee /dev/tty | egrep --invert-match 'created|active|waiting' > /dev/null ) ; ret=$$? ; if [ "$$ret" -ne "0" ] ; then echo -e "\nWaiting $$timeout seconds until the end of the job" ; fi ; timeout=$$((timeout-1)); sleep 1 ; done ; echo -e "Done in $$((BULK_TIMEOUT - timeout)) seconds"; exit $$ret
 
 
 backend-dev-test:
