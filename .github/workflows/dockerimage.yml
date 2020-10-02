@@ -47,7 +47,10 @@ jobs:
           STORAGE_ACCESS_KEY: ${{ secrets.aws_access_key_id }}
           STORAGE_SECRET_KEY: ${{ secrets.aws_secret_access_key }}
       - name: ⚗ Run artillery tests
-        run: make test-perf-v1
+        run: |
+          make backend/tests/clients_test.csv
+          docker cp backend/tests/clients_test.csv deces-backend:/deces-backend/tests/clients_test.csv
+          make test-perf-v1
       - name: 📦 Upload results as job artifact
         uses: actions/upload-artifact@v2
         with:

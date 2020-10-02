@@ -202,7 +202,7 @@ elasticsearch-clean: elasticsearch-stop
 
 # deploy
 
-deploy-local: config elasticsearch-storage-pull elasticsearch-restore elasticsearch docker-check up backup-dir-clean backend-test
+deploy-local: config elasticsearch-storage-pull elasticsearch-restore elasticsearch docker-check up backup-dir-clean
 
 deploy-dependencies: config elasticsearch-storage-pull elasticsearch-restore elasticsearch docker-check elasticsearch backup-dir-clean backend/tests/clients_test.csv
 
