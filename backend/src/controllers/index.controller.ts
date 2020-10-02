@@ -115,7 +115,12 @@ export class IndexController extends Controller {
       const result = await runRequest(requestBuild, requestInput.scroll);
       const builtResult = buildResult(result.data, requestInput)
       if (accept === 'text/csv') {
-        await this.responseJson2Csv(response, builtResult, requestInput)
+        if (builtResult.response.total < 500000) {
+          await this.responseJson2Csv(response, builtResult, requestInput)
+        } else {
+          this.setStatus(402);
+          return  { msg: "error - Too large request:  payment required" };
+        }
       } else {
         return builtResult;
       }
