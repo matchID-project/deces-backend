@@ -59,6 +59,7 @@ VOLUME /${app_path}/dist
 VOLUME /${app_path}/tests
 
 COPY tsconfig.json ./
+COPY jest.config.js ./
 COPY .eslintrc.js ./
 
 # Expose the listening port of your app

@@ -1,6 +1,4 @@
 import { processChunk } from './bulk';
-import { expect } from 'chai';
-import 'mocha';
 
 describe('bulk.ts - Process chunk', () => {
   it('Precise request should return only one result', async () => {
@@ -9,9 +7,10 @@ describe('bulk.ts - Process chunk', () => {
       'DD/MM/YYYY',
       5
     )
-    expect(result.length).to.equal(2)
-    expect(result[0][0].name.first).to.contain('Jean')
-    expect(result[0][0].name.last).to.equal('Pierre')
+    expect(result).toHaveLength(2)
+    expect(result[0][0].name).toHaveProperty('first')
+    expect(result[0][0].name.first).toContain('Jean')
+    expect(result[0][0].name).toHaveProperty('last', 'Pierre')
   });
 
   it('Passing only first and last name', async () => {
@@ -20,9 +19,10 @@ describe('bulk.ts - Process chunk', () => {
       'DD/MM/YYYY',
       5
     )
-    expect(result[0]).to.contain.all.keys(['0','1'])
-    expect(result[0][0].name.first).to.contain('Jean')
-    expect(result[0][0].name.last).to.equal('Pierre')
+    expect(result[0]).toHaveLength(2)
+    expect(result[0][0].name).toHaveProperty('first')
+    expect(result[0][0].name.first).toContain('Jean')
+    expect(result[0][0].name).toHaveProperty('last', 'Pierre')
   });
 
   it('Alternative date format', async () => {
@@ -31,8 +31,9 @@ describe('bulk.ts - Process chunk', () => {
       'YYYY-MM-DD',
       1
     )
-    expect(result.length).to.equal(2)
-    expect(result[0][0].name.first).to.contain('Jean')
-    expect(result[0][0].name.last).to.equal('Pierre')
+    expect(result[0]).toHaveLength(1)
+    expect(result[0][0].name).toHaveProperty('first')
+    expect(result[0][0].name.first).toContain('Jean')
+    expect(result[0][0].name).toHaveProperty('last', 'Pierre')
   });
 });
