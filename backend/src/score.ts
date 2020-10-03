@@ -1,5 +1,5 @@
 import { RequestBody } from './models/requestInput';
-import { Person, Location, Name, RequestField } from './models/entities';
+import { Person, GeoLocation, Name, RequestField } from './models/entities';
 import levenshtein from 'js-levenshtein';
 import moment from 'moment';
 import { dateTransformMask, isDateRange } from './masks';
@@ -366,7 +366,7 @@ const scoreCountry = (countryA: string|string[]|RequestField, countryB: string|s
 }
 
 
-const scoreLocation = (locA: Location, locB: Location): any => {
+const scoreLocation = (locA: GeoLocation, locB: GeoLocation): any => {
     const score: any = {};
     if (locB.country && (scoreCountry('FRANCE', locB.country as string|string[]) === 1)) {
         if (normalize(locA.country as string|string[])) {

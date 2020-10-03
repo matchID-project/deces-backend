@@ -34,7 +34,7 @@ export interface GeoPoint {
     distance: string;
 };
 
-export interface Location {
+export interface GeoLocation {
     city?: string|string[]|RequestField;
     cityCode?: string|RequestField;
     departmentCode?: string|RequestField;
@@ -53,12 +53,12 @@ export interface Person {
     scores: ScoreResult;
     birth: {
       date: string;
-      location: Location;
+      location: GeoLocation;
     };
     death: {
       date: string;
       certificateId: string;
       age: number;
-      location: Location;
+      location: GeoLocation;
     };
   };
