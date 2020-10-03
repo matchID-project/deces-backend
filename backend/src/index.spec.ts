@@ -253,59 +253,59 @@ describe('index.ts - Express application', () => {
     expect(res.text.split('\n').length).toBe(totalPersons + 1);
   });
 
-//  it('/search/csv/ - delete job', async () => {
-//    let res;
-//    let data = '';
-//    let pos = 0;
-//    let index: number;
-//    const nrows = 5000;
-//    const readStream: any = fs.createReadStream('/deces-backend/tests/clients_test.csv',  {encoding: 'utf8'})
-//    readStream
-//      .on('data', function (chunk: string) {
-//        index = chunk.indexOf('\n');
-//        data += chunk;
-//        if (index > 10) {
-//          readStream.close()
-//        } else {
-//          pos += chunk.length;
-//        }
-//      })
-//    await finishedAsync(readStream, {}).catch(() => {
-//      // do nothing: closed stream
-//    });
-//    const buf = Buffer.from(data.split('\n').slice(0, nrows).join('\n'), 'utf8');
-//
-//    res = await superApp
-//      .post(`${process.env.BACKEND_PROXY_PATH}/search/csv`)
-//      .field('sep', ';')
-//      .field('firstName', 'Prenom')
-//      .field('lastName', 'Nom')
-//      .field('birthDate', 'Date')
-//      .field('chunkSize', 20)
-//      .attach('csv', buf, 'file.csv')
-//    const { body : { id: jobId } } = res
-//
-//
-//    while (res.body.status === 'created' || res.body.status === 'waiting' || res.body.msg === 'started' ) {
-//      res = await superApp
-//        .get(`${process.env.BACKEND_PROXY_PATH}/search/csv/${jobId}`)
-//    }
-//    console.log("here started", res.body);
-//    res = await superApp
-//      .delete(`${process.env.BACKEND_PROXY_PATH}/search/csv/${jobId}`)
-//      .expect(200)
-//    console.log("here deleted", res.body);
-//    expect(res.body).toHaveProperty('msg', expect.stringMatching(/cancelled/));
-//    res = await superApp
-//      .get(`${process.env.BACKEND_PROXY_PATH}/search/csv/${jobId}`)
-//      .expect(200)
-//    while (res.body.status === 'created' || res.body.status === 'waiting' || res.body.status === 'active' || res.body.msg === 'started') {
-//      res = await superApp
-//        .get(`${process.env.BACKEND_PROXY_PATH}/search/csv/${jobId}`)
-//        .expect(200)
-//    }
-//    expect(res.body).toHaveProperty('msg', expect.stringMatching(/cancelled/));
-//  });
+  it('/search/csv/ - delete job', async () => {
+    let res;
+    let data = '';
+    let pos = 0;
+    let index: number;
+    const nrows = 5000;
+    const readStream: any = fs.createReadStream('/deces-backend/tests/clients_test.csv',  {encoding: 'utf8'})
+    readStream
+      .on('data', function (chunk: string) {
+        index = chunk.indexOf('\n');
+        data += chunk;
+        if (index > 10) {
+          readStream.close()
+        } else {
+          pos += chunk.length;
+        }
+      })
+    await finishedAsync(readStream, {}).catch(() => {
+      // do nothing: closed stream
+    });
+    const buf = Buffer.from(data.split('\n').slice(0, nrows).join('\n'), 'utf8');
+
+    res = await superApp
+      .post(`${process.env.BACKEND_PROXY_PATH}/search/csv`)
+      .field('sep', ';')
+      .field('firstName', 'Prenom')
+      .field('lastName', 'Nom')
+      .field('birthDate', 'Date')
+      .field('chunkSize', 20)
+      .attach('csv', buf, 'file.csv')
+      .expect(200)
+    expect(res.body).toHaveProperty('msg', 'started') 
+    const { body : { id: jobId } } = res
+
+    while (res.body.status === 'created' || res.body.status === 'waiting' || res.body.msg === 'started' ) {
+      res = await superApp
+        .get(`${process.env.BACKEND_PROXY_PATH}/search/csv/${jobId}`)
+        .expect(200)
+    }
+    res = await superApp
+      .delete(`${process.env.BACKEND_PROXY_PATH}/search/csv/${jobId}`)
+      .expect(200)
+    expect(res.body).toHaveProperty('msg', expect.stringMatching(/cancelled/));
+    res = await superApp
+      .get(`${process.env.BACKEND_PROXY_PATH}/search/csv/${jobId}`)
+      .expect(200)
+    while (res.body.status === 'created' || res.body.status === 'waiting' || res.body.status === 'active' || res.body.msg === 'started') {
+      res = await superApp
+        .get(`${process.env.BACKEND_PROXY_PATH}/search/csv/${jobId}`)
+        .expect(200)
+    }
+    expect(res.body).toHaveProperty('msg', expect.stringMatching(/cancelled/));
+  });
 
   it('/search/csv/ - run bulk job', async () => {
     let res;
@@ -362,31 +362,34 @@ describe('index.ts - Express application', () => {
       });
   });
 
-//   it('/search/csv/ - bulk ordered', async () => {
-//     let res;
-//     const inputArray = [{firstName: 'Prenom', lastName: 'Nom', birthDate: 'Date', sex: 'Sex'},{firstName: 'jean', lastName: 'pierre', birthDate: '04/08/1933', sex: 'M'}, {firstName: 'georges', lastName: 'michel', birthDate: '12/03/1939', sex: 'M'}]
-//     const buf = await writeToBuffer(inputArray)
-//     res = await superApp
-//       .post(`${process.env.BACKEND_PROXY_PATH}/search/csv`)
-//       .field('sep', ',')
-//       .field('firstName', 'Prenom')
-//       .field('lastName', 'Nom')
-//       .field('birthDate', 'Date')
-//       .field('sex', 'Sex')
-//       .attach('csv', buf, 'file.csv')
-//     const { body : { id: jobId } } = res
-//     res = await superApp
-//       .get(`${process.env.BACKEND_PROXY_PATH}/search/csv/${jobId}`)
-//     while (res.body.status === 'created' || res.body.status === 'waiting' || res.body.status === 'active') {
-//       res = await superApp
-//         .get(`${process.env.BACKEND_PROXY_PATH}/search/csv/${jobId}`)
-//     }
-//     parseString(res.text, { headers: true})
-//       .on('data', (row: any) => {
-//         expect(Object.keys(row).slice(0,8)).toEqual(['name.first', 'Prenom', 'name.last', 'Nom', 'birth.date', 'Date', 'sex', 'Sex']);
-//       })
-//       .on('end', (rowCount: number) => {
-//         expect(rowCount).toBe(inputArray.length - 1);
-//       });
-//   });
+  it('/search/csv/ - bulk ordered', async () => {
+    let res;
+    const inputArray = [{firstName: 'Prenom', lastName: 'Nom', birthDate: 'Date', sex: 'Sex'},{firstName: 'jean', lastName: 'pierre', birthDate: '04/08/1933', sex: 'M'}, {firstName: 'georges', lastName: 'michel', birthDate: '12/03/1939', sex: 'M'}]
+    const buf = await writeToBuffer(inputArray)
+    res = await superApp
+      .post(`${process.env.BACKEND_PROXY_PATH}/search/csv`)
+      .field('sep', ',')
+      .field('firstName', 'Prenom')
+      .field('lastName', 'Nom')
+      .field('birthDate', 'Date')
+      .field('sex', 'Sex')
+      .attach('csv', buf, 'file.csv')
+      .expect(200)
+    expect(res.body).toHaveProperty('msg', 'started') 
+    const { body : { id: jobId } } = res
+    res = await superApp
+      .get(`${process.env.BACKEND_PROXY_PATH}/search/csv/${jobId}`)
+    while (res.body.status === 'created' || res.body.status === 'waiting' || res.body.status === 'active') {
+      res = await superApp
+        .get(`${process.env.BACKEND_PROXY_PATH}/search/csv/${jobId}`)
+        .expect(200)
+    }
+    parseString(res.text, { headers: true})
+      .on('data', (row: any) => {
+        expect(Object.keys(row).slice(0,8)).toEqual(['name.first', 'Prenom', 'name.last', 'Nom', 'birth.date', 'Date', 'sex', 'Sex']);
+      })
+      .on('end', (rowCount: number) => {
+        expect(rowCount).toBe(inputArray.length - 1);
+      });
+  });
 });
