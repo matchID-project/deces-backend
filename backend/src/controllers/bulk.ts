@@ -130,7 +130,7 @@ class ProcessStream<I extends any, O extends any> extends Transform {
       this.outputHeaders = undefined;
     }
     records.flat(1).forEach((r: any) => {
-      this.processedRows++;
+      this.processedRows = r && r.metadata && r.metadata.sourceLineNumber || this.processedRows;
       this.push(r);
     });
     this.job.reportProgress({rows: this.processedRows, percentage: this.processedRows / this.totalRows * 100})
