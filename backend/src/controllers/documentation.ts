@@ -3,6 +3,7 @@ import { Router } from 'express';
 import swaggerJsdoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
 import * as swaggerDocument from '../api/swagger.json';
+import { getCwd } from 'swagger-ui-svelte';
 
 export const router = Router();
 
@@ -45,4 +46,5 @@ specs.paths = {...specs.paths, ...swaggerDocument.paths}
 specs.components = {...specs.components, ...swaggerDocument.components}
 // specs.default = swaggerDocument.default;
 
+router.use(`/svelte`, express.static(getCwd(), { 'index': ['index.html'] }));
 router.use(`/`, swaggerUi.serve, swaggerUi.setup(specs));
