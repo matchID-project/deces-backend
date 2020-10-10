@@ -488,6 +488,13 @@ router.post('/csv', multerSingle, async (req: any, res: express.Response) => {
  *           example: 'abc'
  *         required: true
  *         description: ID of the job
+ *       - in: query
+ *         name: order
+ *         schema:
+ *           type: string
+ *           example: 'true'
+ *         required: false
+ *         description: Order matching result columns together
  *      responses:
  *        200:
  *          description: Success de request
@@ -511,6 +518,13 @@ router.post('/csv', multerSingle, async (req: any, res: express.Response) => {
  *           example: 'abc'
  *         required: true
  *         description: ID of the job
+ *       - in: query
+ *         name: order
+ *         schema:
+ *           type: string
+ *           example: 'true'
+ *         required: false
+ *         description: Order matching result columns together
  *      responses:
  *        200:
  *          description: Success de request
@@ -562,25 +576,29 @@ router.get('/:format(csv|json)/:id?', async (req: any, res: express.Response) =>
               transform(row: any, encoding: string, cb: any) {
                 if (sourceHeader === undefined) {
                   sourceHeader = row.metadata.header;
-                  mapping = resultsHeader.map((el, start) => {
-                    if (el.id && row.metadata.header.some((x:any) => (row.metadata.mapping[x] && row.metadata.mapping[x] === el.id))) {
-                      return { start, end: row.metadata.header.findIndex((x:any) => (row.metadata.mapping[x] && row.metadata.mapping[x] === el.id)) }
-                    }
-                  }).filter((x:any) => x)
                   // write header, bypassing fast-csv methods
                   const mapped = [...sourceHeader,...resultsHeader.map(h => h.label.replace(/\.location/, ''))]
-                  mapping.forEach((item: any, initial: number) => {
-                    mapped.splice(item.end + initial - (initial%2), 0, mapped[sourceHeader.length + item.start])
-                    mapped.splice(sourceHeader.length + item.start + 1, 1)
-                  })
+                  if (req.query.order) {
+                    mapping = resultsHeader.map((el, start) => {
+                      if (el.id && row.metadata.header.some((x:any) => (row.metadata.mapping[x] && row.metadata.mapping[x] === el.id))) {
+                        return { start, end: row.metadata.header.findIndex((x:any) => (row.metadata.mapping[x] && row.metadata.mapping[x] === el.id)) }
+                      }
+                    }).filter((x:any) => x)
+                    mapping.forEach((item: any, initial: number) => {
+                      mapped.splice(item.end + initial - (initial%2), 0, mapped[sourceHeader.length + item.start])
+                      mapped.splice(sourceHeader.length + item.start + 1, 1)
+                    })
+                  }
                   this.push(mapped)
                 } else {
                   const mapped = [...sourceHeader.map((key: string) => row.metadata.source[key]),
                     ...resultsHeader.map(key => prettyString(jsonPath(row, key.label)))];
-                  mapping.forEach((item: any, initial: number) => {
-                    mapped.splice(item.end + initial - (initial%2), 0, mapped[sourceHeader.length + item.start])
-                    mapped.splice(sourceHeader.length + item.start + 1, 1)
-                  })
+                  if (req.query.order) {
+                    mapping.forEach((item: any, initial: number) => {
+                      mapped.splice(item.end + initial - (initial%2), 0, mapped[sourceHeader.length + item.start])
+                      mapped.splice(sourceHeader.length + item.start + 1, 1)
+                    })
+                  }
                   this.push(mapped);
                 }
                 cb();

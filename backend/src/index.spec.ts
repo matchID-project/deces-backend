@@ -340,10 +340,10 @@ describe('index.ts - Express application', () => {
       .attach('csv', buf, 'file.csv')
     const { body : { id: jobId } } = res
     res = await chai.request(app)
-      .get(`${process.env.BACKEND_PROXY_PATH}/search/csv/${jobId}`)
+      .get(`${process.env.BACKEND_PROXY_PATH}/search/csv/${jobId}?order=true`)
     while (res.body.status === 'created' || res.body.status === 'waiting' || res.body.status === 'active') {
       res = await chai.request(app)
-        .get(`${process.env.BACKEND_PROXY_PATH}/search/csv/${jobId}`)
+        .get(`${process.env.BACKEND_PROXY_PATH}/search/csv/${jobId}?order=true`)
     }
     expect(res).to.have.status(200);
     parseString(res.text, { headers: true})
