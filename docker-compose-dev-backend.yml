@@ -45,6 +45,8 @@ services:
     ports:
       - ${PORT}:8080
     restart: always
+    depends_on:
+      - "redis"
   redis:
     image: redis:alpine
     container_name: ${APP}-redis

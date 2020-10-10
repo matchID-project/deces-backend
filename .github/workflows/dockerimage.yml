@@ -18,7 +18,7 @@ jobs:
         env:
           NPM_VERBOSE: ""
       - name: 👷 Make deploy local
-        run: make deploy-local
+        run: make deploy-dependencies
         env:
           FILES_TO_PROCESS: deces-2020-m01.txt.gz
           STORAGE_ACCESS_KEY: ${{ secrets.aws_access_key_id }}
@@ -32,43 +32,27 @@ jobs:
           GIT_BRANCH: ${{ steps.extract_branch.outputs.branch }}
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
   bulk:
-    name: ✅ Test bulk mode and perfs
+    name: ✅ Perfs test with artillery.io
     runs-on: ubuntu-latest
+    needs: build
 
     steps:
       - uses: actions/checkout@v1
       - name: Build the dev docker image
         run: make backend-build-all
       - name: Make deploy local
-        run: make config elasticsearch-storage-pull elasticsearch-restore elasticsearch docker-check up backup-dir-clean
+        run: make deploy-local
         env:
           FILES_TO_PROCESS: deaths.txt.gz
           STORAGE_ACCESS_KEY: ${{ secrets.aws_access_key_id }}
           STORAGE_SECRET_KEY: ${{ secrets.aws_secret_access_key }}
-      - name: Make bulk tests
-        run: |
-          curl -L https://github.com/matchID-project/examples/raw/master/data/clients_test.csv -o clients_test.csv
-          head -n 100 clients_test.csv > backend/tests/clients_test.csv
-          docker cp backend/tests/clients_test.csv deces-backend:/deces-backend/tests/clients_test.csv
-          docker exec -i deces-backend ls /deces-backend/tests/clients_test.csv
-          export msg1=$(docker exec -i deces-backend curl  -X POST -H "Content-Type: multipart/form-data" -F "csv=@/deces-backend/tests/clients_test.csv" -F "sep=;" -F "firstName=Prenom" -F "lastName=Nom" -F "birthDate=Date" -F "chunkSize=20" http://localhost:8080/deces/api/v1/search/csv )
-          echo "Result $msg1"
-          export jobId1=$(echo $msg1 | grep -Po '(?<=id":")[0-9a-z]+' )
-          echo "JobID $jobId1"
-          export msg2=$(docker exec -i deces-backend curl  -X POST -H "Content-Type: multipart/form-data" -F "csv=@/deces-backend/tests/clients_test.csv" -F "sep=;" -F "firstName=Prenom" -F "lastName=Nom" -F "birthDate=Date" -F "chunkSize=20" http://localhost:8080/deces/api/v1/search/csv )
-          echo "Result $msg2"
-          export jobId2=$(echo $msg2 | grep -Po '(?<=id":")[0-9a-z]+' )
-          echo "JobID $jobId2"
-          docker exec -i deces-backend curl -s --fail -X DELETE "http://localhost:8080/deces/api/v1/search/csv/$jobId1"
-          until docker exec -i deces-backend curl -s --fail -X GET "http://localhost:8080/deces/api/v1/search/csv/$jobId2" | tee log.log | egrep --invert-match 'created|active|waiting' > /dev/null ; do cat log.log ; sleep 5 ; done ;
-          docker exec -i deces-backend curl -s --fail -X GET "http://localhost:8080/deces/api/v1/search/csv/$jobId2" > results.csv
-      - run: tail -n 10000 clients_test.csv > backend/tests/clients_test.csv
       - name: ⚗ Run artillery tests
-        run: make test-perf-v1
+        run: |
+          make backend/tests/clients_test.csv
+          docker cp backend/tests/clients_test.csv deces-backend:/deces-backend/tests/clients_test.csv
+          make test-perf-v1
       - name: 📦 Upload results as job artifact
         uses: actions/upload-artifact@v2
         with:
           name: match-results
-          path: |
-            results.csv
-            backend/tests/performance/reports/*.html
+          path: backend/tests/performance/reports/*.html
