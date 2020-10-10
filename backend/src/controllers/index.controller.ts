@@ -15,6 +15,7 @@ export class IndexController extends Controller {
   /**
    * Launch single request
    * @summary Rapprocher une seule identité
+   * @param q Nom, prénom, date de naissance ou de décès (JJ/MM/AAAA)
    * @param firstName Prénom
    * @param lastName Nom de famille
    * @param sex Sexe

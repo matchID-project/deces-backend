@@ -635,6 +635,32 @@ router.get('/:format(csv|json)/:id?', async (req: any, res: express.Response) =>
   }
 });
 
+/**
+ * @swagger
+ * /search/csv/{jobId}:
+ *    delete:
+ *      description: Annuler un traitement en cours
+ *      summary: Annuler un traitement en cours
+ *      tags: [Bulk]
+ *      parameters:
+ *       - in: path
+ *         name: jobId
+ *         schema:
+ *           type: string
+ *           example: 'abc'
+ *         required: true
+ *         description: ID of the job
+ *      responses:
+ *        200:
+ *          description: Success de request
+ *          content:
+ *            application/json:
+ *              schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/HealthcheckResponse'
+ *                 - example:
+ *                     msg: 'Job 1234 cancelled'
+ */
 router.delete('/:format(csv|json)/:id?', async (req: any, res: express.Response) => {
   if (req.params.id) {
     const md = forge.md.sha256.create();
