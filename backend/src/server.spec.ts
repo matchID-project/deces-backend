@@ -653,10 +653,10 @@ describe('index.ts - Express application', () => {
     expect(res.body).toHaveProperty('msg', 'started')
     const { body : { id: jobId } } = res
     res = await superApp
-      .get(`${process.env.BACKEND_PROXY_PATH}/search/csv/${jobId}`)
+      .get(`${process.env.BACKEND_PROXY_PATH}/search/csv/${jobId}?order=true`)
     while (res.body.status === 'created' || res.body.status === 'waiting' || res.body.status === 'active') {
       res = await superApp
-        .get(`${process.env.BACKEND_PROXY_PATH}/search/csv/${jobId}`)
+        .get(`${process.env.BACKEND_PROXY_PATH}/search/csv/${jobId}?order=true`)
         .expect(200)
     }
     parseString(res.text, { headers: true})
