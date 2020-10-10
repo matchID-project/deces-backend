@@ -19,8 +19,8 @@ jobs:
           FILES_TO_PROCESS: deces-2020-m01.txt.gz
           STORAGE_ACCESS_KEY: ${{ secrets.aws_access_key_id }}
           STORAGE_SECRET_KEY: ${{ secrets.aws_secret_access_key }}
-      - name: ✅ Execute mocha tests
-        run: make backend-test-mocha
+      - name: ✅ Execute jest tests
+        run: make backend-test-jest
       - name: 🚀 Push the docker image
         if: github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/master'
         run: make docker-push GIT_BRANCH="${GITHUB_REF#refs/heads/}"

@@ -262,8 +262,8 @@ backend-test:
 	@echo Testing API parameters
 	@docker exec -i ${USE_TTY} ${APP} bash /deces-backend/tests/test_query_params.sh
 
-backend-test-mocha:
-	@echo Testing API with mocha tests 
+backend-test-jest:
+	@echo Testing API with jest
 	@export EXEC_ENV=development; export BACKEND_LOG_LEVEL=error; \
 		${DC} -f ${DC_FILE}-dev-backend.yml run --rm backend npm run test
 
