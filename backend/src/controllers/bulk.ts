@@ -475,7 +475,7 @@ router.post('/csv', multerSingle, async (req: any, res: express.Response) => {
 
 /**
  * @swagger
- * /search/csv/{jobId}:
+ * /search/csv/:jobId:
  *    get:
  *      description: Obtenir le statut et le résultat du job
  *      summary: Obtenir le statut et le résultat du traitement
@@ -498,7 +498,7 @@ router.post('/csv', multerSingle, async (req: any, res: express.Response) => {
  *                description: CSV results
  *                example: Prenom,Nom,Date,score,source,id,name,firstName,lastName,sex,birthDate,birthCity,cityCode,departmentCode,country,countryCode,latitude,longitude,deathDate,certificateId,age,deathCity,cityCode,departmentCode,country,countryCode,latitude,longitude \r\n "DENISE","GERMAN","03/02/1952","142.26564","s3://fichier-des-personnes-decedees/deaths","83ad9a6737289a3abd6f35e3a16996c8a3b21fd2","Denise Josephine","German","F","19520203","Septfontaines","25541","25","France","FRA","46.9739924","6.1738194","19760729","1782","24","Septfontaines","25541","25","France","FRA","46.9739924","6.1738194"\r\n "JEAN PIERRE YANNICK","GOUETI","15/01/1953" \r\n "JOSE","PONSARD","30/12/1952","163.79218","s3://fichier-des-personnes-decedees/deaths","99f809265af83e7ea0d98adff4dace0f5c763d0b","Jose","Ponsard","M","19521230","Saulx","70478","70","France","FRA","47.6962074","6.2758008","20050615","7761","52","Saulx","70478","70","France","FRA","47.6962074","6.2758008" \r\n
  *
- * /search/json/{jobId}:
+ * /search/json/:jobId:
  *    get:
  *      description: Obtenir le statut et le résultat du job
  *      summary: Obtenir le statut et le résultat du traitement
