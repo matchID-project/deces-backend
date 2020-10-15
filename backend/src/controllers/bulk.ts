@@ -585,8 +585,8 @@ router.get('/:format(csv|json)/:id?', async (req: any, res: express.Response) =>
                       }
                     }).filter((x:any) => x)
                     mapping.forEach((item: any, initial: number) => {
-                      mapped.splice(item.end + initial - (initial%2), 0, mapped[sourceHeader.length + item.start])
-                      mapped.splice(sourceHeader.length + item.start + 1, 1)
+                      mapped.splice(item.end + initial - (initial%2), 0, mapped[sourceHeader.length + item.start + 1])
+                      mapped.splice(sourceHeader.length + item.start + 2, 1)
                     })
                   }
                   this.push(mapped)
@@ -596,8 +596,8 @@ router.get('/:format(csv|json)/:id?', async (req: any, res: express.Response) =>
                     ...resultsHeader.map(key => prettyString(jsonPath(row, key.label)))];
                   if (req.query.order) {
                     mapping.forEach((item: any, initial: number) => {
-                      mapped.splice(item.end + initial - (initial%2), 0, mapped[sourceHeader.length + item.start])
-                      mapped.splice(sourceHeader.length + item.start + 1, 1)
+                      mapped.splice(item.end + initial - (initial%2), 0, mapped[sourceHeader.length + item.start + 1])
+                      mapped.splice(sourceHeader.length + item.start + 2, 1)
                     })
                   }
                   this.push(mapped);

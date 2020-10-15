@@ -354,4 +354,33 @@ describe('index.ts - Express application', () => {
         expect(rowCount).to.eql(inputArray.length - 1);
       });
   });
+
+  it('/search/csv/ - bulk non ordered', async () => {
+    let res;
+    const inputArray = [{firstName: 'Prenom', lastName: 'Nom', birthDate: 'Date', sex: 'Sex'},{firstName: 'jean', lastName: 'pierre', birthDate: '04/08/1933', sex: 'M'}, {firstName: 'georges', lastName: 'michel', birthDate: '12/03/1939', sex: 'M'}]
+    const buf = await writeToBuffer(inputArray)
+    res = await chai.request(app)
+      .post(`${process.env.BACKEND_PROXY_PATH}/search/csv`)
+      .field('sep', ',')
+      .field('firstName', 'Prenom')
+      .field('lastName', 'Nom')
+      .field('birthDate', 'Date')
+      .field('sex', 'Sex')
+      .attach('csv', buf, 'file.csv')
+    const { body : { id: jobId } } = res
+    res = await chai.request(app)
+      .get(`${process.env.BACKEND_PROXY_PATH}/search/csv/${jobId}`)
+    while (res.body.status === 'created' || res.body.status === 'waiting' || res.body.status === 'active') {
+      res = await chai.request(app)
+        .get(`${process.env.BACKEND_PROXY_PATH}/search/csv/${jobId}`)
+    }
+    expect(res).to.have.status(200);
+    parseString(res.text, { headers: true})
+      .on('data', (row: any) => {
+        expect(Object.keys(row).slice(0,8)).to.have.ordered.members(['Prenom', 'Nom', 'Date', 'Sex', 'sourceLineNumber', 'score', 'scores', 'source']);
+      })
+      .on('end', (rowCount: number) => {
+        expect(rowCount).to.eql(inputArray.length - 1);
+      });
+  });
 });
