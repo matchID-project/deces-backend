@@ -577,7 +577,7 @@ router.get('/:format(csv|json)/:id?', async (req: any, res: express.Response) =>
                 if (sourceHeader === undefined) {
                   sourceHeader = row.metadata.header;
                   // write header, bypassing fast-csv methods
-                  const mapped = [...sourceHeader,...resultsHeader.map(h => h.label.replace(/\.location/, ''))]
+                  const mapped = [...sourceHeader, 'sourceLineNumber', ...resultsHeader.map(h => h.label.replace(/\.location/, ''))]
                   if (req.query.order) {
                     mapping = resultsHeader.map((el, start) => {
                       if (el.id && row.metadata.header.some((x:any) => (row.metadata.mapping[x] && row.metadata.mapping[x] === el.id))) {
@@ -585,18 +585,19 @@ router.get('/:format(csv|json)/:id?', async (req: any, res: express.Response) =>
                       }
                     }).filter((x:any) => x)
                     mapping.forEach((item: any, initial: number) => {
-                      mapped.splice(item.end + initial - (initial%2), 0, mapped[sourceHeader.length + item.start])
-                      mapped.splice(sourceHeader.length + item.start + 1, 1)
+                      mapped.splice(item.end + initial - (initial%2), 0, mapped[sourceHeader.length + item.start + 1])
+                      mapped.splice(sourceHeader.length + item.start + 2, 1)
                     })
                   }
                   this.push(mapped)
                 } else {
                   const mapped = [...sourceHeader.map((key: string) => row.metadata.source[key]),
+                    row.metadata.sourceLineNumber,
                     ...resultsHeader.map(key => prettyString(jsonPath(row, key.label)))];
                   if (req.query.order) {
                     mapping.forEach((item: any, initial: number) => {
-                      mapped.splice(item.end + initial - (initial%2), 0, mapped[sourceHeader.length + item.start])
-                      mapped.splice(sourceHeader.length + item.start + 1, 1)
+                      mapped.splice(item.end + initial - (initial%2), 0, mapped[sourceHeader.length + item.start + 1])
+                      mapped.splice(sourceHeader.length + item.start + 2, 1)
                     })
                   }
                   this.push(mapped);
