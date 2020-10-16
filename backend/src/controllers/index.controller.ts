@@ -7,7 +7,6 @@ import { RequestInput, RequestBody } from '../models/requestInput';
 import { buildResult } from '../models/result';
 import { Result, ErrorResponse, HealthcheckResponse } from '../models/result';
 import { format } from '@fast-csv/format';
-import fs from 'fs';
 // import getDataGouvCatalog from '../getDataGouvCatalog';
 
 @Route('')
@@ -16,6 +15,7 @@ export class IndexController extends Controller {
   /**
    * Launch single request
    * @summary Rapprocher une seule identité
+   * @param q Nom, prénom, date de naissance ou de décès (JJ/MM/AAAA)
    * @param firstName Prénom
    * @param lastName Nom de famille
    * @param sex Sexe
@@ -150,12 +150,12 @@ export class IndexController extends Controller {
     csvStream.pipe(response)
 
     csvStream.write([
-      ...resultsHeader.map(h => h.replace(/\.location/, '').replace(/\./,' '))
+      ...resultsHeader.map(h => h.label.replace(/\.location/, '').replace(/\./,' '))
     ]
     );
     builtResult.response.persons.forEach((row: any) => {
       csvStream.write([
-        ...resultsHeader.map(key => prettyString(jsonPath(row, key)))
+        ...resultsHeader.map(key => prettyString(jsonPath(row, key.label)))
       ])
     });
     while ( builtResult.response.persons.length > 0 ) {
@@ -165,7 +165,7 @@ export class IndexController extends Controller {
       builtResult = buildResult(result.data, requestInput)
       builtResult.response.persons.forEach((row: any) => {
         csvStream.write([
-          ...resultsHeader.map(key => prettyString(jsonPath(row, key)))
+          ...resultsHeader.map(key => prettyString(jsonPath(row, key.label)))
         ])
       });
     }
