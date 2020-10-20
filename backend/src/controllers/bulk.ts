@@ -23,7 +23,8 @@ const salt = crypto.randomBytes(128);
 export const router = Router();
 const multerSingle = multer().any();
 
-const stopJob: any = [];
+const stopJob: string[] = [];
+const stopJobReason: StopJobReason[] = [];
 const stopJobError = 'job has been stopped';
 const inputsArray: JobInput[]= []
 const jobQueue = new Queue('jobs',  {
@@ -279,21 +280,26 @@ export const processCsv =  async (job: Queue.Job, jobFile: any): Promise<any> =>
     const decryptStream: any = crypto.createDecipheriv('aes-256-cbc', pbkdf2(job.data.randomKey), encryptioniv);
     const readStream: any = fs.createReadStream(jobFile.file)
       .pipe(decryptStream)
-      .on('error', (e: any) => log({decryptProcessingError: e, jobId}))
+      .on('error', (e: any) => log({decryptProcessingError: e.toString(), jobId}))
       .pipe(gunzipStream)
-      .on('error', (e: any) => log({gunzipProcessingError: e, jobId}))
+      .on('error', (e: any) => log({gunzipProcessingError: e.toString(), jobId}))
       .pipe(csvStream)
-      .on('error', (e: any) => log({csvProcessingError: e, jobId}))
+      .on('error', (e: any) => {
+        log({csvProcessingError: e.toString(), jobId})
+        readStream.close()
+        stopJob.push(job.id);
+        stopJobReason.push({id: job.id, msg: e.toString()})
+      })
       .pipe(processStream)
-      .on('error', (e: any) => log({matchingProcessingError: e, jobId}))
+      .on('error', (e: any) => log({matchingProcessingError: e.toString(), jobId}))
       .pipe(jsonStringStream)
-      .on('error', (e: any) => log({stringifyProcessingError: e, jobId}))
+      .on('error', (e: any) => log({stringifyProcessingError: e.toString(), jobId}))
       .pipe(gzipStream)
-      .on('error', (e: any) => log({gzipProcessingError: e, jobId}))
+      .on('error', (e: any) => log({gzipProcessingError: e.toString(), jobId}))
       .pipe(encryptStream)
-      .on('error', (e: any) => log({encryptProcessingError: e, jobId}))
+      .on('error', (e: any) => log({encryptProcessingError: e.toString(), jobId}))
       .pipe(writeStream)
-      .on('error', (e: any) => log({writeProcessingError: e, jobId}));
+      .on('error', (e: any) => log({writeProcessingError: e.toString(), jobId}));
     setTimeout(() => {
         // lazily removes inputfile index as soon as pipline begins
         fs.unlink(jobFile.file, (e: any) => { if (e) log({unlinkInputProcessingError: e, jobId}) });
@@ -302,9 +308,9 @@ export const processCsv =  async (job: Queue.Job, jobFile: any): Promise<any> =>
   } catch(e) {
     throw(e);
   }
-  if (stopJob === job.id) {
+  if (stopJob.includes(job.id)) {
     return stopJobError;
-  } else {
+  }  else {
     return;
   }
 }
@@ -341,7 +347,7 @@ chunkQueue.process(Number(process.env.BACKEND_CHUNK_CONCURRENCY), async (chunkJo
   return await processChunk(chunkJob.data.chunk, chunkJob.data.dateFormat, chunkJob.data.candidateNumber);
 })
 
-jobQueue.process(Number(process.env.BACKEND_JOB_CONCURRENCY), async (job: Queue.Job) => {
+jobQueue.process(Number(process.env.BACKEND_JOB_CONCURRENCY), (job: Queue.Job) => {
   const jobIndex = inputsArray.findIndex(x => x.id === job.id);
   const jobFile = inputsArray.splice(jobIndex, 1).pop();
   return processCsv(job, jobFile);
@@ -544,8 +550,13 @@ router.get('/:format(csv|json)/:id?', async (req: any, res: express.Response) =>
     if (job && job.status === 'succeeded') {
       try {
         if (stopJob.includes(job.id)) {
-          res.send({msg: `Job ${req.params.id} was cancelled`});
-          return;
+          if (stopJobReason.map(reason => reason.id).includes(job.id)) {
+            res.send({msg: stopJobReason.find(reason => reason.id === job.id).msg});
+            return;
+          } else {
+            res.send({msg: `Job ${req.params.id} was cancelled`});
+            return;
+          }
         }
         const size = fs.statSync(`${jobId}.out.enc`).size;
         let sourceHeader: any;
@@ -776,7 +787,7 @@ interface JobInput {
   size: number;
 }
 
-interface JobResult {
+interface StopJobReason {
   id: string;
-  result: forge.util.ByteStringBuffer;
+  msg: string;
 }
