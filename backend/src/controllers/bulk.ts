@@ -551,10 +551,10 @@ router.get('/:format(csv|json)/:id?', async (req: any, res: express.Response) =>
       try {
         if (stopJob.includes(job.id)) {
           if (stopJobReason.map(reason => reason.id).includes(job.id)) {
-            res.send({msg: stopJobReason.find(reason => reason.id === job.id).msg});
+            res.status(400).send({msg: stopJobReason.find(reason => reason.id === job.id).msg});
             return;
           } else {
-            res.send({msg: `Job ${req.params.id} was cancelled`});
+            res.status(400).send({msg: `Job ${req.params.id} was cancelled`});
             return;
           }
         }
