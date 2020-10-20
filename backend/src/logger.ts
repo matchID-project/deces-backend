@@ -20,7 +20,11 @@ const simplestLogger: Logger = createLogger({
 
 class LoggerStream {
   write(message: string) {
-    simplestLogger.info(message.substring(0, message.lastIndexOf('\n')));
+    if (message.lastIndexOf('\n') > -1) {
+      simplestLogger.info(message.substring(0, message.lastIndexOf('\n')));
+    } else {
+      simplestLogger.info(message);
+    }
   }
 }
 
