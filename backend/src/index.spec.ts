@@ -149,14 +149,6 @@ describe('index.ts - Express application', () => {
       expect(res.body.msg).to.include('error');
     });
 
-    it('wrong field', async () => {
-      const res = await chai.request(app)
-        .get(`${process.env.BACKEND_PROXY_PATH}/search`)
-        .query({ bob: 'Pop' })
-      expect(res).to.have.status(400);
-      expect(res.body.msg).to.include('error');
-    });
-
     it('wrong value', async () => {
       const res = await chai.request(app)
         .get(`${process.env.BACKEND_PROXY_PATH}/search`)
@@ -184,11 +176,232 @@ describe('index.ts - Express application', () => {
       expect(res).to.have.status(200);
       expect(res.body.response.persons).to.have.lengthOf.within(1, 20);
     });
+
+    it('sex', async () => {
+      const res = await chai.request(app)
+        .get(`${process.env.BACKEND_PROXY_PATH}/search`)
+        .query({ deathDate: '2020', sex: 'M' })
+      expect(res).to.have.status(200);
+      expect(res.body.response.persons.map((x: Person) => x.sex)).to.not.include('F');
+    });
+
+    it('sort', async () => {
+      const res = await chai.request(app)
+        .get(`${process.env.BACKEND_PROXY_PATH}/search`)
+        .query({ deathDate: '2020', sort: '[{\"sex\":\"asc\"}]' })
+      expect(res).to.have.status(200);
+      expect(res.body.response.persons.map((x: Person) => x.sex)).to.not.include('M');
+    });
+
+    it('scroll', async () => {
+      let res = await chai.request(app)
+        .get(`${process.env.BACKEND_PROXY_PATH}/search`)
+        .query({ firstName: 'Alban', scroll: '1m' })
+      expect(res).to.have.status(200);
+      totalPersons = res.body.response.persons.length;
+      while (res.body.response.persons.length > 0) {
+        res = await chai.request(app)
+          .get(`${process.env.BACKEND_PROXY_PATH}/search`)
+          .query({ scroll: '1m', scrollId: res.body.response.scrollId })
+        expect(res).to.have.status(200);
+        totalPersons += res.body.response.persons.length;
+      }
+      expect(totalPersons).to.equal(res.body.response.total);
+    });
+
+    it('pagination', async () => {
+      let actualPage = 1;
+      let res = await chai.request(app)
+        .get(`${process.env.BACKEND_PROXY_PATH}/search`)
+        .query({ firstName: 'Alban', page: actualPage })
+      expect(res).to.have.status(200);
+      totalPersons = res.body.response.persons.length;
+      while (res.body.response.persons.length > 0) {
+        actualPage += 1;
+        res = await chai.request(app)
+          .get(`${process.env.BACKEND_PROXY_PATH}/search`)
+          .query({ firstName: 'Alban', page: actualPage })
+        expect(res).to.have.status(200);
+        totalPersons += res.body.response.persons.length;
+      }
+      expect(totalPersons).to.equal(res.body.response.total);
+    });
+
+    it('inconnu', async () => {
+      const res = await chai.request(app)
+        .get(`${process.env.BACKEND_PROXY_PATH}/search`)
+        .query({ firstName: 'Inconnu' })
+      expect(res).to.have.status(200);
+      expect(res.body.response.total).to.equal(0);
+      expect(res.body.response.persons).to.have.lengthOf(0);
+    });
+
   })
 
 
   describe('/search POST', () => {
-    it('scrollId', async () => {
+    it('firstName', async () => {
+      const res = await chai.request(app)
+        .post(`${process.env.BACKEND_PROXY_PATH}/search`)
+        .send({deathDate: 2020, firstName: 'Harry'})
+      expect(res).to.have.status(200);
+      expect(res.body.response.persons[0].name).to.have.property('first');
+      expect(res.body.response.persons[0].name.first).to.include('Harry');
+    });
+
+    it('lastName', async () => {
+      const res = await chai.request(app)
+        .post(`${process.env.BACKEND_PROXY_PATH}/search`)
+        .send({deathDate: 2020, lastName: 'Pottier'})
+      expect(res).to.have.status(200);
+      expect(res.body.response.persons[0].name).to.have.property('last');
+      expect(res.body.response.persons[0].name.last).to.match(/Pottier/);
+    });
+
+    it('birthCountry', async () => {
+      const res = await chai.request(app)
+        .post(`${process.env.BACKEND_PROXY_PATH}/search`)
+        .send({deathDate: 2020, birthCountry: 'France'})
+      expect(res).to.have.status(200);
+      expect(res.body.response.persons[0].birth.location.country).to.equal('France');
+    });
+
+    it('deathCountry', async () => {
+      const res = await chai.request(app)
+        .post(`${process.env.BACKEND_PROXY_PATH}/search`)
+        .send({deathDate: 2020, deathCountry: 'Argentine'})
+      expect(res).to.have.status(200);
+      expect(res.body.response.persons[0].death.location.country).to.equal('Argentine');
+    });
+
+    it('deathDate', async () => {
+      const res = await chai.request(app)
+        .post(`${process.env.BACKEND_PROXY_PATH}/search`)
+        .send({ deathDate: '22/01/2020'})
+      expect(res).to.have.status(200);
+      expect(res.body.response.persons[0].death.date).to.equal('20200122');
+    });
+
+    it('deathDate range', async () => {
+      const res = await chai.request(app)
+        .post(`${process.env.BACKEND_PROXY_PATH}/search`)
+        .send({ deathDate: '22/01/2020-30/01/2020'})
+      expect(res).to.have.status(200);
+      res.body.response.persons.forEach((person: Person) => {
+        expect(parseInt(person.death.date, 10)).to.be.within(20200122, 20200130);
+      })
+    });
+
+    it('birthCity', async () => {
+      const res = await chai.request(app)
+        .post(`${process.env.BACKEND_PROXY_PATH}/search`)
+        .send({ deathDate: '2020', birthCity: 'Metz' })
+      expect(res).to.have.status(200);
+      expect(res.body.response.persons[0].birth.location.city).to.equal('Metz');
+    });
+
+    it('deathCity', async () => {
+      const res = await chai.request(app)
+        .post(`${process.env.BACKEND_PROXY_PATH}/search`)
+        .send({ deathDate: '2020', deathCity: 'Nice' })
+      expect(res).to.have.status(200);
+      expect(res.body.response.persons[0].death.location.city).to.equal('Nice');
+    });
+    
+    it('birthDepartment Code', async () => {
+      const res = await chai.request(app)
+        .post(`${process.env.BACKEND_PROXY_PATH}/search`)
+        .send({ deathDate: '2020', birthDepartment: '57' })
+      expect(res).to.have.status(200);
+      expect(res.body.response.persons[0].birth.location.departmentCode).to.equal('57');
+    });
+
+    it('deathDepartment Code', async () => {
+      const res = await chai.request(app)
+        .post(`${process.env.BACKEND_PROXY_PATH}/search`)
+        .send({ deathDate: '2020', deathDepartment: '75' })
+      expect(res).to.have.status(200);
+      expect(res.body.response.persons[0].death.location.departmentCode).to.equal('75');
+    });
+
+
+    it('fuzzy', async () => {
+      const res = await chai.request(app)
+        .post(`${process.env.BACKEND_PROXY_PATH}/search`)
+        .send({ deathDate: '2020', firstName: 'Ana', fuzzy: 'false' })
+      expect(res).to.have.status(200);
+      res.body.response.persons.forEach((person: Person) => {
+        expect(person.name.first).to.include('Ana');
+      })
+    });
+
+    it('fullText', async () => {
+      const res = await chai.request(app)
+        .post(`${process.env.BACKEND_PROXY_PATH}/search`)
+        .send({ q: 'Michel Rojo' })
+      expect(res).to.have.status(200);
+      res.body.response.persons.forEach((person: Person) => {
+        expect(person.name.first).to.include('Michel');
+      })
+    });
+
+    it('empty request', async () => {
+      const res = await chai.request(app)
+        .post(`${process.env.BACKEND_PROXY_PATH}/search`)
+      expect(res).to.have.status(400);
+      expect(res.body.msg).to.include('error');
+    });
+
+    it('wrong field', async () => {
+      const res = await chai.request(app)
+        .post(`${process.env.BACKEND_PROXY_PATH}/search`)
+        .send({ bob: 'Pop' })
+      expect(res).to.have.status(400);
+      expect(res.body.msg).to.include('error');
+    });
+
+    it('wrong value', async () => {
+      const res = await chai.request(app)
+        .post(`${process.env.BACKEND_PROXY_PATH}/search`)
+        .send({ birthDate: 19 })
+      expect(res).to.have.status(400);
+      res.body.msg.some((msg: string) => {
+        expect(msg).to.include('invalid');
+      })
+    });
+
+    it('simple and complex request', async () => {
+      const res = await chai.request(app)
+        .post(`${process.env.BACKEND_PROXY_PATH}/search`)
+        .send({ birthDate: 19, q: 'Georges' })
+      expect(res).to.have.status(400);
+      expect(res.body.msg).to.include('error - simple and complex request');
+    });
+
+    it('deathAge', async () => {
+      const res = await chai.request(app)
+        .post(`${process.env.BACKEND_PROXY_PATH}/search`)
+        .send({ deathDate: '2020', deathAge: 20 })
+      expect(res).to.have.status(200);
+      expect(res.body.response.persons.length).to.be.within(1,20)
+    });
+
+    it('sex', async () => {
+      const res = await chai.request(app)
+        .post(`${process.env.BACKEND_PROXY_PATH}/search`)
+        .send({ deathDate: '2020', sex: 'M' })
+      expect(res).to.have.status(200);
+      expect(res.body.response.persons.map((x: Person) => x.sex)).to.not.include(['F'])
+    });
+
+    it('sort', async () => {
+      const res = await chai.request(app)
+        .post(`${process.env.BACKEND_PROXY_PATH}/search`)
+        .send({ deathDate: '2020', sort: [{sex: 'asc'}] })
+      expect(res.body.response.persons.map((x: Person) => x.sex)).to.not.include(['M'])
+    });
+
+    it('scroll', async () => {
       let res = await chai.request(app)
         .post(`${process.env.BACKEND_PROXY_PATH}/search`)
         .send({ firstName: 'Alban', scroll: '1m' })
@@ -218,6 +431,14 @@ describe('index.ts - Express application', () => {
       }
       expect(res).to.have.status(200);
       expect(totalPersons).to.eql(res.body.response.total);
+    });
+
+     it('inconnu', async () => {
+      const res = await chai.request(app)
+        .post(`${process.env.BACKEND_PROXY_PATH}/search`)
+        .send({ firstName: 'Inconnu' })
+      expect(res.body.response.total).to.equal(0);
+      expect(res.body.response.persons).to.have.lengthOf(0);
     });
 
     it('text/csv', async () => {
