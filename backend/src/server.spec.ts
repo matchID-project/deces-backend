@@ -1,4 +1,4 @@
-import { app } from './index';
+import { app } from './server';
 import { expect } from 'chai';
 import { finished } from 'stream';
 import { Person } from './models/entities';
@@ -307,7 +307,7 @@ describe('index.ts - Express application', () => {
       expect(res).to.have.status(200);
       expect(res.body.response.persons[0].death.location.city).to.equal('Nice');
     });
-    
+
     it('birthDepartment Code', async () => {
       const res = await chai.request(app)
         .post(`${process.env.BACKEND_PROXY_PATH}/search`)
@@ -485,7 +485,7 @@ describe('index.ts - Express application', () => {
         .attach('csv', buf, 'file.csv')
       const { body : { id: jobId } } = res
 
-      while (res.body.status === 'created' || res.body.status === 'waiting') {
+      while (res.body.status === 'created' || res.body.status === 'waiting' || res.body.msg === 'started') {
         res = await chai.request(app)
           .get(`${process.env.BACKEND_PROXY_PATH}/search/csv/${jobId}`)
       }
@@ -637,7 +637,7 @@ describe('index.ts - Express application', () => {
           .get(`${process.env.BACKEND_PROXY_PATH}/search/csv/${jobId}`)
       }
       expect(res).to.have.status(400);
-      expect(res.body).to.have.all.keys('msg');
+      expect(res.body).to.have.property('msg');
       expect(res.body.msg).to.have.string('column header mismatch');
     });
   })
