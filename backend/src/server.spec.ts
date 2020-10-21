@@ -503,7 +503,7 @@ describe('index.ts - Express application', () => {
       expect(res).to.have.status(400);
       expect(res.body).to.have.all.keys('msg');
       expect(res.body.msg).to.have.string('cancelled');
-    });
+    }).timeout(5000);
 
     it('run bulk job', async () => {
       let res;
