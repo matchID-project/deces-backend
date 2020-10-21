@@ -9,10 +9,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v1
-      - name: Extract branch name
-        shell: bash
-        run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
-        id: extract_branch
       - name: 🐋 Build the master docker image
         run: make backend-build-all
         env:
@@ -26,7 +22,7 @@ jobs:
       - name: ✅ Execute mocha tests
         run: make backend-test-mocha
       - name: 🚀 Push the docker image
-        if: steps.extract_branch.outputs.branch == 'master' || steps.extract_branch.outputs.branch == 'dev'
+        if: github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/master'
         run: make docker-push GIT_BRANCH="$GIT_BRANCH"
         env:
           GIT_BRANCH: ${{ steps.extract_branch.outputs.branch }}
