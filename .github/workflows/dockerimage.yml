@@ -23,9 +23,8 @@ jobs:
         run: make backend-test-mocha
       - name: 🚀 Push the docker image
         if: github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/master'
-        run: make docker-push GIT_BRANCH="$GIT_BRANCH"
+        run: make docker-push GIT_BRANCH="${GITHUB_REF#refs/heads/}"
         env:
-          GIT_BRANCH: ${{ steps.extract_branch.outputs.branch }}
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
   bulk:
     name: ✅ Perfs test with artillery.io
