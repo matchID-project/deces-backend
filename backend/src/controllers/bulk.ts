@@ -23,7 +23,8 @@ const salt = crypto.randomBytes(128);
 export const router = Router();
 const multerSingle = multer().any();
 
-const stopJob: any = [];
+const stopJob: string[] = [];
+const stopJobReason: StopJobReason[] = [];
 const stopJobError = 'job has been stopped';
 const inputsArray: JobInput[]= []
 const jobQueue = new Queue('jobs',  {
@@ -279,21 +280,26 @@ export const processCsv =  async (job: Queue.Job, jobFile: any): Promise<any> =>
     const decryptStream: any = crypto.createDecipheriv('aes-256-cbc', pbkdf2(job.data.randomKey), encryptioniv);
     const readStream: any = fs.createReadStream(jobFile.file)
       .pipe(decryptStream)
-      .on('error', (e: any) => log({decryptProcessingError: e, jobId}))
+      .on('error', (e: any) => log({decryptProcessingError: e.toString(), jobId}))
       .pipe(gunzipStream)
-      .on('error', (e: any) => log({gunzipProcessingError: e, jobId}))
+      .on('error', (e: any) => log({gunzipProcessingError: e.toString(), jobId}))
       .pipe(csvStream)
-      .on('error', (e: any) => log({csvProcessingError: e, jobId}))
+      .on('error', (e: any) => {
+        log({csvProcessingError: e.toString(), jobId})
+        readStream.close()
+        stopJob.push(job.id);
+        stopJobReason.push({id: job.id, msg: e.toString()})
+      })
       .pipe(processStream)
-      .on('error', (e: any) => log({matchingProcessingError: e, jobId}))
+      .on('error', (e: any) => log({matchingProcessingError: e.toString(), jobId}))
       .pipe(jsonStringStream)
-      .on('error', (e: any) => log({stringifyProcessingError: e, jobId}))
+      .on('error', (e: any) => log({stringifyProcessingError: e.toString(), jobId}))
       .pipe(gzipStream)
-      .on('error', (e: any) => log({gzipProcessingError: e, jobId}))
+      .on('error', (e: any) => log({gzipProcessingError: e.toString(), jobId}))
       .pipe(encryptStream)
-      .on('error', (e: any) => log({encryptProcessingError: e, jobId}))
+      .on('error', (e: any) => log({encryptProcessingError: e.toString(), jobId}))
       .pipe(writeStream)
-      .on('error', (e: any) => log({writeProcessingError: e, jobId}));
+      .on('error', (e: any) => log({writeProcessingError: e.toString(), jobId}));
     setTimeout(() => {
         // lazily removes inputfile index as soon as pipline begins
         fs.unlink(jobFile.file, (e: any) => { if (e) log({unlinkInputProcessingError: e, jobId}) });
@@ -302,9 +308,9 @@ export const processCsv =  async (job: Queue.Job, jobFile: any): Promise<any> =>
   } catch(e) {
     throw(e);
   }
-  if (stopJob === job.id) {
+  if (stopJob.includes(job.id)) {
     return stopJobError;
-  } else {
+  }  else {
     return;
   }
 }
@@ -341,7 +347,7 @@ chunkQueue.process(Number(process.env.BACKEND_CHUNK_CONCURRENCY), async (chunkJo
   return await processChunk(chunkJob.data.chunk, chunkJob.data.dateFormat, chunkJob.data.candidateNumber);
 })
 
-jobQueue.process(Number(process.env.BACKEND_JOB_CONCURRENCY), async (job: Queue.Job) => {
+jobQueue.process(Number(process.env.BACKEND_JOB_CONCURRENCY), (job: Queue.Job) => {
   const jobIndex = inputsArray.findIndex(x => x.id === job.id);
   const jobFile = inputsArray.splice(jobIndex, 1).pop();
   return processCsv(job, jobFile);
@@ -475,7 +481,7 @@ router.post('/csv', multerSingle, async (req: any, res: express.Response) => {
 
 /**
  * @swagger
- * /search/csv/{jobId}:
+ * /search/csv/:jobId:
  *    get:
  *      description: Obtenir le statut et le résultat du job
  *      summary: Obtenir le statut et le résultat du traitement
@@ -505,7 +511,7 @@ router.post('/csv', multerSingle, async (req: any, res: express.Response) => {
  *                description: CSV results
  *                example: Prenom,Nom,Date,score,source,id,name,firstName,lastName,sex,birthDate,birthCity,cityCode,departmentCode,country,countryCode,latitude,longitude,deathDate,certificateId,age,deathCity,cityCode,departmentCode,country,countryCode,latitude,longitude \r\n "DENISE","GERMAN","03/02/1952","142.26564","s3://fichier-des-personnes-decedees/deaths","83ad9a6737289a3abd6f35e3a16996c8a3b21fd2","Denise Josephine","German","F","19520203","Septfontaines","25541","25","France","FRA","46.9739924","6.1738194","19760729","1782","24","Septfontaines","25541","25","France","FRA","46.9739924","6.1738194"\r\n "JEAN PIERRE YANNICK","GOUETI","15/01/1953" \r\n "JOSE","PONSARD","30/12/1952","163.79218","s3://fichier-des-personnes-decedees/deaths","99f809265af83e7ea0d98adff4dace0f5c763d0b","Jose","Ponsard","M","19521230","Saulx","70478","70","France","FRA","47.6962074","6.2758008","20050615","7761","52","Saulx","70478","70","France","FRA","47.6962074","6.2758008" \r\n
  *
- * /search/json/{jobId}:
+ * /search/json/:jobId:
  *    get:
  *      description: Obtenir le statut et le résultat du job
  *      summary: Obtenir le statut et le résultat du traitement
@@ -544,8 +550,13 @@ router.get('/:format(csv|json)/:id?', async (req: any, res: express.Response) =>
     if (job && job.status === 'succeeded') {
       try {
         if (stopJob.includes(job.id)) {
-          res.send({msg: `Job ${req.params.id} was cancelled`});
-          return;
+          if (stopJobReason.map(reason => reason.id).includes(job.id)) {
+            res.status(400).send({msg: stopJobReason.find(reason => reason.id === job.id).msg});
+            return;
+          } else {
+            res.status(400).send({msg: `Job ${req.params.id} was cancelled`});
+            return;
+          }
         }
         const size = fs.statSync(`${jobId}.out.enc`).size;
         let sourceHeader: any;
@@ -776,7 +787,7 @@ interface JobInput {
   size: number;
 }
 
-interface JobResult {
+interface StopJobReason {
   id: string;
-  result: forge.util.ByteStringBuffer;
+  msg: string;
 }
