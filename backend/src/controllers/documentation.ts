@@ -3,6 +3,7 @@ import { Router } from 'express';
 import swaggerJsdoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
 import * as swaggerDocument from '../api/swagger.json';
+import { getCwd } from 'swagger-ui-svelte';
 
 export const router = Router();
 
@@ -45,4 +46,8 @@ specs.paths = {...specs.paths, ...swaggerDocument.paths}
 specs.components = {...specs.components, ...swaggerDocument.components}
 // specs.default = swaggerDocument.default;
 
+// deafult swagger-example.json replaced by local swagger file
+// this could also be done using a res.redirect('/path/to/swagger`)
+router.get(`/svelte/swagger-example.json`, (_, res) => res.send(specs));
+router.use(`/svelte`, express.static(getCwd(), { 'index': ['index.html'] }));
 router.use(`/`, swaggerUi.serve, swaggerUi.setup(specs));
