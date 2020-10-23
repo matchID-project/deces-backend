@@ -447,6 +447,20 @@ describe('index.ts - Express application', () => {
         .set('Accept', 'text/csv')
         .send({ firstName: 'Alban' })
       expect(res).to.have.status(200);
+      expect(res.text.split('\n')[0]).to.not.include('scores');
+      // remove header and last line
+      expect(res.text.split('\n').length).to.eql(totalPersons + 1);
+    });
+
+    it('text/csv french header', async () => {
+      const res = await chai.request(app)
+        .post(`${process.env.BACKEND_PROXY_PATH}/search`)
+        .set('Accept', 'text/csv')
+        .send({ firstName: 'Alban', headerLang: 'french' })
+      expect(res).to.have.status(200);
+      expect(res.text.split('\n')[1].match(/[a-zA-Z0-9\.\-\/]+|"[^"]+"/g)[6]).to.match(/\d{2}\/\d{2}\/\d{4}/);
+      expect(res.text.split('\n')[0]).to.not.include('scores');
+      expect(res.text.split('\n')[0]).to.include('date_naissance,commune_naissance');
       // remove header and last line
       expect(res.text.split('\n').length).to.eql(totalPersons + 1);
     });
