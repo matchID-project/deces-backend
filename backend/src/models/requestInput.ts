@@ -122,6 +122,10 @@ export interface RequestBody {
   * Age du décès
   */
  lastSeenAliveDate?: string;
+ /**
+  * Langage entête
+  */
+ headerLang?: string;
 };
 
 export class RequestInput {
