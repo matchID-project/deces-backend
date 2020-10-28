@@ -180,9 +180,6 @@ class ProcessStream<I extends any, O extends any> extends Transform {
       }
     }
     Object.values(record.source).forEach((value: string, idx: number) => {
-      if (this.mapField[this.inputHeaders[idx]]) {
-        request[this.mapField[this.inputHeaders[idx]]] = jsonFields.includes(this.inputHeaders[idx]) ? JSON.parse(value) : value;
-      }
       request.metadata.source[this.inputHeaders[idx]] = value;
     });
     request.block = request.block
@@ -581,7 +578,7 @@ router.get('/:format(csv|json)/:id?', async (req: any, res: express.Response) =>
             .pipe(ToLinesStream())
             .on('error', (e: any) => log({toLinesGetResultsError: e, jobId}))
             .pipe(JsonParseStream())
-            .on('error', (e: any) => log({jsonParseGetResultsError: e, jobId}))
+            .on('error', (e: any) => log({jsonParseGetResultsError: e.toString(), jobId}))
             .pipe(new Transform({
               objectMode: true,
               transform(row: any, encoding: string, cb: any) {
@@ -604,7 +601,7 @@ router.get('/:format(csv|json)/:id?', async (req: any, res: express.Response) =>
                 } else {
                   const mapped = [...sourceHeader.map((key: string) => row.metadata.source[key]),
                     row.metadata.sourceLineNumber,
-                    ...resultsHeader.map(key => prettyString(jsonPath(row, key.label)))];
+                    ...resultsHeader.map(key => prettyString(jsonPath(row, key.id)))];
                   if (req.query.order) {
                     mapping.forEach((item: any, initial: number) => {
                       mapped.splice(item.end + initial - (initial%2), 0, mapped[sourceHeader.length + item.start + 1])
@@ -728,7 +725,7 @@ router.delete('/:format(csv|json)/:id?', async (req: any, res: express.Response)
 });
 
 export const jsonPath = (json: any, path: string): any => {
-  if (!json) { return undefined }
+  if (!json || !path) { return undefined }
   if (!path.includes('.')) {
     return json[path];
   } else {
