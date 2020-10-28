@@ -690,5 +690,33 @@ describe('index.ts - Express application', () => {
           expect(rowCount).to.eql(inputArray.length - 1);
         });
     }).timeout(5000);
+
+    it('bulk json output format', async () => {
+      let res;
+      const inputArray = [
+        ['Prenom', 'Nom', 'Date', 'Sexe'],
+        ['jean', 'pierre', '04/08/1908', 'M'],
+        ['georges', 'michel', '12/03/1903', 'M']
+      ]
+      const buf = await writeToBuffer(inputArray)
+      res = await chai.request(app)
+        .post(`${process.env.BACKEND_PROXY_PATH}/search/csv`)
+        .field('sep', ',')
+        .field('firstName', 'Prenom')
+        .field('lastName', 'Nom')
+        .field('birthDate', 'Date')
+        .field('sex', 'Sexe')
+        .attach('csv', buf, 'file.csv')
+      const { body : { id: jobId } } = res
+      res = await chai.request(app)
+        .get(`${process.env.BACKEND_PROXY_PATH}/search/json/${jobId}`)
+      while (res.body.status === 'created' || res.body.status === 'waiting' || res.body.status === 'active') {
+        res = await chai.request(app)
+          .get(`${process.env.BACKEND_PROXY_PATH}/search/json/${jobId}`)
+      }
+      expect(res).to.have.status(200);
+      expect(res.body).to.have.lengthOf(inputArray.length);
+    }).timeout(5000);
+
   })
 });

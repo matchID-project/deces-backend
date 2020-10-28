@@ -211,6 +211,27 @@ const ToLinesStream = () => {
   });
 }
 
+const ToJsonStream = () => {
+  let soFar: string;
+  let sourceHeader: boolean;
+  return new Transform({
+    objectMode: true,
+    transform(row: any, encoding: string, cb: any) {
+      if (sourceHeader === undefined) {
+        sourceHeader = true;
+        this.push('[' + row)
+      } else {
+        this.push(',' + row);
+      }
+      cb();
+    },
+    flush(done: any) {
+      this.push(soFar != null ? soFar:']');
+      done();
+    }
+  });
+}
+
 const JsonStringifyStream = () => {
   return new Transform({
     objectMode: true,
@@ -568,8 +589,12 @@ router.get('/:format(csv|json)/:id?', async (req: any, res: express.Response) =>
           res.send({msg: 'Empty results'})
         } else if (req.params.format === 'json') {
           res.setHeader('Content-Type', 'application/json');
-          dataStream.pipe(res)
-            .on('error', (e: any) => log({httpGetResultsError: e, jobId}));
+          dataStream
+            .pipe(ToLinesStream())
+            .on('error', (e: any) => log({toLinesStream: e.toString(), jobId}))
+            .pipe(ToJsonStream())
+            .on('error', (e: any) => log({toJsonStream: e.toString(), jobId}))
+            .pipe(res)
           await finishedAsync(dataStream);
         } else if (req.params.format === 'csv') {
           res.setHeader('Content-Type', 'text/csv');
