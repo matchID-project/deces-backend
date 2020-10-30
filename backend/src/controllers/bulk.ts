@@ -214,6 +214,27 @@ const ToLinesStream = () => {
   });
 }
 
+const ToJsonStream = () => {
+  let soFar: string;
+  let sourceHeader: boolean;
+  return new Transform({
+    objectMode: true,
+    transform(row: any, encoding: string, cb: any) {
+      if (sourceHeader === undefined) {
+        sourceHeader = true;
+        this.push('[' + row)
+      } else {
+        this.push(',' + row);
+      }
+      cb();
+    },
+    flush(done: any) {
+      this.push(soFar != null ? soFar:']');
+      done();
+    }
+  });
+}
+
 const JsonStringifyStream = () => {
   return new Transform({
     objectMode: true,
@@ -571,8 +592,12 @@ router.get('/:format(csv|json)/:id?', async (req: any, res: express.Response) =>
           res.send({msg: 'Empty results'})
         } else if (req.params.format === 'json') {
           res.setHeader('Content-Type', 'application/json');
-          dataStream.pipe(res)
-            .on('error', (e: any) => log({httpGetResultsError: e, jobId}));
+          dataStream
+            .pipe(ToLinesStream())
+            .on('error', (e: any) => log({toLinesStream: e.toString(), jobId}))
+            .pipe(ToJsonStream())
+            .on('error', (e: any) => log({toJsonStream: e.toString(), jobId}))
+            .pipe(res)
           await finishedAsync(dataStream);
         } else if (req.params.format === 'csv') {
           res.setHeader('Content-Type', 'text/csv');
@@ -581,7 +606,7 @@ router.get('/:format(csv|json)/:id?', async (req: any, res: express.Response) =>
             .pipe(ToLinesStream())
             .on('error', (e: any) => log({toLinesGetResultsError: e, jobId}))
             .pipe(JsonParseStream())
-            .on('error', (e: any) => log({jsonParseGetResultsError: e, jobId}))
+            .on('error', (e: any) => log({jsonParseGetResultsError: e.toString(), jobId}))
             .pipe(new Transform({
               objectMode: true,
               transform(row: any, encoding: string, cb: any) {
@@ -602,6 +627,7 @@ router.get('/:format(csv|json)/:id?', async (req: any, res: express.Response) =>
                   }
                   this.push(mapped)
                 } else {
+                  if (!row.score) row.sex = '';
                   const mapped = [...sourceHeader.map((key: string) => row.metadata.source[key]),
                     row.metadata.sourceLineNumber,
                     ...resultsHeader.map(key => prettyString(jsonPath(row, key.label)))];
@@ -728,7 +754,7 @@ router.delete('/:format(csv|json)/:id?', async (req: any, res: express.Response)
 });
 
 export const jsonPath = (json: any, path: string): any => {
-  if (!json) { return undefined }
+  if (!json || !path) { return undefined }
   if (!path.includes('.')) {
     return json[path];
   } else {
@@ -754,31 +780,31 @@ export const prettyString = (json: any): string => {
 }
 
 export const resultsHeader = [
-  {label: 'score'},
-  {label: 'scores'},
-  {label: 'source'},
-  {label: 'id'},
-  {label: 'name.last', id: 'lastName'},
-  {label: 'name.first', id: 'firstName'},
-  {label: 'sex', id: 'sex'},
-  {label: 'birth.date', id: 'birthDate'},
-  {label: 'birth.location.city', id: 'birthCity'},
-  {label: 'birth.location.cityCode'},
-  {label: 'birth.location.departmentCode', id: 'birthDepartment'},
-  {label: 'birth.location.country', id: 'birthCountry'},
-  {label: 'birth.location.countryCode'},
-  {label: 'birth.location.latitude'},
-  {label: 'birth.location.longitude'},
-  {label: 'death.certificateId'},
-  {label: 'death.age', id: 'deathAge'},
-  {label: 'death.date', id: 'deathDate'},
-  {label: 'death.location.city', id: 'deathCity'},
-  {label: 'death.location.cityCode'},
-  {label: 'death.location.departmentCode', id: 'deathDepartment'},
-  {label: 'death.location.country', id: 'deathCountry'},
-  {label: 'death.location.countryCode'},
-  {label: 'death.location.latitude'},
-  {label: 'death.location.longitude'}
+  {label: 'score', labelFr: 'score'},
+  {label: 'scores', labelFr: 'scores'},
+  {label: 'source', labelFr: 'source_INSEE'},
+  {label: 'id', labelFr: 'id'},
+  {label: 'name.last', labelFr: 'nom', id: 'lastName'},
+  {label: 'name.first', labelFr: 'prénoms', id: 'firstName'},
+  {label: 'sex', labelFr: 'sexe', id: 'sex'},
+  {label: 'birth.date', labelFr: 'date_naissance', id: 'birthDate'},
+  {label: 'birth.location.city', labelFr: 'commune_naissance', id: 'birthCity'},
+  {label: 'birth.location.cityCode', labelFr: 'code_INSEE_naissance'},
+  {label: 'birth.location.departmentCode', labelFr: 'département_naissance', id: 'birthDepartment'},
+  {label: 'birth.location.country', labelFr: 'pays_naissance', id: 'birthCountry'},
+  {label: 'birth.location.countryCode', labelFr: 'pays_ISO_naissance'},
+  {label: 'birth.location.latitude', labelFr: 'latitude_naissance'},
+  {label: 'birth.location.longitude', labelFr: 'longitude_naissance'},
+  {label: 'death.certificateId', labelFr: 'id_certificat'},
+  {label: 'death.age', id: 'deathAge', labelFr: 'age_décès'},
+  {label: 'death.date', id: 'deathDate', labelFr: 'date_décès'},
+  {label: 'death.location.city', id: 'deathCity', labelFr: 'commune_décès'},
+  {label: 'death.location.cityCode', labelFr: 'code_INSEE_décès'},
+  {label: 'death.location.departmentCode', id: 'deathDepartment', labelFr: 'département_décès'},
+  {label: 'death.location.country', labelFr: 'pays_décès', id: 'deathCountry'},
+  {label: 'death.location.countryCode', labelFr: 'pays_ISO_décès'},
+  {label: 'death.location.latitude', labelFr: 'latitude_décès'},
+  {label: 'death.location.longitude', labelFr: 'longitude_décès'}
 ]
 
 interface JobInput {

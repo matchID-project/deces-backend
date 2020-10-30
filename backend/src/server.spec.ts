@@ -447,8 +447,32 @@ describe('index.ts - Express application', () => {
         .set('Accept', 'text/csv')
         .send({ firstName: 'Alban' })
       expect(res).to.have.status(200);
+      expect(res.text.split('\n')[0]).to.not.include('scores');
       // remove header and last line
-      expect(res.text.split('\n').length).to.eql(totalPersons + 1);
+      parseString(res.text, { headers: true, delimiter: ','})
+        .on('data', (row: any) => {
+          expect(row).to.include.all.keys('name last', 'name first', 'birth city', 'birth cityCode');
+          expect(row['birth date']).to.match(/\d{2}\/\d{2}\/\d{4}/);
+        })
+        .on('end', (rowCount: number) => {
+          expect(rowCount).to.eql(totalPersons);
+        });
+    });
+
+    it('text/csv french header', async () => {
+      const res = await chai.request(app)
+        .post(`${process.env.BACKEND_PROXY_PATH}/search`)
+        .set('Accept', 'text/csv')
+        .send({ firstName: 'Alban', headerLang: 'french' })
+      expect(res).to.have.status(200);
+      parseString(res.text, { headers: true, delimiter: ','})
+        .on('data', (row: any) => {
+          expect(row).to.include.all.keys('nom', 'prénoms', 'sexe', 'date_naissance');
+          expect(row['date_naissance']).to.match(/\d{2}\/\d{2}\/\d{4}/);
+        })
+        .on('end', (rowCount: number) => {
+          expect(rowCount).to.eql(totalPersons);
+        });
     });
   })
 
@@ -640,5 +664,73 @@ describe('index.ts - Express application', () => {
       expect(res.body).to.have.property('msg');
       expect(res.body.msg).to.have.string('column header mismatch');
     });
+
+    it('sex is not filled even when there is no match', async () => {
+      let res;
+      const inputArray = [
+        ['Prenom', 'Nom', 'Date', 'Sexe'],
+        ['jean', 'pierre', '04/08/1908', 'M'],
+        ['georges', 'michel', '12/03/1903', 'M']
+      ]
+      const buf = await writeToBuffer(inputArray)
+      res = await chai.request(app)
+        .post(`${process.env.BACKEND_PROXY_PATH}/search/csv`)
+        .field('sep', ',')
+        .field('firstName', 'Prenom')
+        .field('lastName', 'Nom')
+        .field('birthDate', 'Date')
+        .field('sex', 'Sexe')
+        .attach('csv', buf, 'file.csv')
+      const { body : { id: jobId } } = res
+      res = await chai.request(app)
+        .get(`${process.env.BACKEND_PROXY_PATH}/search/csv/${jobId}`)
+      while (res.body.status === 'created' || res.body.status === 'waiting' || res.body.status === 'active') {
+        res = await chai.request(app)
+          .get(`${process.env.BACKEND_PROXY_PATH}/search/csv/${jobId}`)
+      }
+      expect(res).to.have.status(200);
+      parseString(res.text, { headers: true})
+        .on('data', (row: any) => {
+          expect(row).to.have.property('Sexe', 'M');
+          if (row.score && row.score.length > 0) {
+            expect(row).to.have.property('sex', 'M');
+          } else {
+            expect(row).to.have.property('sex', '');
+            expect(row).to.have.property('birth.date', '');
+            expect(row).to.have.property('name.last', '');
+          }
+        })
+        .on('end', (rowCount: number) => {
+          expect(rowCount).to.eql(inputArray.length - 1);
+        });
+    }).timeout(5000);
+
+    it('bulk json output format', async () => {
+      let res;
+      const inputArray = [
+        ['Prenom', 'Nom', 'Date', 'Sexe'],
+        ['jean', 'pierre', '04/08/1908', 'M'],
+        ['georges', 'michel', '12/03/1903', 'M']
+      ]
+      const buf = await writeToBuffer(inputArray)
+      res = await chai.request(app)
+        .post(`${process.env.BACKEND_PROXY_PATH}/search/csv`)
+        .field('sep', ',')
+        .field('firstName', 'Prenom')
+        .field('lastName', 'Nom')
+        .field('birthDate', 'Date')
+        .field('sex', 'Sexe')
+        .attach('csv', buf, 'file.csv')
+      const { body : { id: jobId } } = res
+      res = await chai.request(app)
+        .get(`${process.env.BACKEND_PROXY_PATH}/search/json/${jobId}`)
+      while (res.body.status === 'created' || res.body.status === 'waiting' || res.body.status === 'active') {
+        res = await chai.request(app)
+          .get(`${process.env.BACKEND_PROXY_PATH}/search/json/${jobId}`)
+      }
+      expect(res).to.have.status(200);
+      expect(res.body).to.have.lengthOf(inputArray.length);
+    }).timeout(5000);
+
   })
 });

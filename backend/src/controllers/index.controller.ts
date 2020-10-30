@@ -95,7 +95,7 @@ export class IndexController extends Controller {
   public async searchpost(@Body() requestBody: RequestBody, @Request() request: express.Request, @Header('Accept') accept?: string): Promise<Result> {
     const response = (request).res;
     if (Object.keys(requestBody).length > 0) {
-      const validFields = ['q', 'firstName', 'lastName', 'sex', 'birthDate', 'birthCity', 'birthDepartment', 'birthCountry', 'birthGeoPoint', 'deathDate', 'deathCity', 'deathDepartment', 'deathCountry', 'deathGeoPoint', 'deathAge', 'scroll', 'scrollId', 'size', 'page', 'fuzzy', 'sort', 'lastSeenAliveDate']
+      const validFields = ['q', 'firstName', 'lastName', 'sex', 'birthDate', 'birthCity', 'birthDepartment', 'birthCountry', 'birthGeoPoint', 'deathDate', 'deathCity', 'deathDepartment', 'deathCountry', 'deathGeoPoint', 'deathAge', 'scroll', 'scrollId', 'size', 'page', 'fuzzy', 'sort', 'lastSeenAliveDate', 'headerLang']
       const notValidFields = Object.keys(requestBody).filter((item: string) => !validFields.includes(item))
       if (notValidFields.length > 0) {
         this.setStatus(400);
@@ -119,7 +119,7 @@ export class IndexController extends Controller {
       const builtResult = buildResult(result.data, requestInput)
       if (accept === 'text/csv') {
         if (builtResult.response.total < 500000) {
-          await this.responseJson2Csv(response, builtResult, requestInput)
+          await this.responseJson2Csv(response, builtResult, requestInput, requestBody.headerLang)
         } else {
           this.setStatus(402);
           return  { msg: "error - Too large request:  payment required" };
@@ -133,7 +133,7 @@ export class IndexController extends Controller {
     }
   }
 
-  private async responseJson2Csv(response: express.Response, builtResult: Result, requestInput: RequestInput): Promise<void> {
+  private async responseJson2Csv(response: express.Response, builtResult: Result, requestInput: RequestInput, headerLang: string): Promise<void> {
     let requestBuild;
     let result;
     response.setHeader('Content-disposition', 'attachment; filename=download.csv');
@@ -143,16 +143,34 @@ export class IndexController extends Controller {
     const csvStream = format({
       headers: false,
       writeHeaders: true,
-      delimiter: ','
+      delimiter: ',',
+      transform: (row: any) => {
+        // remove id, score and scores column
+        row.splice(0, 2)
+        row.splice(1, 1)
+        // prettify date format
+        if (row[4] !== 'date_naissance') {
+          row.splice(4, 1, row[4].replace(/(\d{4})(\d{2})(\d{2})/,"$3/$2/$1"))
+          row.splice(14, 1, row[14].replace(/(\d{4})(\d{2})(\d{2})/,"$3/$2/$1"))
+        }
+        return row
+      }
     });
 
     // pipe csvstream write to response
     csvStream.pipe(response)
 
-    csvStream.write([
-      ...resultsHeader.map(h => h.label.replace(/\.location/, '').replace(/\./,' '))
-    ]
-    );
+    if (headerLang === 'french') {
+      csvStream.write([
+        ...resultsHeader.map(h => h.labelFr.replace(/\.location/, '').replace(/\./,' '))
+      ]
+      );
+    } else {
+      csvStream.write([
+        ...resultsHeader.map(h => h.label.replace(/\.location/, '').replace(/\./,' '))
+      ]
+      );
+    }
     builtResult.response.persons.forEach((row: any) => {
       csvStream.write([
         ...resultsHeader.map(key => prettyString(jsonPath(row, key.label)))
