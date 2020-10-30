@@ -449,7 +449,14 @@ describe('index.ts - Express application', () => {
       expect(res).to.have.status(200);
       expect(res.text.split('\n')[0]).to.not.include('scores');
       // remove header and last line
-      expect(res.text.split('\n').length).to.eql(totalPersons + 1);
+      parseString(res.text, { headers: true, delimiter: ','})
+        .on('data', (row: any) => {
+          expect(row).to.include.all.keys('name last', 'name first', 'birth city', 'birth cityCode');
+          expect(row['birth date']).to.match(/\d{2}\/\d{2}\/\d{4}/);
+        })
+        .on('end', (rowCount: number) => {
+          expect(rowCount).to.eql(totalPersons);
+        });
     });
 
     it('text/csv french header', async () => {
@@ -458,11 +465,14 @@ describe('index.ts - Express application', () => {
         .set('Accept', 'text/csv')
         .send({ firstName: 'Alban', headerLang: 'french' })
       expect(res).to.have.status(200);
-      expect(res.text.split('\n')[1].match(/[a-zA-Z0-9\.\-\/]+|"[^"]+"/g)[6]).to.match(/\d{2}\/\d{2}\/\d{4}/);
-      expect(res.text.split('\n')[0]).to.not.include('scores');
-      expect(res.text.split('\n')[0]).to.include('date_naissance,commune_naissance');
-      // remove header and last line
-      expect(res.text.split('\n').length).to.eql(totalPersons + 1);
+      parseString(res.text, { headers: true, delimiter: ','})
+        .on('data', (row: any) => {
+          expect(row).to.include.all.keys('nom', 'prénoms', 'sexe', 'date_naissance');
+          expect(row['date_naissance']).to.match(/\d{2}\/\d{2}\/\d{4}/);
+        })
+        .on('end', (rowCount: number) => {
+          expect(rowCount).to.eql(totalPersons);
+        });
     });
   })
 
