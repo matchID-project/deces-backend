@@ -180,6 +180,9 @@ class ProcessStream<I extends any, O extends any> extends Transform {
       }
     }
     Object.values(record.source).forEach((value: string, idx: number) => {
+      if (this.mapField[this.inputHeaders[idx]]) {
+        request[this.mapField[this.inputHeaders[idx]]] = jsonFields.includes(this.inputHeaders[idx]) ? JSON.parse(value) : value;
+      }
       request.metadata.source[this.inputHeaders[idx]] = value;
     });
     request.block = request.block
@@ -624,9 +627,10 @@ router.get('/:format(csv|json)/:id?', async (req: any, res: express.Response) =>
                   }
                   this.push(mapped)
                 } else {
+                  if (!row.score) row.sex = '';
                   const mapped = [...sourceHeader.map((key: string) => row.metadata.source[key]),
                     row.metadata.sourceLineNumber,
-                    ...resultsHeader.map(key => prettyString(jsonPath(row, key.id)))];
+                    ...resultsHeader.map(key => prettyString(jsonPath(row, key.label)))];
                   if (req.query.order) {
                     mapping.forEach((item: any, initial: number) => {
                       mapped.splice(item.end + initial - (initial%2), 0, mapped[sourceHeader.length + item.start + 1])

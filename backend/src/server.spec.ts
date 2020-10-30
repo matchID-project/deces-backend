@@ -682,9 +682,13 @@ describe('index.ts - Express application', () => {
       parseString(res.text, { headers: true})
         .on('data', (row: any) => {
           expect(row).to.have.property('Sexe', 'M');
-          expect(row).to.have.property('sex', '');
-          expect(row).to.have.property('birth.date', '');
-          expect(row).to.have.property('name.last', '');
+          if (row.score && row.score.length > 0) {
+            expect(row).to.have.property('sex', 'M');
+          } else {
+            expect(row).to.have.property('sex', '');
+            expect(row).to.have.property('birth.date', '');
+            expect(row).to.have.property('name.last', '');
+          }
         })
         .on('end', (rowCount: number) => {
           expect(rowCount).to.eql(inputArray.length - 1);
