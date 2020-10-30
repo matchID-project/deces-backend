@@ -145,12 +145,13 @@ export class IndexController extends Controller {
       writeHeaders: true,
       delimiter: ',',
       transform: (row: any) => {
-        // remove scores column
+        // remove id, score and scores column
+        row.splice(0, 2)
         row.splice(1, 1)
         // prettify date format
-        if (row[6] !== 'date_naissance') {
-          row.splice(6, 1, row[6].replace(/(\d{4})(\d{2})(\d{2})/,"$3/$2/$1"))
-          row.splice(16, 1, row[16].replace(/(\d{4})(\d{2})(\d{2})/,"$3/$2/$1"))
+        if (row[4] !== 'date_naissance') {
+          row.splice(4, 1, row[4].replace(/(\d{4})(\d{2})(\d{2})/,"$3/$2/$1"))
+          row.splice(14, 1, row[14].replace(/(\d{4})(\d{2})(\d{2})/,"$3/$2/$1"))
         }
         return row
       }
