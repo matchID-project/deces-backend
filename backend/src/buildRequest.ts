@@ -62,10 +62,10 @@ const buildAdaptativeBlockMatch = (searchInput: RequestInput) => {
 }
 
 const buildSimpleMatch = (searchInput: string) => {
-  const searchTerm = searchInput.normalize('NFKD').replace(/[\u0300-\u036f]/g, "").split(/\s+/)
+  const searchTerm = searchInput.normalize('NFKD').replace(/[\u0300-\u036f]/g, "").split(/\s+/);
   let date = searchTerm.filter( x => /^\d{2}\/\d{2}\/\d{4}$/.exec(x)).map( x => x.replace(/(\d{2})\/(\d{2})\/(\d{4})/,"$3$2$1"));
   date = date.length ? [date[0]] : null;
-  const names = searchTerm.filter( x => /[a-z]+/.exec(x)).filter( x => !/^(el|d|le|de|la|los)$/.exec(x));
+  const names = searchTerm.filter( x => /[a-z]+/i.exec(x)).filter( x => !/^(el|d|le|de|la|los)$/i.exec(x));
 
   const defaultQuery = { match_all: {} }
 
