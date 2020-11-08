@@ -468,7 +468,7 @@ describe('index.ts - Express application', () => {
       parseString(res.text, { headers: true, delimiter: ','})
         .on('data', (row: any) => {
           expect(row).to.include.all.keys('nom', 'prénoms', 'sexe', 'date_naissance');
-          expect(row['date_naissance']).to.match(/\d{2}\/\d{2}\/\d{4}/);
+          expect(row.date_naissance).to.match(/\d{2}\/\d{2}\/\d{4}/);
         })
         .on('end', (rowCount: number) => {
           expect(rowCount).to.eql(totalPersons);
