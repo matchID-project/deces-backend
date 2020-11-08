@@ -271,7 +271,7 @@ const pbkdf2 = (key: string) => {
   // return crypto.pbkdf2Sync(key, salt, 16, 16, 'sha256');
 };
 
-export const processCsv =  async (job: Queue.Job, jobFile: any): Promise<any> => {
+export const processCsv =  async (job: Queue.Job<any>, jobFile: any): Promise<any> => {
   try {
     // const inputHeaders: string[] = [];
     // let outputHeaders: any;
@@ -364,11 +364,11 @@ export const processChunk = async (chunk: any, dateFormat: string, candidateNumb
   }
 }
 
-chunkQueue.process(Number(process.env.BACKEND_CHUNK_CONCURRENCY), async (chunkJob: Queue.Job) => {
+chunkQueue.process(Number(process.env.BACKEND_CHUNK_CONCURRENCY), async (chunkJob: Queue.Job<any>) => {
   return await processChunk(chunkJob.data.chunk, chunkJob.data.dateFormat, chunkJob.data.candidateNumber);
 })
 
-jobQueue.process(Number(process.env.BACKEND_JOB_CONCURRENCY), (job: Queue.Job) => {
+jobQueue.process(Number(process.env.BACKEND_JOB_CONCURRENCY), (job: Queue.Job<any>) => {
   const jobIndex = inputsArray.findIndex(x => x.id === job.id);
   const jobFile = inputsArray.splice(jobIndex, 1).pop();
   return processCsv(job, jobFile);
@@ -376,7 +376,6 @@ jobQueue.process(Number(process.env.BACKEND_JOB_CONCURRENCY), (job: Queue.Job) =
 
 /**
  * @swagger
- * path:
  *  /search/csv:
  *    post:
  *      summary: Rapprochement par lot
@@ -478,7 +477,6 @@ router.post('/csv', multerSingle, async (req: any, res: express.Response) => {
     const job = await jobQueue
       .createJob({...options})
       .setId(md.digest().toHex())
-      // .reportProgress({rows: 0, percentage: 0}) TODO: add for bee-queue version 1.2.4
       .save()
     job.on('succeeded', (result: any) => {
       if (!stopJob.includes(job.id)) {
@@ -566,7 +564,7 @@ router.get('/:format(csv|json)/:id?', async (req: any, res: express.Response) =>
     const md = forge.md.sha256.create();
     md.update(req.params.id);
     const jobId = md.digest().toHex();
-    const job: Queue.Job|any = await jobQueue.getJob(jobId);
+    const job: Queue.Job<any>|any = await jobQueue.getJob(jobId);
     const jobsActive = await jobQueue.getJobs('active', {start: 0, end: 25})
     if (job && job.status === 'succeeded') {
       try {
@@ -722,7 +720,7 @@ router.delete('/:format(csv|json)/:id?', async (req: any, res: express.Response)
     const md = forge.md.sha256.create();
     md.update(req.params.id);
     const jobId = md.digest().toHex()
-    const job: Queue.Job|any= await jobQueue.getJob(jobId)
+    const job: Queue.Job<any>|any= await jobQueue.getJob(jobId)
     if (job && job.status === 'created') {
       stopJob.push(job.id);
       setTimeout(() => {
