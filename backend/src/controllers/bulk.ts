@@ -376,7 +376,6 @@ jobQueue.process(Number(process.env.BACKEND_JOB_CONCURRENCY), (job: Queue.Job) =
 
 /**
  * @swagger
- * path:
  *  /search/csv:
  *    post:
  *      summary: Rapprochement par lot
