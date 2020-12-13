@@ -48,14 +48,14 @@ export const fuzzyShouldTermQuery = (field: string, value: string, fuzzy: boolea
                 should: [
                     {
                         match: {
-                            [field]: value
+                            [`${field}.raw`]: value
                         }
                     }
                 ]
             }
         };
     } else {
-        return matchQuery(field, value, false, must);
+        return matchQuery(`${field}.raw`, value, false, must);
     }
 };
 
