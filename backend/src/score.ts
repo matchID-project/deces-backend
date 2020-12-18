@@ -444,7 +444,7 @@ const scoreDateRaw = (dateRangeA: any, dateStringB: string): number => {
 
 const scoreSex = (sexA: any, sexB: string): number => {
     return (sexA && sexB)
-            ? ((sexA === sexB) ? 1 : minSexScore)
+            ? ((sexA.replace(/^(H).*$/,'M') === sexB) ? 1 : minSexScore)
             : blindSexScore;
 }
 
