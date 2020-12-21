@@ -124,6 +124,7 @@ export interface ResultRawHit {
     PRENOMS: string;
     NOM: string;
     SEXE: 'M'|'F';
+    UID: string;
     DATE_NAISSANCE: string;
     COMMUNE_NAISSANCE: string;
     CODE_INSEE_NAISSANCE: string;
@@ -202,7 +203,7 @@ export const buildResultSingle = (item: ResultRawHit): Person => {
     // source: dataCatalog[item._source.SOURCE],
     source: item._source.SOURCE,
     scores: {score: 0},
-    id: item._id,
+    id: item._source.UID,
     name: {
       first: item._source.PRENOMS ? item._source.PRENOMS.split(' ') : [''],
       last: item._source.NOM
