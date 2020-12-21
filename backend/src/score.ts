@@ -345,6 +345,7 @@ const scoreCity = (cityA: string|string[]|RequestField, cityB: string|string[]):
 
 const countryRegExp = [
     [ /(^|\s)(de|en|les|le|la|a|aux|au|du|de la|s|sous|sur|l|d|des)\s/g, ' '],
+    [ /hollande/, 'pays-bas'],
 ];
 
 const countryNorm = (country: string|string[]): string|string[] => {
@@ -443,7 +444,7 @@ const scoreDateRaw = (dateRangeA: any, dateStringB: string): number => {
 
 const scoreSex = (sexA: any, sexB: string): number => {
     return (sexA && sexB)
-            ? ((sexA === sexB) ? 1 : minSexScore)
+            ? ((sexA.replace(/^(H).*$/,'M') === sexB) ? 1 : minSexScore)
             : blindSexScore;
 }
 
