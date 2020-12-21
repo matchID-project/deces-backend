@@ -70,7 +70,8 @@ export const nameQuery = (field: NameFields, value: Name, fuzzy: boolean, must: 
                         bool: {
                             should: [
                                 value.first && firstNameQuery([field.first.first, field.first.all], value.first as string, fuzzy, must),
-                                value.last && fuzzyShouldTermQuery(field.last as string, value.last as string, fuzzy, must)
+                                value.last && fuzzyShouldTermQuery(field.last as string, value.last as string, fuzzy, must),
+                                value.legal && fuzzyShouldTermQuery(field.legal as string, value.legal as string, fuzzy, must)
                             ].filter(x => x),
                             minimum_should_match: min_should,
                             boost: 2
@@ -95,7 +96,8 @@ export const nameQuery = (field: NameFields, value: Name, fuzzy: boolean, must: 
                 minimum_should_match: min_should,
                 should: [
                     value.first && matchQuery(field.first.first, value.first as string, false, must),
-                    value.last && matchQuery(field.last as string, value.last as string, false, must)
+                    value.last && matchQuery(field.last as string, value.last as string, false, must),
+                    value.legal && matchQuery(field.legal as string, value.legal as string, false, must)
                 ].filter(x => x)
             }
         };

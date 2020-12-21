@@ -338,7 +338,7 @@ export const processCsv =  async (job: Queue.Job<any>, jobFile: any): Promise<an
 
 export const processChunk = async (chunk: any, dateFormat: string, candidateNumber: number) => {
   const bulkRequest = chunk.map((row: any) => { // TODO: type
-    const requestInput = new RequestInput(row.q, row.firstName, row.lastName, row.sex, row.birthDate, row.birthCity, row.birthDepartment, row.birthCountry, row.birthGeoPoint, row.deathDate, row.deathCity, row.deathDepartment, row.deathCountry, row.deathGeoPoint, row.deathAge, row.lastSeenAliveDate, row.scroll, row.scrollId, row.size, row.page, row.fuzzy, row.sort, row.block, dateFormat);
+    const requestInput = new RequestInput(row.q, row.firstName, row.lastName, row.legalName, row.sex, row.birthDate, row.birthCity, row.birthDepartment, row.birthCountry, row.birthGeoPoint, row.deathDate, row.deathCity, row.deathDepartment, row.deathCountry, row.deathGeoPoint, row.deathAge, row.lastSeenAliveDate, row.scroll, row.scrollId, row.size, row.page, row.fuzzy, row.sort, row.block, dateFormat);
     return [JSON.stringify({index: "deces"}), JSON.stringify(buildRequest(requestInput))];
   })
   const msearchRequest = bulkRequest.map((x: any) => x.join('\n\r')).join('\n\r') + '\n';

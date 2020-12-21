@@ -7,6 +7,7 @@ export interface Sort {
 export interface Name {
     first: string|string[]|RequestField;
     last: string|string[]|RequestField;
+    legal?: string|string[]|RequestField;
   };
 
 export interface NameFields {
@@ -15,6 +16,7 @@ export interface NameFields {
         all?: string;
     };
     last: string|string[];
+    legal?: string|string[];
 };
 
 export interface RequestField {

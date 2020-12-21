@@ -164,6 +164,7 @@ export const buildResult = (result: ResultRawES, requestInput: RequestInput): Re
       if (item === 'name') {
         filteredRequest.firstName = requestInput.name.value && requestInput.name.value.first;
         filteredRequest.lastName = requestInput.name.value && requestInput.name.value.last;
+        filteredRequest.legalName = requestInput.name.value && requestInput.name.value.legal;
       } else {
         filteredRequest[item] = requestInput[item].value
       }
