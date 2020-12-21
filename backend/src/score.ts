@@ -173,7 +173,13 @@ export class ScoreResult {
     }
     if (request.firstName || request.lastName) {
       if ((pruneScore < scoreReduce(this)) || !this.date) {
-        this.name = scoreName({first: request.firstName, last: request.lastName}, result.name);
+        if (request.sex && request.sex === 'F') {
+          const scoreLastName = scoreName({first: request.firstName, last: request.lastName}, result.name);
+          const scoreLegalName = scoreName({first: request.firstName, last: request.legalName}, result.name);
+          this.name = Math.max(scoreLastName, scoreLegalName);
+        } else {
+          this.name = scoreName({first: request.firstName, last: request.lastName}, result.name);
+        }
       } else {
         this.score = 0
       }
