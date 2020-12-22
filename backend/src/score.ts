@@ -241,14 +241,22 @@ const scoreName = (nameA: Name, nameB: Name): number => {
     let lastB = tokenize(normalize(nameB.last as string|string[]));
 
     const scoreFirst = scoreToken(firstA, firstB as string|string[]);
+    const scoreLast = scoreToken(lastA, lastB as string|string[]);
     score = 0.01 * Math.round(100*
+      Math.max(
         Math.max(
+          Math.max(
+            scoreFirst * (scoreLast ** lastNamePenalty),
             Math.max(
-                scoreFirst * (scoreToken(lastA, lastB as string) ** lastNamePenalty),
-                nameInversionPenalty * (scoreToken(firstA, lastB as string) ** lastNamePenalty) * scoreToken(lastA, firstB as string|string[]) ** lastNamePenalty
-            ),
+              scoreFirst * (blindNameScore ** 0.5),
+              (scoreLast ** lastNamePenalty) * (blindNameScore ** 0.5)
+            )
+          ),
+          nameInversionPenalty * (scoreToken(firstA, lastB as string) ** lastNamePenalty) * scoreToken(lastA, firstB as string|string[]) ** lastNamePenalty
+        ),
         minNameScore
-    ));
+      )
+    );
 
     if (score === 1) return 1;
 
