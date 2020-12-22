@@ -65,6 +65,7 @@ interface ResType {
  *     "persons": [{
  *        "score":10.542101,
  *        "source":"2020-m01",
+ *        "sourceLine": 212,
  *        "id":"ba7582a6344757e67351bf42096c952a12108e06",
  *        "name":{"first":["Jean","Pierre"],"last":"Dupont"},
  *        "sex": "M",
