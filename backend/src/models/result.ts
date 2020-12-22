@@ -121,6 +121,7 @@ export interface ResultRawHit {
   _id: string;
   _source: {
     SOURCE: string;
+    SOURCE_LINE: number;
     PRENOMS: string;
     NOM: string;
     SEXE: 'M'|'F';
@@ -202,6 +203,7 @@ export const buildResultSingle = (item: ResultRawHit): Person => {
     score: item._score,
     // source: dataCatalog[item._source.SOURCE],
     source: item._source.SOURCE,
+    sourceLine: item._source.SOURCE_LINE,
     scores: {score: 0},
     id: item._source.UID,
     name: {
