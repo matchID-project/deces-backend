@@ -397,7 +397,7 @@ export const buildRequest = (requestInput: RequestInput): BodyResponse|ScrolledR
         "PAYS_NAISSANCE","PAYS_NAISSANCE_CODEISO3",
         "GEOPOINT_NAISSANCE","GEOPOINT_DECES",
         "SEXE","UID",
-        "SOURCE"],
+        "SOURCE", "SOURCE_LINE"],
       // aggs: {
       //   COMMUNE_NAISSANCE: { terms: { field: "COMMUNE_NAISSANCE.keyword", size: 30 } },
       //   PAYS_NAISSANCE: {

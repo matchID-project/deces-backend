@@ -13,6 +13,7 @@ describe('score.ts - Score function', () => {
       score: 0.7,
       scores: {score: 0},
       source: '',
+      sourceLine: 212,
       id: "13",
       name: {
         first: "Georges",

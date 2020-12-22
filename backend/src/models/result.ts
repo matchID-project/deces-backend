@@ -65,6 +65,7 @@ interface ResType {
  *     "persons": [{
  *        "score":10.542101,
  *        "source":"2020-m01",
+ *        "sourceLine": 212,
  *        "id":"ba7582a6344757e67351bf42096c952a12108e06",
  *        "name":{"first":["Jean","Pierre"],"last":"Dupont"},
  *        "sex": "M",
@@ -121,6 +122,7 @@ export interface ResultRawHit {
   _id: string;
   _source: {
     SOURCE: string;
+    SOURCE_LINE: number;
     PRENOMS: string;
     NOM: string;
     SEXE: 'M'|'F';
@@ -202,6 +204,7 @@ export const buildResultSingle = (item: ResultRawHit): Person => {
     score: item._score,
     // source: dataCatalog[item._source.SOURCE],
     source: item._source.SOURCE,
+    sourceLine: item._source.SOURCE_LINE,
     scores: {score: 0},
     id: item._source.UID,
     name: {
