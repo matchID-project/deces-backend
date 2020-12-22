@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Route, Query, Response, Tags, Header, Request } from 'tsoa';
+import { Controller, Get, Post, Body, Route, Query, Response, Tags, Header, Request, Path } from 'tsoa';
 import express from 'express';
 import { resultsHeader, jsonPath, prettyString } from './bulk';
 import { runRequest } from '../runRequest';
@@ -189,6 +189,20 @@ export class IndexController extends Controller {
       });
     }
   }
+
+  /**
+   * Search by ID
+   * @summary Use unique identifier to search for people
+   * @param id Person unique identifier
+   */
+  @Tags('Simple')
+  @Get('/id/{id}')
+  public searchId(
+    @Path() id: string
+  ): any {
+    return {id}
+  }
+
 
   @Response<HealthcheckResponse>('200', 'OK')
   @Tags('Check')
