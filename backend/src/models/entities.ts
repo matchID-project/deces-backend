@@ -47,6 +47,7 @@ export interface Location {
 export interface Person {
     score: number;
     source: string;
+    sourceLine: number;
     id: string;
     name: Name;
     sex: 'M'|'F';
