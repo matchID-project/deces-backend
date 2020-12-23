@@ -151,6 +151,7 @@ interface RequestInputParams {
   deathGeoPoint?: GeoPoint;
   deathAge?: string|number;
   lastSeenAliveDate?: string;
+  id?: string;
   scroll?: string;
   scrollId?: string;
   size?: number;
@@ -198,6 +199,7 @@ export class RequestInput {
     this.scrollId = params.scrollId ? params.scrollId : '';
     this.sort = params.sort ? sortWithQuery(params.sort) : {value: [{score: 'desc'}]}
     this.block = params.block;
+    this.id = params.id;
     this.dateFormat = params.dateFormat;
     const birthDateTransformed = params.birthDate && params.dateFormat ? moment(params.birthDate.toString(), params.dateFormat).format("DD/MM/YYYY"): params.birthDate;
     let deathDateTransformed

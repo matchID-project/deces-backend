@@ -195,14 +195,19 @@ export class IndexController extends Controller {
    * @summary Use unique identifier to search for people
    * @param id Person unique identifier
    */
+  @Response<ErrorResponse>('400', 'Bad request')
+  @Response<Result>('200', 'OK')
   @Tags('Simple')
   @Get('/id/{id}')
-  public searchId(
+  public async searchId(
     @Path() id: string
-  ): any {
-    return {id}
+  ): Promise<Result> {
+    const requestInput = new RequestInput({id});
+    const requestBuild = buildRequest(requestInput);
+    const result = await runRequest(requestBuild, requestInput.scroll);
+    const builtResult = buildResult(result.data, requestInput)
+    return builtResult
   }
-
 
   @Response<HealthcheckResponse>('200', 'OK')
   @Tags('Check')
