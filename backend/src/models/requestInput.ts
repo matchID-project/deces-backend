@@ -212,7 +212,7 @@ export class RequestInput {
     this.fullText = fullTextWithQuery(params.q, params.fuzzy);
     this.name = nameWithQuery({
       first: params.firstName,
-      last: params.lastName
+      last: params.lastName,
       legal: params.legalName
     }, params.fuzzy);
     this.sex = sexWithQuery(params.sex, params.fuzzy);
