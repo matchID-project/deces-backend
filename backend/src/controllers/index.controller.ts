@@ -213,6 +213,16 @@ export class IndexController extends Controller {
     return builtResult
   }
 
+  @Get('/agg')
+  public async aggregation(): Promise<any> {
+    const requestInput = new RequestInput({q: "jean"});
+    requestInput.aggs = ["birthCity"]
+    const requestBuild = buildRequest(requestInput);
+    const result = await runRequest(requestBuild, requestInput.scroll);
+    const builtResult = buildResult(result.data, requestInput)
+    return builtResult
+  }
+
   @Response<HealthcheckResponse>('200', 'OK')
   @Tags('Check')
   @Get('/healthcheck')

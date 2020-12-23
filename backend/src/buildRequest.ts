@@ -378,9 +378,24 @@ export const buildSort = (inputs?: any) => {
   }).filter((x:any) => x.order).map((x: any) => { return { [x.field]: x.order } })
 }
 
+const buildAggregation = (aggs: any=[]): any => {
+  const aggregation: any = {}
+  aggs.forEach((agg: string) => {
+    aggregation[agg] = { terms: { field: referenceSort[agg]} }
+  })
+  // {
+  //   COMMUNE_NAISSANCE: { terms: { field: "COMMUNE_NAISSANCE.raw", size: 30 } },
+  //     PAYS_NAISSANCE: {
+  //       terms: { field: "PAYS_NAISSANCE.raw" }
+  //     }
+  // }
+  return aggregation
+}
+
 export const buildRequest = (requestInput: RequestInput): BodyResponse|ScrolledResponse => {
   const sort = buildSort(requestInput.sort.value);
   const match = buildMatch(requestInput);
+  const aggregations = buildAggregation(requestInput.aggs);
   // const filter = buildRequestFilter(myFilters); // TODO
   const size = requestInput.size;
   const from = buildFrom(requestInput.page, size);
@@ -419,12 +434,7 @@ export const buildRequest = (requestInput: RequestInput): BodyResponse|ScrolledR
         "GEOPOINT_NAISSANCE","GEOPOINT_DECES",
         "SEXE","UID",
         "SOURCE", "SOURCE_LINE"],
-      // aggs: {
-      //   COMMUNE_NAISSANCE: { terms: { field: "COMMUNE_NAISSANCE.keyword", size: 30 } },
-      //   PAYS_NAISSANCE: {
-      //     terms: { field: "PAYS_NAISSANCE.keyword" }
-      //   }
-      // },
+      aggs: aggregations,
 
       // Dynamic values based on current Search UI state
       // --------------------------

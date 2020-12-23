@@ -170,6 +170,7 @@ interface RequestInputParams {
   page?: number;
   fuzzy?: string|boolean;
   sort?: string|Sort[];
+  aggs?: string[];
   block?: Block;
   dateFormat?: any;
 }
@@ -201,6 +202,7 @@ export class RequestInput {
   scrollId?: string;
   page?: number;
   fuzzy?: string|boolean;
+  aggs?: string[];
   sort?: RequestField;
   block?: Block;
   dateFormat?: string;
@@ -212,6 +214,7 @@ export class RequestInput {
     this.scroll = params.scroll ? params.scroll : '';
     this.scrollId = params.scrollId ? params.scrollId : '';
     this.sort = params.sort ? sortWithQuery(params.sort) : {value: [{score: 'desc'}]}
+    this.aggs = params.aggs ? params.aggs : [];
     this.block = params.block;
     this.id = params.id;
     this.dateFormat = params.dateFormat;
