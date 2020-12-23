@@ -23,6 +23,18 @@ describe('index.ts - Express application', () => {
     expect(res.body.msg).to.eql("OK");
   });
 
+  it('/id/{id}', async () => {
+    let res = await chai.request(app)
+      .get(`${process.env.BACKEND_PROXY_PATH}/search`)
+      .query({deathDate: 2020, firstName: 'Harry'})
+    const { id } = res.body.response.persons[0];
+    res = await chai.request(app)
+      .get(`${process.env.BACKEND_PROXY_PATH}/id/${id}`)
+    expect(res).to.have.status(200);
+    expect(res.body.response.persons[0].name.first).to.include('Harry');
+    expect(res.body.response.persons[0].id).to.eql(id);
+  });
+
   describe('/search GET', () => {
     it('firstName', async () => {
       const res = await chai.request(app)
