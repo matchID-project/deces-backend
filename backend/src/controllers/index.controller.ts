@@ -44,6 +44,7 @@ export class IndexController extends Controller {
     @Query() q?: string,
     @Query() firstName?: string,
     @Query() lastName?: string,
+    @Query() legalName?: string,
     @Query() sex?: 'M'|'F'|'H',
     @Query() birthDate?: StrAndNumber,
     @Query() birthCity?: string,
@@ -62,13 +63,13 @@ export class IndexController extends Controller {
     @Query() fuzzy?: 'true'|'false',
     @Query() sort?: string
   ): Promise<Result> {
-    if (q || firstName || lastName || sex || birthDate || birthCity || birthDepartment || birthCountry || deathDate || deathCity || deathDepartment || deathCountry || deathAge || lastSeenAliveDate || scroll) {
-      const requestInput = new RequestInput(q, firstName, lastName, sex, birthDate, birthCity, birthDepartment, birthCountry, null, deathDate, deathCity, deathDepartment, deathCountry, null, deathAge, lastSeenAliveDate, scroll, scrollId, size, page, fuzzy, sort);
+    if (q || firstName || lastName || legalName || sex || birthDate || birthCity || birthDepartment || birthCountry || deathDate || deathCity || deathDepartment || deathCountry || deathAge || lastSeenAliveDate || scroll) {
+      const requestInput = new RequestInput(q, firstName, lastName, legalName, sex, birthDate, birthCity, birthDepartment, birthCountry, null, deathDate, deathCity, deathDepartment, deathCountry, null, deathAge, lastSeenAliveDate, scroll, scrollId, size, page, fuzzy, sort);
       if (requestInput.errors.length) {
         this.setStatus(400);
         return  { msg: requestInput.errors };
       }
-      if ((firstName || lastName || sex || birthDate || birthCity || birthDepartment || birthCountry || deathDate || deathCity || deathDepartment || deathCountry || deathAge) && q) {
+      if ((firstName || lastName || legalName || sex || birthDate || birthCity || birthDepartment || birthCountry || deathDate || deathCity || deathDepartment || deathCountry || deathAge) && q) {
         this.setStatus(400);
         return  { msg: "error - simple and complex request at the same time" };
       }
@@ -95,17 +96,17 @@ export class IndexController extends Controller {
   public async searchpost(@Body() requestBody: RequestBody, @Request() request: express.Request, @Header('Accept') accept?: string): Promise<Result> {
     const response = (request).res;
     if (Object.keys(requestBody).length > 0) {
-      const validFields = ['q', 'firstName', 'lastName', 'sex', 'birthDate', 'birthCity', 'birthDepartment', 'birthCountry', 'birthGeoPoint', 'deathDate', 'deathCity', 'deathDepartment', 'deathCountry', 'deathGeoPoint', 'deathAge', 'scroll', 'scrollId', 'size', 'page', 'fuzzy', 'sort', 'lastSeenAliveDate', 'headerLang']
+      const validFields = ['q', 'firstName', 'lastName', 'legalName', 'sex', 'birthDate', 'birthCity', 'birthDepartment', 'birthCountry', 'birthGeoPoint', 'deathDate', 'deathCity', 'deathDepartment', 'deathCountry', 'deathGeoPoint', 'deathAge', 'scroll', 'scrollId', 'size', 'page', 'fuzzy', 'sort', 'lastSeenAliveDate', 'headerLang']
       const notValidFields = Object.keys(requestBody).filter((item: string) => !validFields.includes(item))
       if (notValidFields.length > 0) {
         this.setStatus(400);
         return  { msg: "error - unknown field" };
       }
-      if ((requestBody.firstName || requestBody.lastName || requestBody.birthDate || requestBody.birthCity || requestBody.birthDepartment || requestBody.birthCountry || requestBody.birthGeoPoint || requestBody.deathDate || requestBody.deathCity || requestBody.deathDepartment || requestBody.deathCountry || requestBody.deathAge || requestBody.deathGeoPoint || requestBody.lastSeenAliveDate ) && requestBody.q) {
+      if ((requestBody.firstName || requestBody.lastName || requestBody.legalName || requestBody.birthDate || requestBody.birthCity || requestBody.birthDepartment || requestBody.birthCountry || requestBody.birthGeoPoint || requestBody.deathDate || requestBody.deathCity || requestBody.deathDepartment || requestBody.deathCountry || requestBody.deathAge || requestBody.deathGeoPoint || requestBody.lastSeenAliveDate ) && requestBody.q) {
         this.setStatus(400);
         return  { msg: "error - simple and complex request at the same time" };
       }
-      const requestInput = new RequestInput(requestBody.q, requestBody.firstName, requestBody.lastName, requestBody.sex, requestBody.birthDate, requestBody.birthCity, requestBody.birthDepartment, requestBody.birthCountry, requestBody.birthGeoPoint, requestBody.deathDate, requestBody.deathCity, requestBody.deathDepartment, requestBody.deathCountry, requestBody.deathGeoPoint, requestBody.deathAge, requestBody.lastSeenAliveDate, requestBody.scroll, requestBody.scrollId, requestBody.size, requestBody.page, requestBody.fuzzy, requestBody.sort);
+      const requestInput = new RequestInput(requestBody.q, requestBody.firstName, requestBody.lastName, requestBody.legalName, requestBody.sex, requestBody.birthDate, requestBody.birthCity, requestBody.birthDepartment, requestBody.birthCountry, requestBody.birthGeoPoint, requestBody.deathDate, requestBody.deathCity, requestBody.deathDepartment, requestBody.deathCountry, requestBody.deathGeoPoint, requestBody.deathAge, requestBody.lastSeenAliveDate, requestBody.scroll, requestBody.scrollId, requestBody.size, requestBody.page, requestBody.fuzzy, requestBody.sort);
       if (requestInput.errors.length) {
         this.setStatus(400);
         return  { msg: requestInput.errors };

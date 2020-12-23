@@ -23,6 +23,9 @@ const buildAdaptativeBlockMatch = (searchInput: RequestInput) => {
   if (searchInput.name && searchInput.name.value && searchInput.name.value.last && searchInput.name.value.first) {
     let queryMust = [fuzzyTermQuery('PRENOMS_NOM', [searchInput.name.value.last, searchInput.name.value.first].filter(x => x).join(" "), "auto", false)]
     let queryShould = [matchQuery('NOM', searchInput.name.value.last as string, false, false)]
+    if (searchInput.name.value.legal) {
+      queryShould = [...queryShould, matchQuery('NOM', searchInput.name.value.legal as string, false, false)]
+    }
     if (searchInput.birthDate && searchInput.birthDate.value) {
       if (isDateRange(searchInput.birthDate.value as string) || isDateLimit(searchInput.birthDate.value as string)) {
         queryMust = [

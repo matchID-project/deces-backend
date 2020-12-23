@@ -35,4 +35,17 @@ describe('bulk.ts - Process chunk', () => {
     expect(result[0][0].name.first).to.contain('Jean')
     expect(result[0][0].name.last).to.equal('Pierre')
   });
+
+  it('Nom d\'usage', async () => {
+    const result = await processChunk(
+      [{firstName: 'jeanne', lastName: 'michou', sex: 'F', legalName: 'marie'}],
+      'YYYY-MM-DD',
+      1
+    )
+    expect(result.length).to.equal(1)
+    expect(result[0][0].name.first).to.contain('Jeanne')
+    expect(result[0][0].name.last).to.equal('Marie')
+    expect(result[0][0].scores.name).to.equal(1)
+  });
+
 });

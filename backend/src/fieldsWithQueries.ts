@@ -31,7 +31,8 @@ export const nameWithQuery = (value: Name, fuzzy: string|boolean) => value && (v
             first: "PRENOM",
             all: "PRENOMS"
         },
-        last: "NOM"
+        last: "NOM",
+        legal: "NOM"
     },
     query: nameQuery,
     fuzzy: (fuzzy && fuzzy === 'false') ? false : "auto"
