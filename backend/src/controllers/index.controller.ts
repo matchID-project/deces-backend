@@ -4,8 +4,8 @@ import { resultsHeader, jsonPath, prettyString } from './bulk';
 import { runRequest } from '../runRequest';
 import { buildRequest } from '../buildRequest';
 import { RequestInput, RequestBody } from '../models/requestInput';
-import { buildResult } from '../models/result';
-import { Result, ErrorResponse, HealthcheckResponse } from '../models/result';
+import { buildResult, buildResultAgg } from '../models/result';
+import { Result, ResultAgg, ErrorResponse, HealthcheckResponse } from '../models/result';
 import { format } from '@fast-csv/format';
 // import getDataGouvCatalog from '../getDataGouvCatalog';
 
@@ -214,13 +214,45 @@ export class IndexController extends Controller {
   }
 
   @Get('/agg')
-  public async aggregation(): Promise<any> {
-    const requestInput = new RequestInput({q: "jean"});
-    requestInput.aggs = ["birthCity"]
-    const requestBuild = buildRequest(requestInput);
-    const result = await runRequest(requestBuild, requestInput.scroll);
-    const builtResult = buildResult(result.data, requestInput)
-    return builtResult
+  public async aggregation(
+    @Query() q?: string,
+    @Query() firstName?: string,
+    @Query() lastName?: string,
+    @Query() legalName?: string,
+    @Query() sex?: 'M'|'F'|'H',
+    @Query() birthDate?: StrAndNumber,
+    @Query() birthCity?: string,
+    @Query() birthDepartment?: string,
+    @Query() birthCountry?: string,
+    @Query() deathDate?: StrAndNumber,
+    @Query() deathCity?: string,
+    @Query() deathDepartment?: string,
+    @Query() deathCountry?: string,
+    @Query() deathAge?: StrAndNumber,
+    @Query() lastSeenAliveDate?: string,
+    @Query() fuzzy?: 'true'|'false',
+    @Query() aggs?: string,
+  ): Promise<ResultAgg> {
+    if (q || firstName || lastName || legalName || sex || birthDate || birthCity || birthDepartment || birthCountry || deathDate || deathCity || deathDepartment || deathCountry || deathAge || lastSeenAliveDate) {
+      // http://localhost:8084/deces/api/v1/agg?q=jean&aggs=[%22birthCountry%22]
+      const requestInput = new RequestInput({q, firstName, lastName, legalName, sex, birthDate, birthCity, birthDepartment, birthCountry, deathDate, deathCity, deathDepartment, deathCountry, deathAge, lastSeenAliveDate, fuzzy, aggs});
+      if (requestInput.errors.length) {
+        this.setStatus(400);
+        return  { msg: requestInput.errors };
+      }
+      if ((firstName || lastName || legalName || sex || birthDate || birthCity || birthDepartment || birthCountry || deathDate || deathCity || deathDepartment || deathCountry || deathAge) && q) {
+        this.setStatus(400);
+        return  { msg: "error - simple and complex request at the same time" };
+      }
+      const requestBuild = buildRequest(requestInput);
+      const result = await runRequest(requestBuild, null);
+      const builtResult = buildResultAgg(result.data, requestInput)
+      this.setStatus(200);
+      return  builtResult;
+    } else {
+      this.setStatus(400);
+      return  { msg: "error - empty request" };
+    }
   }
 
   @Response<HealthcheckResponse>('200', 'OK')

@@ -49,6 +49,15 @@ interface ResType {
  persons: Person[];
 }
 
+interface ResTypeAgg {
+ total: number;
+ /**
+  * délai du traitement
+  */
+ delay: number;
+ aggregations: any;
+}
+
 /**
  * This is a description of a model
  * @tsoaModel
@@ -107,6 +116,25 @@ export interface Result {
   response?: ResType;
 }
 
+/**
+ * This is a description of a model
+ * @tsoaModel
+ * @example
+ * {
+ *   "request": {
+ *    "q": "Georges Pompidou"
+ *   },
+ *   "response": {
+ *    "bucket": "bucket"
+ *   }
+ * }
+ */
+export interface ResultAgg {
+  msg?: string|string[];
+  request?: RequestType;
+  response?: ResTypeAgg;
+}
+
 export interface ResultRawES {
   '_scroll_id'?: string;
   took: number;
@@ -116,6 +144,11 @@ export interface ResultRawES {
     }
     'max_score': number;
     hits:  ResultRawHit[]
+  };
+  aggregations?: {
+    doc_count_error_upper_bound: number;
+    sum_other_doc_count: number;
+    buckets: any[];
   }
 }
 
@@ -162,6 +195,31 @@ export const getFromGeoPoint = (geoPoint: string, latOrLon: string): number  => 
   } catch {
     return undefined;
   }
+}
+
+
+export const buildResultAgg = (result: ResultRawES, requestInput: RequestInput): ResultAgg => {
+  const filteredRequest: RequestType = {}
+  Object.keys(requestInput).forEach((item: any) => {
+    if (requestInput[item] && requestInput[item].value) {
+      if (item === 'name') {
+        filteredRequest.firstName = requestInput.name.value && requestInput.name.value.first;
+        filteredRequest.lastName = requestInput.name.value && requestInput.name.value.last;
+        filteredRequest.legalName = requestInput.name.value && requestInput.name.value.legal;
+      } else {
+        filteredRequest[item] = requestInput[item].value
+      }
+    }
+  })
+  const composedResult =  {
+    request: filteredRequest,
+    response: {
+      total: result.hits.total.value,
+      delay: result.took,
+      aggregations: result.aggregations
+    }
+  }
+  return composedResult
 }
 
 export const buildResult = (result: ResultRawES, requestInput: RequestInput): Result => {
