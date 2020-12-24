@@ -198,7 +198,7 @@ export const getFromGeoPoint = (geoPoint: string, latOrLon: string): number  => 
 }
 
 
-export const buildResultAgg = (result: ResultRawES, requestInput: RequestInput): ResultAgg => {
+export const buildResultAgg = (result: any, requestInput: RequestInput): ResultAgg => {
   const filteredRequest: RequestType = {}
   Object.keys(requestInput).forEach((item: any) => {
     if (requestInput[item] && requestInput[item].value) {
@@ -214,9 +214,9 @@ export const buildResultAgg = (result: ResultRawES, requestInput: RequestInput):
   const composedResult =  {
     request: filteredRequest,
     response: {
-      total: result.hits.total.value,
-      delay: result.took,
-      aggregations: result.aggregations
+      total: result.total,
+      delay: result.delay,
+      aggregations: result.buckets
     }
   }
   return composedResult

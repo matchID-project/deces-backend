@@ -202,6 +202,7 @@ export class RequestInput {
   scrollId?: string;
   page?: number;
   fuzzy?: string|boolean;
+  afterKey?: number;
   aggs?: string[];
   sort?: RequestField;
   block?: Block;
@@ -209,7 +210,7 @@ export class RequestInput {
   metadata?: any;
   errors: string[] = [];
   constructor(params: RequestInputParams) {
-    this.size = params.size ? params.size : 20;
+    this.size = params.size !== undefined ? params.size : 20;
     this.page = params.page ? params.page : 1;
     this.scroll = params.scroll ? params.scroll : '';
     this.scrollId = params.scrollId ? params.scrollId : '';

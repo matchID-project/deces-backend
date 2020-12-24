@@ -378,24 +378,32 @@ export const buildSort = (inputs?: any) => {
   }).filter((x:any) => x.order).map((x: any) => { return { [x.field]: x.order } })
 }
 
-const buildAggregation = (aggs: any=[]): any => {
-  const aggregation: any = {}
-  aggs.forEach((agg: string) => {
-    aggregation[agg] = { terms: { field: referenceSort[agg]} }
+const buildAggregation = (requestInput: RequestInput): any => {
+  const aggregationArray = requestInput.aggs.map((agg: string) => {
+    const aggregation: any = {}
+    aggregation[agg] = {
+      terms: {
+        field: referenceSort[agg]
+      }
+    }
+    return aggregation
   })
-  // {
-  //   COMMUNE_NAISSANCE: { terms: { field: "COMMUNE_NAISSANCE.raw", size: 30 } },
-  //     PAYS_NAISSANCE: {
-  //       terms: { field: "PAYS_NAISSANCE.raw" }
-  //     }
-  // }
-  return aggregation
+  const aggregationRequest: any = {
+    myByckets : {
+      composite: {
+        size: 10,
+        sources: aggregationArray
+      }
+    }
+  }
+  if (requestInput.afterKey !== undefined) aggregationRequest.myByckets.composite.after = requestInput.afterKey
+  return aggregationRequest
 }
 
 export const buildRequest = (requestInput: RequestInput): BodyResponse|ScrolledResponse => {
   const sort = buildSort(requestInput.sort.value);
   const match = buildMatch(requestInput);
-  const aggregations = buildAggregation(requestInput.aggs);
+  const aggregations = buildAggregation(requestInput);
   // const filter = buildRequestFilter(myFilters); // TODO
   const size = requestInput.size;
   const from = buildFrom(requestInput.page, size);

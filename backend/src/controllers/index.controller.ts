@@ -235,7 +235,7 @@ export class IndexController extends Controller {
   ): Promise<ResultAgg> {
     if (q || firstName || lastName || legalName || sex || birthDate || birthCity || birthDepartment || birthCountry || deathDate || deathCity || deathDepartment || deathCountry || deathAge || lastSeenAliveDate) {
       // http://localhost:8084/deces/api/v1/agg?q=jean&aggs=[%22birthCountry%22]
-      const requestInput = new RequestInput({q, firstName, lastName, legalName, sex, birthDate, birthCity, birthDepartment, birthCountry, deathDate, deathCity, deathDepartment, deathCountry, deathAge, lastSeenAliveDate, fuzzy, aggs});
+      const requestInput = new RequestInput({q, firstName, lastName, legalName, sex, birthDate, birthCity, birthDepartment, birthCountry, deathDate, deathCity, deathDepartment, deathCountry, deathAge, lastSeenAliveDate, fuzzy, size: 0, aggs});
       if (requestInput.errors.length) {
         this.setStatus(400);
         return  { msg: requestInput.errors };
@@ -244,9 +244,22 @@ export class IndexController extends Controller {
         this.setStatus(400);
         return  { msg: "error - simple and complex request at the same time" };
       }
-      const requestBuild = buildRequest(requestInput);
-      const result = await runRequest(requestBuild, null);
-      const builtResult = buildResultAgg(result.data, requestInput)
+      let requestBuild = buildRequest(requestInput);
+      let result = await runRequest(requestBuild, null);
+      let { after_key: afterKey } = result.data.aggregations.myByckets
+      let { took: delay } = result.data
+      let { buckets } = result.data.aggregations.myByckets
+      while ( result.data.aggregations.myByckets.buckets.length > 0 ) {
+        requestInput.afterKey = afterKey
+        requestBuild = buildRequest(requestInput);
+        result = await runRequest(requestBuild, null);
+        delay += result.data.took
+        const { buckets: afterBucket } = result.data.aggregations.myByckets
+        buckets = buckets.concat(afterBucket)
+        afterKey = result.data.aggregations.myByckets.after_key
+      }
+      const builtResult = buildResultAgg({total: result.data.hits.total.value, delay, buckets}, requestInput)
+
       this.setStatus(200);
       return  builtResult;
     } else {
