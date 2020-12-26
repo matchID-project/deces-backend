@@ -231,16 +231,16 @@ const firstNameSexMismatch = (firstNameA: string, firstNameB: string): boolean =
     return /.?e/.test(firstA.replace(firstB, '')) || /.?e/.test(firstB.replace(firstA, ''));
 }
 
-const scoreName = (nameA: Name, nameB: Name): number => {
+const scoreName = (nameA: Name, nameB: Name): any => {
     if ((!nameA.first && !nameA.last) || (!nameB.first && !nameB.last)) { return blindNameScore }
-    let score = 0;
+    let score:any = 0;
     const firstA = tokenize(normalize(nameA.first as string|string[]), true);
     let lastA = tokenize(normalize(nameA.last as string|string[]));
     const firstB = tokenize(normalize(nameB.first as string|string[]), true);
     let lastB = tokenize(normalize(nameB.last as string|string[]));
 
-    const scoreFirst = scoreToken(firstA, firstB as string|string[]);
-    const scoreLast = scoreToken(lastA, lastB as string|string[]);
+    const scoreFirst = 0.01 * Math.round(100 * scoreToken(firstA, firstB as string|string[]));
+    const scoreLast = 0.01 * Math.round(100 * scoreToken(lastA, lastB as string|string[]));
     score = 0.01 * Math.round(100*
       Math.max(
         Math.max(
@@ -256,13 +256,13 @@ const scoreName = (nameA: Name, nameB: Name): number => {
         minNameScore
       )
     );
-
-    if (score === 1) return 1;
+    score = { score: score, first: scoreFirst, last: scoreLast };
+    if (score.score === 1) return score;
 
     lastA = tokenize(filterStopNames(normalize(nameA.last as string|string[])));
     lastB = tokenize(filterStopNames(normalize(nameB.last as string|string[])));
 
-    return Math.max(
+    score.score = Math.max(
         score,
         stopNamePenalty * (0.01 * Math.round(100*
             Math.max(
