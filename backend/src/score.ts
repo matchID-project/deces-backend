@@ -193,19 +193,18 @@ export class ScoreResult {
     } else if (request.firstName && firstNameSexMismatch(request.firstName, result.name.first as string)) {
         this.sex = firstNameSexPenalty;
     }
-    if (request.birthCity || request.birthCityCode || request.birthDepartment || request.latitude || request.longitude) {
-      if (pruneScore < scoreReduce(this)) {
-        this.location = scoreLocation({
-          city: request.birthCity,
-          cityCode: request.birthCityCode,
-          departmentCode: request.birthDepartment,
-          country: request.birthCountry,
-          latitude: request.latitude,
-          longitude: request.longitude
-        }, result.birth.location);
-      } else {
-        this.score = 0
-      }
+    // location
+    if (pruneScore < scoreReduce(this)) {
+    this.location = scoreLocation({
+        city: request.birthCity,
+        cityCode: request.birthCityCode,
+        departmentCode: request.birthDepartment,
+        country: request.birthCountry,
+        latitude: request.latitude,
+        longitude: request.longitude
+    }, result.birth.location);
+    } else {
+    this.score = 0
     }
     if (!this.score) {
       this.score = scoreReduce(this)
