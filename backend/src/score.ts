@@ -235,8 +235,10 @@ const scoreName = (nameA: Name, nameB: Name): any => {
     if ((!nameA.first && !nameA.last) || (!nameB.first && !nameB.last)) { return blindNameScore }
     let score:any = 0;
     const firstA = tokenize(normalize(nameA.first as string|string[]), true);
+    const firstFirstA = Array.isArray(firstA) ? firstA[0] : firstA ;
     let lastA = tokenize(normalize(nameA.last as string|string[]));
     const firstB = tokenize(normalize(nameB.first as string|string[]), true);
+    const firstFirstB = Array.isArray(firstB) ? firstB[0] : firstB ;
     let lastB = tokenize(normalize(nameB.last as string|string[]));
 
     const scoreFirst = 0.01 * Math.round(100 * scoreToken(firstA, firstB as string|string[]));
@@ -251,7 +253,7 @@ const scoreName = (nameA: Name, nameB: Name): any => {
               (scoreLast ** lastNamePenalty) * (blindNameScore ** 0.5)
             )
           ),
-          nameInversionPenalty * (scoreToken(firstA, lastB as string) ** lastNamePenalty) * scoreToken(lastA, firstB as string|string[]) ** lastNamePenalty
+          nameInversionPenalty * (scoreToken(firstFirstA as string, lastB as string) ** lastNamePenalty) * scoreToken(lastA, firstFirstB as string) ** lastNamePenalty
         ),
         minNameScore
       )
