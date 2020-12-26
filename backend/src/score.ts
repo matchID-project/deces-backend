@@ -249,8 +249,8 @@ const scoreName = (nameA: Name, nameB: Name): any => {
           Math.max(
             scoreFirst * (scoreLast ** lastNamePenalty),
             Math.max(
-              scoreFirst * (blindNameScore ** 0.5),
-              (scoreLast ** lastNamePenalty) * (blindNameScore ** 0.5)
+              scoreFirst * blindNameScore,
+              (scoreLast ** lastNamePenalty) * blindNameScore
             )
           ),
           nameInversionPenalty * (scoreToken(firstFirstA as string, lastB as string) ** lastNamePenalty) * scoreToken(lastA, firstFirstB as string) ** lastNamePenalty
