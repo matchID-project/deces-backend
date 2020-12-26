@@ -7,7 +7,8 @@ import { dateTransformMask, isDateRange } from './masks';
 import soundex from '@thejellyfish/soundex-fr';
 
 const perfectScoreThreshold = 0.95;
-const multiplePerfectScorePenalty = 0.8;
+const multiplePerfectScorePenalty = 0.84;
+const multipleErrorPenalty = 0.8;
 const secondaryCandidatePenaltyPow = 1.5;
 const secondaryCandidateThreshold = 0.5;
 
@@ -30,7 +31,7 @@ const uncertainDateScore = 0.7;
 const datePenalty = 3
 
 const minLocationScore = 0.2;
-const minDepScore = 0.8;
+const minDepScore = 0.85;
 const minNotFrCityScore = 0.5;
 const minNotFrCountryScore = 0.5;
 const blindLocationScore = 0.7;
@@ -116,7 +117,7 @@ const scoreReduce = (score:any):number => {
                 return  0.01 * Math.round(100 * score[k].score) || scoreReduce(score[k]);
             }
         });
-        return r.length ? 0.01 * Math.round(100 * r.reduce(multyiply)) : 0;
+        return r.length ? (0.01 * Math.round(100 * r.reduce(multyiply) ** ( multipleErrorPenalty * ( 2 - (r.filter((s: number) => s === 1).length)/r.length)))) : 0;
     }
 }
 
