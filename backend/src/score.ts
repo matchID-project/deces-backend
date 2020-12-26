@@ -1,6 +1,7 @@
 import { RequestBody } from './models/requestInput';
 import { Person, Location, Name, RequestField } from './models/entities';
 import levenshtein from 'js-levenshtein';
+import fuzz from 'fuzzball';
 import moment from 'moment';
 import { dateTransformMask, isDateRange } from './masks';
 import soundex from '@thejellyfish/soundex-fr';
@@ -62,7 +63,7 @@ const fuzzyScore = (tokenA: string, tokenB: string): number => {
     const b:string = normalize(tokenB) as string;
     if (a === b) {return 1}
     const s = 0.01 * Math.round(
-        100 * (levNormScore(a, b) ** ((soundex(a) === soundex(b)) ? (1/boostSoundex) : boostSoundex ** 2) )
+        100 * ((fuzz.ratio(a, b)/100) ** ((soundex(a) === soundex(b)) ? (1/boostSoundex) : boostSoundex ** 2) )
     );
     return s;
 };
