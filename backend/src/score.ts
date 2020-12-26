@@ -275,13 +275,14 @@ const scoreName = (nameA: Name, nameB: Name): any => {
             minNameScore
         )))
     );
+    return ;
 }
 
 const scoreToken = (tokenA: string|string[]|RequestField, tokenB: string|string[], option?: string): number => {
     let s:number;
     try {
         if (!tokenA || !tokenB) {
-            s = blindTokenScore
+            s = blindTokenScore;
         } else {
             if (typeof(tokenA) === 'string') {
                 if (typeof(tokenB) === 'string') {
@@ -393,7 +394,8 @@ const scoreLocation = (locA: Location, locB: Location): any => {
         }
         if (normalize(locA.departmentCode as string|string[]) && locB.departmentCode) {
             if (locB.country && (scoreCountry('FRANCE', locB.country as string|string[]) === 1)) {
-                score.department = (locA.departmentCode === locB.departmentCode) ? 1 : minDepScore;
+                score.department = (locA.departmentCode === locB.departmentCode) ? 1 :
+                    ( ( (score.city === 1) && (locB.departmentCode === '75') && (['78','91','92','93','94','95'].indexOf(locA.departmentCode as string)) ) ? 1 : minDepScore);
             }
         }
         score.score = (score.country || score.city || score.department) ? Math.max(minLocationScore, scoreReduce(score)) : blindLocationScore;
