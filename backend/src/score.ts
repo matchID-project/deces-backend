@@ -441,13 +441,17 @@ const scoreCountry = (countryA: string|string[]|RequestField, countryB: string|s
     if (typeof(countryA) === 'string') {
         const countryNormA = countryNorm(countryA) as string;
         if (typeof(countryB) === 'string') {
-            return fuzzyScore(countryNormA, countryNorm(countryB) as string);
+            return fuzzyScore(countryNormA, countryNorm(countryB) as string, fuzzSetRatio);
         } else {
-            return Math.max(...countryB.map(country => fuzzyScore(countryNormA, countryNorm(country) as string)));
+            return Math.max(...countryB.map(country => fuzzyScore(countryNormA, countryNorm(country) as string, fuzzSetRatio)),
+                fuzzSetRatio(countryNormA, countryB.join(' '))
+                );
         }
     } else {
         const countryNormB = countryNorm(countryB);
-        return Math.max(...(countryA as string[]).map(country => scoreCountry(countryNorm(country), countryNormB)));
+        return Math.max(...(countryA as string[]).map(country => scoreCountry(countryNorm(country), countryNormB)),
+            fuzzSetRatio((countryA as string[]).join(' '), Array.isArray(countryNormB) ? countryNormB.join(' ') : countryNormB)
+        );
     }
 }
 
