@@ -1,6 +1,7 @@
 import { RequestBody } from './models/requestInput';
 import { Person, Location, Name, RequestField } from './models/entities';
 import levenshtein from 'js-levenshtein';
+import jw from 'jaro-winkler';
 import fuzz from 'fuzzball';
 import moment from 'moment';
 import { dateTransformMask, isDateRange } from './masks';
@@ -16,6 +17,7 @@ const tokenPlacePenalty = 0.7;
 const blindTokenScore = 0.5;
 
 const nameInversionPenalty = 0.7;
+const jwPenalty = 1.5;
 const stopNamePenalty = 0.8;
 const minNameScore = 0.1;
 const blindNameScore = 0.5;
@@ -350,10 +352,12 @@ const cityNorm = (city: string|string[]): string|string[] => {
 const scoreCity = (cityA: string|string[]|RequestField, cityB: string|string[]): number => {
     if (typeof(cityA) === 'string') {
         const cityNormA = cityNorm(cityA) as string;
-        if (typeof(cityB) === 'string') {
-            return fuzzyScore(cityNormA, cityNorm(cityB) as string);
+        const cityNormB = cityNorm(cityB);
+        let score;
+        if (typeof(cityNormB) === 'string') {
+            score = fuzzyScore(cityNormA, cityNormB as string, jw);
         } else {
-            return Math.max(...cityB.map(city => fuzzyScore(cityNormA, cityNorm(city) as string)));
+            score = Math.max(...cityNormB.map(city => fuzzyScore(cityNormA, city as string,jw)));
         }
     } else {
         const cityNormB = cityNorm(cityB);
