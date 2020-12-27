@@ -33,6 +33,7 @@ const uncertainDateScore = 0.7;
 const datePenalty = 3
 
 const minLocationScore = 0.2;
+const boroughLocationPenalty = 0.85;
 const minDepScore = 0.85;
 const minNotFrCityScore = 0.5;
 const minNotFrCountryScore = 0.5;
@@ -345,6 +346,12 @@ const cityRegExp = [
     [ /^\s*/, '']
 ];
 
+const bouroughRegExp = /^.*0?([1-9]?\d).*$/;
+
+const extractBouroughNumber = (city: string): string => {
+    return city.replace(bouroughRegExp, '$1');
+}
+
 const cityNorm = (city: string|string[]): string|string[] => {
     return applyRegex(city, cityRegExp);
 }
@@ -359,6 +366,12 @@ const scoreCity = (cityA: string|string[]|RequestField, cityB: string|string[]):
         } else {
             score = Math.max(...cityNormB.map(city => fuzzyScore(cityNormA, city as string,jw)));
         }
+        if ((score === 1) && Array.isArray(cityNormB) && cityNorm(cityNormB[0]) === 'paris') {
+            if (extractBouroughNumber(cityA) !== extractBouroughNumber(cityB[1])) {
+                return boroughLocationPenalty;
+            }
+        }
+        return score;
     } else {
         const cityNormB = cityNorm(cityB);
         return Math.max(...(cityA as string[]).map(city => scoreCity(cityNorm(city), cityNormB)));
