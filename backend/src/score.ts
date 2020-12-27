@@ -56,7 +56,8 @@ const normalize = (token: string|string[]): string|string[] => {
     }
 }
 
-const fuzzyScore = (tokenA: string, tokenB: string): number => {
+const fuzzyScore = (tokenA: string, tokenB: string, option?: any): number => {
+    const compare = option || levNormScore;
     if (!tokenA || !tokenB) {
         return 0;
     }
@@ -64,7 +65,7 @@ const fuzzyScore = (tokenA: string, tokenB: string): number => {
     const b:string = normalize(tokenB) as string;
     if (a === b) {return 1}
     const s = 0.01 * Math.round(
-        100 * ((fuzz.ratio(a, b)/100) ** ((soundex(a) === soundex(b)) ? (1/boostSoundex) : boostSoundex ** 2) )
+        100 * ((compare(a, b)) ** ((soundex(a) === soundex(b)) ? (1/boostSoundex) : boostSoundex ** 2) )
     );
     return s;
 };
