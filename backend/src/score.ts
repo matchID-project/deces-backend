@@ -194,10 +194,10 @@ export class ScoreResult {
     }
     if (request.firstName || request.lastName) {
       if ((pruneScore < scoreReduce(this)) || !this.date) {
-        if (request.sex && request.sex === 'F') {
-          this.name = scoreName({first: request.firstName, last: [request.lastName, request.legalName]}, result.name);
+        if (result.sex && result.sex === 'F') {
+          this.name = scoreName({first: request.firstName, last: [request.lastName, request.legalName]}, result.name, 'F');
         } else {
-          this.name = scoreName({first: request.firstName, last: request.lastName}, result.name);
+          this.name = scoreName({first: request.firstName, last: request.lastName}, result.name, 'M');
         }
       } else {
         this.score = 0
