@@ -33,7 +33,7 @@ const uncertainDateScore = 0.7;
 const datePenalty = 3
 
 const minLocationScore = 0.2;
-const boroughLocationPenalty = 0.85;
+const boroughLocationPenalty = 0.80;
 const minDepScore = 0.85;
 const minNotFrCityScore = 0.5;
 const minNotFrCountryScore = 0.5;
