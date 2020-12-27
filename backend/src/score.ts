@@ -85,6 +85,10 @@ const levNormScore = (tokenA: string, tokenB: string): number => {
     }
 }
 
+const fuzzSetRatio = (a: string, b: string) => {
+    return 0.01 * fuzz.token_set_ratio(a,b);
+}
+
 const applyRegex = (a: string|string[], reTable: any): string|string[] => {
     if (typeof(a) === 'string') {
         let b = normalize(a) as string;
@@ -232,57 +236,91 @@ const firstNameSexMismatch = (firstNameA: string, firstNameB: string): boolean =
     firstA = typeof(firstA) === 'string' ? firstA : (firstA as string[])[0];
     let firstB = tokenize(normalize(firstNameB as string|string[]), true);
     firstB = typeof(firstB) === 'string' ? firstB : (firstB as string[])[0];
-    return /.?e/.test(firstA.replace(firstB, '')) || /.?e/.test(firstB.replace(firstA, ''));
+    return /^.?(e|a)$/.test(firstA.replace(firstB, '')) || /^.?(e|a)$/.test(firstB.replace(firstA, ''));
 }
 
-const scoreName = (nameA: Name, nameB: Name): any => {
+const scoreName = (nameA: Name, nameB: Name, sex: string): any => {
     if ((!nameA.first && !nameA.last) || (!nameB.first && !nameB.last)) { return blindNameScore }
-    let score:any = 0;
+    let score:any;
     const firstA = tokenize(normalize(nameA.first as string|string[]), true);
-    const firstFirstA = Array.isArray(firstA) ? firstA[0] : firstA ;
-    let lastA = tokenize(normalize(nameA.last as string|string[]));
+    const lastA = tokenize(normalize(nameA.last as string|string[]));
     const firstB = tokenize(normalize(nameB.first as string|string[]), true);
-    const firstFirstB = Array.isArray(firstB) ? firstB[0] : firstB ;
-    let lastB = tokenize(normalize(nameB.last as string|string[]));
-
+    const lastB = tokenize(normalize(nameB.last as string|string[]));
+    let firstFirstA; let firstFirstB; let scoreFirstALastB; let fuzzScore;
     const scoreFirst = 0.01 * Math.round(100 * scoreToken(firstA, firstB as string|string[]));
     const scoreLast = 0.01 * Math.round(100 * scoreToken(lastA, lastB as string|string[]));
     score = 0.01 * Math.round(100*
-      Math.max(
-        Math.max(
-          Math.max(
-            scoreFirst * (scoreLast ** lastNamePenalty),
             Math.max(
-              scoreFirst * blindNameScore,
-              (scoreLast ** lastNamePenalty) * blindNameScore
-            )
-          ),
-          nameInversionPenalty * (scoreToken(firstFirstA as string, lastB as string) ** lastNamePenalty) * scoreToken(lastA, firstFirstB as string) ** lastNamePenalty
-        ),
-        minNameScore
-      )
-    );
-    score = { score: score, first: scoreFirst, last: scoreLast };
+                scoreFirst * (scoreLast ** lastNamePenalty),
+                Math.max(
+                    /* missing first name */
+                    (!nameA.first || !nameB.last) ? (scoreLast ** lastNamePenalty) * (blindNameScore ** 2): 0,
+                    /* wrong last name, give a chance for legal Name */
+                    scoreFirst * blindNameScore ** (sex === 'F' ? 1 : lastNamePenalty)
+                )
+            ),
+          );
+    if (score < blindNameScore) {
+        if ( ((scoreFirst >= blindNameScore) || (scoreLast >= blindNameScore))
+            && (Array.isArray(lastA) || Array.isArray(lastB)) && (Array.isArray(firstA) || Array.isArray(firstB)) ) {
+            // backoff to fuzzball set ratio for complex names situations
+            const partA = lastA.toString()+" "+firstA.toString();
+            const partB = lastB.toString()+" "+firstB.toString();
+            fuzzScore = 0.01 * Math.round(100 *
+                (tokenPlacePenalty * fuzzyScore(partA, partB , fuzzSetRatio) ** jwPenalty)
+            );
+            if (fuzzScore > blindNameScore) {
+                score = Math.max(
+                    score,
+                    fuzzScore
+                );
+            }
+        }
+        // first / last name inversion
+        firstFirstA = Array.isArray(firstA) ? firstA[0] : firstA ;
+        scoreFirstALastB = scoreToken(firstFirstA as string, lastB as string);
+        if (scoreFirstALastB >= blindNameScore) {
+            firstFirstB = Array.isArray(firstB) ? firstB[0] : firstB ;
+            score = Math.max(
+                score,
+                Math.max(
+                    minNameScore,
+                    nameInversionPenalty * (scoreFirstALastB ** lastNamePenalty) * scoreToken(lastA, firstFirstB as string) ** lastNamePenalty
+                )
+            );
+        }
+    }
+    score = { score, first: scoreFirst, last: scoreLast };
+    if (fuzzScore) { score.fuzz = fuzzScore}
     if (score.score === 1) return score;
 
-    lastA = tokenize(filterStopNames(normalize(nameA.last as string|string[])));
-    lastB = tokenize(filterStopNames(normalize(nameB.last as string|string[])));
+    // give a chance to particle names
+    const lastStopA = tokenize(filterStopNames(normalize(nameA.last as string|string[])));
+    const lastStopB = tokenize(filterStopNames(normalize(nameB.last as string|string[])));
 
-    score.score = Math.max(
-        score,
-        stopNamePenalty * (0.01 * Math.round(100*
-            Math.max(
-                Math.max(
-                    scoreFirst * (scoreToken(lastA, lastB as string) ** lastNamePenalty),
-                    nameInversionPenalty * (scoreToken(firstA, lastB as string) ** lastNamePenalty) * scoreToken(lastA, firstB as string|string[]) ** lastNamePenalty
-                ),
-            minNameScore
-        )))
-    );
-    return ;
+    if ((lastA !== lastStopA) && (lastB !== lastStopB)) {
+        score.score = Math.max(
+            score,
+            stopNamePenalty * (0.01 * Math.round(100*
+                scoreFirst * (scoreToken(lastStopA, lastStopB as string) ** lastNamePenalty)
+            )));
+        if (score.score < blindNameScore) {
+            firstFirstA = firstFirstA || (Array.isArray(firstA) ? firstA[0] : firstA);
+            scoreFirstALastB = scoreToken(firstFirstA, lastStopB as string);
+            if (scoreFirstALastB >= blindNameScore) {
+                firstFirstB = firstFirstB || (Array.isArray(firstB) ? firstB[0] : firstB);
+                score.score = Math.max(
+                    score,
+                    stopNamePenalty * (0.01 * Math.round(100*
+                        nameInversionPenalty * (scoreFirstALastB ** lastNamePenalty) * scoreToken(lastStopB, firstFirstB as string|string[]) ** lastNamePenalty
+                    )));
+            }
+        }
+    }
+    return score;
 }
 
-const scoreToken = (tokenA: string|string[]|RequestField, tokenB: string|string[], option?: string): number => {
+const scoreToken = (tokenA: string|string[]|RequestField, tokenB: string|string[], option?: any): number => {
     let s:number;
     try {
         if (!tokenA || !tokenB) {
