@@ -368,14 +368,13 @@ const scoreToken = (tokenA: string|string[]|RequestField, tokenB: string|string[
             }
         }
     } catch(err) {
-        s = err;
+        s = 0;
     }
     return s;
 }
 
 const cityRegExp = [
     [ /^\s*(lyon|marseille|paris)(\s.*|\s*\d\d*.*|.*art.*|.*arr.*)$/, '$1'],
-    [ /montreuil s.* bois/, 'montreuil'],
     [ /(^|\s)ste(\s|$)/, '$1sainte$2'],
     [ /(^|\s)st(\s|$)/, '$1saint$2'],
     [ /^aix pce$/, 'aix provence'],
@@ -388,6 +387,8 @@ const cityRegExp = [
     [ /^.*inconnu.*$/, ''],
     [ /sainte clotilde/, 'saint denis'],
     [ /berck mer/, 'berck'],
+    [ /montreuil s.* bois/, 'montreuil'],
+    [ /asnieres s.* seine/, 'asnieres'],
     [ /clichy garenne.*/, 'clichy'],
     [ /belleville saone/, 'belleville'],
     [ /^levallois$/, 'levallois perret'],
