@@ -287,12 +287,16 @@ const scoreToken = (tokenA: string|string[]|RequestField, tokenB: string|string[
         } else {
             if (typeof(tokenA) === 'string') {
                 if (typeof(tokenB) === 'string') {
-                    s = fuzzyScore(tokenA, tokenB);
+                    if (tokenA === tokenB) {
+                        s = 1;
+                    } else {
+                        s = fuzzyScore(tokenA, tokenB, option);
+                    }
                 } else {
                     s = Math.max(
-                        fuzzyScore(tokenA, tokenB[0]),
+                        fuzzyScore(tokenA, tokenB[0], option),
                         ( tokenB.length > 1 )
-                            ? (option === 'any' ? 1 : tokenPlacePenalty) * tokenB.slice(1, tokenB.length).map(token => fuzzyScore(tokenA, token)).reduce(max) : 0
+                            ? tokenPlacePenalty * tokenB.slice(1, tokenB.length).map(token => fuzzyScore(tokenA, token, option)).reduce(max) : 0
                     );
                 }
             } else {
@@ -300,17 +304,14 @@ const scoreToken = (tokenA: string|string[]|RequestField, tokenB: string|string[
                     s = scoreToken(tokenB, tokenA as string|string[], option);
                 } else {
                     // if both tokenA and tokenB are arrays
-                    if (option === 'any') {
-                        s = (tokenA as string[]).map(a => tokenB.map(b => fuzzyScore(a,b)).reduce(max)).reduce(max);
-                    } else {
-                    // compare field by field
-                        let min = blindNameScore;
-                        s = mean((tokenA as string[]).map((token, i) => {
-                            const current = tokenB[i] ? fuzzyScore(token, tokenB[i]) : min;
-                            if (min > current) { min = current }
-                            return current;
-                        }))
-                    }
+                    // compare field by field, first field error lead to greater penalty (cf ** (1/(i+1)))
+                    let min = blindNameScore;
+                    s = mean((tokenA as string[]).filter((token,i) => (i<tokenB.length))
+                        .map((token, i) => {
+                        const current = tokenB[i] ? fuzzyScore(token, tokenB[i],option) ** (1/(i+1)) : min;
+                        if (min > current) { min = current }
+                        return current;
+                    }))
                 }
             }
         }
