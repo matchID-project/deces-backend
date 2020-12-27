@@ -454,7 +454,8 @@ const scoreCountry = (countryA: string|string[]|RequestField, countryB: string|s
 
 const scoreLocation = (locA: Location, locB: Location): any => {
     const score: any = {};
-    if (locB.country && (scoreCountry('FRANCE', locB.country as string|string[]) === 1)) {
+    const BisFrench = locB.country && (locB.countryCode === 'FRA');
+    if (BisFrench) {
         if (normalize(locA.country as string|string[])) {
             score.country = scoreCountry(locA.country, tokenize(locB.country as string) as string|string[]);
         }
@@ -462,9 +463,13 @@ const scoreLocation = (locA: Location, locB: Location): any => {
             score.city = scoreCity(locA.city, locB.city as string|string[]);
         }
         if (normalize(locA.departmentCode as string|string[]) && locB.departmentCode) {
-            if (locB.country && (scoreCountry('FRANCE', locB.country as string|string[]) === 1)) {
+            if (BisFrench) {
+                if (locA.departmentCode !== '99') {
                 score.department = (locA.departmentCode === locB.departmentCode) ? 1 :
                     ( ( (score.city === 1) && (locB.departmentCode === '75') && (['78','91','92','93','94','95'].indexOf(locA.departmentCode as string)) ) ? 1 : minDepScore);
+                } else {
+                    score.country = minLocationScore;
+                }
             }
         }
         score.score = (score.country || score.city || score.department) ? Math.max(minLocationScore, scoreReduce(score)) : blindLocationScore;
