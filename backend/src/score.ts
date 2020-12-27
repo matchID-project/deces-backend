@@ -7,8 +7,8 @@ import moment from 'moment';
 import { dateTransformMask, isDateRange } from './masks';
 import soundex from '@thejellyfish/soundex-fr';
 
-const perfectScoreThreshold = 0.95;
-const multiplePerfectScorePenalty = 0.84;
+const perfectScoreThreshold = 0.7;
+const multiplePerfectScorePenalty = 0.9;
 const multipleErrorPenalty = 0.8;
 const secondaryCandidatePenaltyPow = 1.5;
 const secondaryCandidateThreshold = 0.5;
@@ -21,7 +21,7 @@ const jwPenalty = 1.5;
 const stopNamePenalty = 0.8;
 const minNameScore = 0.1;
 const blindNameScore = 0.5;
-const lastNamePenalty = 3
+const lastNamePenalty = 2;
 
 const minSexScore = 0.5;
 const firstNameSexPenalty = 0.75;
@@ -41,7 +41,7 @@ const blindLocationScore = 0.7;
 
 const boostSoundex = 1.5;
 
-const pruneScore = 0.25;
+const pruneScore = 0.3;
 
 const multyiply = (a:number, b: number): number => a*b;
 const max = (a:number, b: number): number => Math.max(a*b);
@@ -115,6 +115,9 @@ const tokenize = (sentence: string|string[]|RequestField, tokenizeArray?: boolea
 }
 
 const scoreReduce = (score:any):number => {
+    if (!score) {
+        return 0;
+    }
     if (score.score) {
         return 0.01 * Math.round(100 * score.score);
     } else {
@@ -132,6 +135,7 @@ const scoreReduce = (score:any):number => {
 export const scoreResults = (request: RequestBody, results: Person[], dateFormat: string): Person[] => {
     let maxScore = 0;
     let perfectScoreNumber = 0;
+    let filteredResultsNumber = 0;
     const resultsWithScores: any = results
             .filter((result:any) => result.score > 0)
             .map((result:any) => {
@@ -148,20 +152,27 @@ export const scoreResults = (request: RequestBody, results: Person[], dateFormat
                 return result;
             })
             .filter((result: any) => result.score >= pruneScore)
+            .map((result: any) => { filteredResultsNumber++; return result })
             .sort((a: any, b: any) => (a.score < b.score) ? 1 : ( (a.score > b.score) ? -1 : 0 ))
             .map((result: any) => {
-                if (perfectScoreNumber) {
+                if (perfectScoreNumber > 0) {
                     if (result.score < perfectScoreThreshold) {
                         result.score = 0.01 * Math.round(100 * (
-                            ((perfectScoreNumber > 1) ? multiplePerfectScorePenalty : 1) * result.score ** secondaryCandidatePenaltyPow)
-                        );
-                        if (result.score < secondaryCandidateThreshold) {
-                            result.score = 0;
-                        };
+                            ((perfectScoreNumber > 1) ? multiplePerfectScorePenalty : 1) * result.score ** (secondaryCandidatePenaltyPow + (filteredResultsNumber - perfectScoreNumber))
+                        ));
                     } else {
                         if (perfectScoreNumber > 1) {
                             result.score = result.score * multiplePerfectScorePenalty;
                         }
+                    }
+                    if (result.score < secondaryCandidateThreshold) {
+                        result.score = 0;
+                    }
+                } else {
+                    if (filteredResultsNumber > 1) {
+                        result.score = 0.01 * Math.round(100 * (
+                            result.score ** (secondaryCandidatePenaltyPow - 2 + filteredResultsNumber)
+                        ));
                     }
                 }
                 return result;
