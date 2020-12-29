@@ -468,7 +468,8 @@ const scoreCity = (cityA: string|string[]|RequestField, cityB: string|string[]):
 const countryRegExp = [
     [ /(^|\s)(de|en|les|le|la|a|aux|au|du|de la|s|sous|sur|l|d|des)\s/g, ' '],
     [ /hollande/, 'pays-bas'],
-    [ /(angleterre|grande bretagne)/, 'royaume-uni']
+    [ /(angleterre|grande bretagne)/, 'royaume-uni'],
+    [ /(vietnam)/, 'viet nam']
 ];
 
 const countryNorm = (country: string|string[]): string|string[] => {
