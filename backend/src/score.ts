@@ -145,6 +145,7 @@ const scoreReduce = (score:any):number => {
 export const scoreResults = (request: RequestBody, results: Person[], dateFormat: string): Person[] => {
     let maxScore = 0;
     let perfectScoreNumber = 0;
+    let perfectNameScore = false;
     let bestScoreNumber = 0;
     let filteredResultsNumber = 0;
     // following count of meaning arguments (sex not taken as such) used to reduce penalty of blind scoring penalties
@@ -164,6 +165,7 @@ export const scoreResults = (request: RequestBody, results: Person[], dateFormat
                 result.score = (result.scores.score !== undefined) ?  round(result.scores.score) : result.scores.es;
                 if (result.score > maxScore) { maxScore = result.score }
                 if (result.score >= perfectScoreThreshold) { perfectScoreNumber++ }
+                if ((result.sex && (result.sex === 'F')) && (result.scores && result.scores.name && (result.scores.name.score > wrongLastNamePenalty['F']))) { perfectNameScore = true; }
                 return result;
             })
             .filter((result: any) => result.score >= pruneScore)
@@ -174,29 +176,36 @@ export const scoreResults = (request: RequestBody, results: Person[], dateFormat
             })
             .sort((a: any, b: any) => (a.score < b.score) ? 1 : ( (a.score > b.score) ? -1 : 0 ))
             .map((result: any) => {
-                if (perfectScoreNumber > 0) {
-                    if (result.score < perfectScoreThreshold) {
-                        result.score = round((
-                            (1 - multiplePerfectScorePenalty * (perfectScoreNumber-1)) * result.score ** (secondaryCandidatePenaltyPow + (filteredResultsNumber - perfectScoreNumber))
-                        ));
-                    } else {
-                        result.score = round(
-                            result.score * (1 - multiplePerfectScorePenalty * (perfectScoreNumber-1)) ** (result.score < maxScore ? secondaryCandidatePenaltyPow : 1)
-                        );
-                        result.scores.multiMatchPenalty = round(result.score / (result.scores.score || 1));
-                        result.scores.score = result.score;
-                    }
-                } else {
-                    if (filteredResultsNumber > 1) {
-                        result.score = round((
-                            result.score * (1 - multipleBestScorePenalty * (bestScoreNumber-1)) ** (result.score < maxScore ? secondaryCandidatePenaltyPow : 1)
-                        ));
-                        result.scores.multiMatchPenalty = round(result.score / (result.scores.score || 1));
-                        result.scores.score = result.score;
-                    }
+                if (perfectNameScore && filteredResultsNumber &&
+                    result.scores && result.scores.name && (result.scores.name.score <= wrongLastNamePenalty['F'])) {
+                    // filter alteratives with wrong last name if a good one is present in results list
+                        result.score = 0;
                 }
-                if (result.score < secondaryCandidateThreshold) {
-                    result.score = 0;
+                if (result.score > 0) {
+                    if (perfectScoreNumber > 0) {
+                        if (result.score < perfectScoreThreshold) {
+                            result.score = round((
+                                (1 - multiplePerfectScorePenalty * (perfectScoreNumber-1)) * result.score ** (secondaryCandidatePenaltyPow + (filteredResultsNumber - perfectScoreNumber))
+                            ));
+                        } else {
+                            result.score = round(
+                                result.score * (1 - multiplePerfectScorePenalty * (perfectScoreNumber-1)) ** (result.score < maxScore ? secondaryCandidatePenaltyPow : 1)
+                            );
+                            result.scores.multiMatchPenalty = round(result.score / (result.scores.score || 1));
+                            result.scores.score = result.score;
+                        }
+                    } else {
+                        if (filteredResultsNumber > 1) {
+                            result.score = round((
+                                result.score * (1 - multipleBestScorePenalty * (bestScoreNumber-1)) ** (result.score < maxScore ? secondaryCandidatePenaltyPow : 1)
+                            ));
+                            result.scores.multiMatchPenalty = round(result.score / (result.scores.score || 1));
+                            result.scores.score = result.score;
+                        }
+                    }
+                    if (result.score < secondaryCandidateThreshold) {
+                        result.score = 0;
+                    }
                 }
                 return result;
             })
