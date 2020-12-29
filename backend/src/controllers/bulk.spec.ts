@@ -45,7 +45,7 @@ describe('bulk.ts - Process chunk', () => {
     expect(result.length).to.equal(1)
     expect(result[0][0].name.first).to.contain('Jeanne')
     expect(result[0][0].name.last).to.equal('Marie')
-    expect(result[0][0].scores.name).to.equal(1)
+    expect(result[0][0].scores.name.last).to.above(0.7)
   });
 
 });

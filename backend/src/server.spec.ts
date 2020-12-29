@@ -13,7 +13,7 @@ import 'mocha';
 chai.use(chaiHttp);
 const finishedAsync:any = promisify(finished);
 
-describe('index.ts - Express application', () => {
+describe('server.ts - Express application', () => {
   let totalPersons: number;
 
   it('/healthcheck', async () => {
@@ -59,7 +59,7 @@ describe('index.ts - Express application', () => {
     it('birthDate', async () => {
       const res = await chai.request(app)
         .get(`${process.env.BACKEND_PROXY_PATH}/search`)
-        .query({deathDate: 2020, birthDate: '23/01/1928'})
+        .query({deathDate: 2020, birthDate: '23/01/1928', fuzzy: false})
       expect(res).to.have.status(200);
       expect(res.body.response.persons[0].birth.date).to.equal('19280123');
     });
