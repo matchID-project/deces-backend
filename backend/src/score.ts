@@ -1,5 +1,5 @@
 import { RequestBody } from './models/requestInput';
-import { Person, Location, Name, RequestField } from './models/entities';
+import { Person, Location, Name, RequestField, ScoreParams } from './models/entities';
 import { distance } from 'fastest-levenshtein';
 import damlev from 'damlev';
 import jw from 'jaro-winkler';
@@ -47,7 +47,7 @@ const blindLocationScore = 0.8;
 
 const boostSoundex = 1.5;
 
-const pruneScore = 0.3;
+const defaultPruneScore = 0.3;
 
 const multyiply = (a:number, b: number): number => a*b;
 const max = (a:number, b: number): number => Math.max(a*b);
@@ -142,7 +142,8 @@ const scoreReduce = (score:any):number => {
     }
 }
 
-export const scoreResults = (request: RequestBody, results: Person[], dateFormat: string): Person[] => {
+export const scoreResults = (request: RequestBody, results: Person[], params: ScoreParams): Person[] => {
+    const pruneScore = params.pruneScore !== undefined ? params.pruneScore : defaultPruneScore
     let maxScore = 0;
     let perfectScoreNumber = 0;
     let perfectNameScore = false;
@@ -156,7 +157,7 @@ export const scoreResults = (request: RequestBody, results: Person[], dateFormat
             .filter((result:any) => result.score > 0)
             .map((result:any) => {
                 try {
-                    result.scores = new ScoreResult(request, result, dateFormat);
+                    result.scores = new ScoreResult(request, result, params);
                     result.scores.score =  round(scoreReduce(result.scores) ** (requestMeaningArgsNumber/(Object.keys(result.scores).length || 1)));
                 } catch(err) {
                     result.scores = {};
@@ -165,7 +166,7 @@ export const scoreResults = (request: RequestBody, results: Person[], dateFormat
                 result.score = (result.scores.score !== undefined) ?  round(result.scores.score) : result.scores.es;
                 if (result.score > maxScore) { maxScore = result.score }
                 if (result.score >= perfectScoreThreshold) { perfectScoreNumber++ }
-                if ((result.sex && (result.sex === 'F')) && (result.scores && result.scores.name && (result.scores.name.score > wrongLastNamePenalty['F']))) { perfectNameScore = true; }
+                if ((result.sex && (result.sex === 'F')) && (result.scores && result.scores.name && (result.scores.name.score > wrongLastNamePenalty.F))) { perfectNameScore = true; }
                 return result;
             })
             .filter((result: any) => result.score >= pruneScore)
@@ -177,7 +178,7 @@ export const scoreResults = (request: RequestBody, results: Person[], dateFormat
             .sort((a: any, b: any) => (a.score < b.score) ? 1 : ( (a.score > b.score) ? -1 : 0 ))
             .map((result: any) => {
                 if (perfectNameScore && filteredResultsNumber &&
-                    result.scores && result.scores.name && (result.scores.name.score <= wrongLastNamePenalty['F'])) {
+                    result.scores && result.scores.name && (result.scores.name.score <= wrongLastNamePenalty.F)) {
                     // filter alteratives with wrong last name if a good one is present in results list
                         result.score = 0;
                 }
@@ -220,9 +221,10 @@ export class ScoreResult {
   sex?: number;
   location?: number;
 
-  constructor(request: RequestBody, result: Person, dateFormat?: string) {
+  constructor(request: RequestBody, result: Person, params: ScoreParams = {}) {
+    const pruneScore = params.pruneScore !== undefined ? params.pruneScore : defaultPruneScore
     if (request.birthDate) {
-      this.date = scoreDate(request.birthDate, result.birth.date, dateFormat);
+      this.date = scoreDate(request.birthDate, result.birth.date, params.dateFormat);
     }
     if (request.firstName || request.lastName) {
       if ((pruneScore < scoreReduce(this)) || !this.date) {
@@ -466,6 +468,8 @@ const scoreCity = (cityA: string|string[]|RequestField, cityB: string|string[]):
 const countryRegExp = [
     [ /(^|\s)(de|en|les|le|la|a|aux|au|du|de la|s|sous|sur|l|d|des)\s/g, ' '],
     [ /hollande/, 'pays-bas'],
+    [ /(angleterre|grande bretagne)/, 'royaume-uni'],
+    [ /(vietnam)/, 'viet nam']
 ];
 
 const countryNorm = (country: string|string[]): string|string[] => {

@@ -65,3 +65,8 @@ export interface Person {
       location: Location;
     };
   };
+
+export interface ScoreParams {
+  dateFormat?: string;
+  pruneScore?: number;
+}
