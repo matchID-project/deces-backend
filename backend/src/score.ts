@@ -165,7 +165,7 @@ export const scoreResults = (request: RequestBody, results: Person[], dateFormat
                 result.score = (result.scores.score !== undefined) ?  round(result.scores.score) : result.scores.es;
                 if (result.score > maxScore) { maxScore = result.score }
                 if (result.score >= perfectScoreThreshold) { perfectScoreNumber++ }
-                if ((result.sex && (result.sex === 'F')) && (result.scores && result.scores.name && (result.scores.name.score > wrongLastNamePenalty['F']))) { perfectNameScore = true; }
+                if ((result.sex && (result.sex === 'F')) && (result.scores && result.scores.name && (result.scores.name.score > wrongLastNamePenalty.F))) { perfectNameScore = true; }
                 return result;
             })
             .filter((result: any) => result.score >= pruneScore)
@@ -177,7 +177,7 @@ export const scoreResults = (request: RequestBody, results: Person[], dateFormat
             .sort((a: any, b: any) => (a.score < b.score) ? 1 : ( (a.score > b.score) ? -1 : 0 ))
             .map((result: any) => {
                 if (perfectNameScore && filteredResultsNumber &&
-                    result.scores && result.scores.name && (result.scores.name.score <= wrongLastNamePenalty['F'])) {
+                    result.scores && result.scores.name && (result.scores.name.score <= wrongLastNamePenalty.F)) {
                     // filter alteratives with wrong last name if a good one is present in results list
                         result.score = 0;
                 }
@@ -466,6 +466,7 @@ const scoreCity = (cityA: string|string[]|RequestField, cityB: string|string[]):
 const countryRegExp = [
     [ /(^|\s)(de|en|les|le|la|a|aux|au|du|de la|s|sous|sur|l|d|des)\s/g, ' '],
     [ /hollande/, 'pays-bas'],
+    [ /(angleterre|grande bretagne)/, 'royaume-uni']
 ];
 
 const countryNorm = (country: string|string[]): string|string[] => {
