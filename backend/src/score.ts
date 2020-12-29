@@ -143,7 +143,7 @@ const scoreReduce = (score:any):number => {
 }
 
 export const scoreResults = (request: RequestBody, results: Person[], params: ScoreParams): Person[] => {
-    let pruneScore = params.pruneScore !== undefined ? params.pruneScore : defaultPruneScore
+    const pruneScore = params.pruneScore !== undefined ? params.pruneScore : defaultPruneScore
     let maxScore = 0;
     let perfectScoreNumber = 0;
     let perfectNameScore = false;
@@ -222,7 +222,7 @@ export class ScoreResult {
   location?: number;
 
   constructor(request: RequestBody, result: Person, params: ScoreParams = {}) {
-    let pruneScore = params.pruneScore !== undefined ? params.pruneScore : defaultPruneScore
+    const pruneScore = params.pruneScore !== undefined ? params.pruneScore : defaultPruneScore
     if (request.birthDate) {
       this.date = scoreDate(request.birthDate, result.birth.date, params.dateFormat);
     }

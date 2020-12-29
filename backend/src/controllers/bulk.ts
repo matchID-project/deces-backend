@@ -72,6 +72,7 @@ class ProcessStream<I extends any, O extends any> extends Transform {
   totalRows: number;
   dateFormat: string;
   candidateNumber: number;
+  pruneScore: number;
 
   constructor(job: any, mapField: any, options: any = {}) {
     // init Transform
@@ -86,6 +87,7 @@ class ProcessStream<I extends any, O extends any> extends Transform {
     this.sourceLineNumber = 1;
     this.totalRows = this.job.data.totalRows;
     this.dateFormat = this.job.data.dateFormat;
+    this.pruneScore = this.job.data.pruneScore;
     this.candidateNumber = this.job.data.candidateNumber;
     this.jobs = [];
   }
@@ -161,6 +163,7 @@ class ProcessStream<I extends any, O extends any> extends Transform {
       .createJob({
         chunk: this.batch.map((r: any) => this.toRequest(r)),
         dateFormat: this.dateFormat,
+        pruneScore: this.pruneScore,
         candidateNumber: this.candidateNumber
       })
       .timeout(30000)
@@ -337,7 +340,6 @@ export const processCsv =  async (job: Queue.Job<any>, jobFile: any): Promise<an
   }
 }
 
-// export const processChunk = async (chunk: any, dateFormat: string, candidateNumber: number, pruneScore: number = 0.3) => {
 export const processChunk = async (chunk: any, candidateNumber: number, params: ScoreParams) => {
   const bulkRequest = chunk.map((row: any) => { // TODO: type
     const requestInput = new RequestInput(row.q, row.firstName, row.lastName, row.legalName, row.sex, row.birthDate, row.birthCity, row.birthDepartment, row.birthCountry, row.birthGeoPoint, row.deathDate, row.deathCity, row.deathDepartment, row.deathCountry, row.deathGeoPoint, row.deathAge, row.lastSeenAliveDate, row.scroll, row.scrollId, row.size, row.page, row.fuzzy, row.sort, row.block, params.dateFormat);
@@ -367,7 +369,7 @@ export const processChunk = async (chunk: any, candidateNumber: number, params: 
 }
 
 chunkQueue.process(Number(process.env.BACKEND_CHUNK_CONCURRENCY), async (chunkJob: Queue.Job<any>) => {
-  return await processChunk(chunkJob.data.chunk, chunkJob.data.candidateNumber, {dateFormat: chunkJob.data.dateFormat, pruneScore: chunkJob.data.dateFormat});
+  return await processChunk(chunkJob.data.chunk, chunkJob.data.candidateNumber, {dateFormat: chunkJob.data.dateFormat, pruneScore: chunkJob.data.pruneScore});
 })
 
 jobQueue.process(Number(process.env.BACKEND_JOB_CONCURRENCY), (job: Queue.Job<any>) => {
@@ -453,7 +455,7 @@ router.post('/csv', multerSingle, async (req: any, res: express.Response) => {
     options.inputHeaders = [];
     options.outputHeaders = {};
     options.candidateNumber = options.candidateNumber || 1;
-    options.pruneScore = options.pruneScore !== undefined ? options.pruneScore : undefined;
+    options.pruneScore = options.pruneScore !== undefined ? parseFloat(options.pruneScore) : undefined;
     options.mapField = {};
     validFields.forEach(key => options.mapField[options[key] || key] = key );
 
