@@ -369,11 +369,12 @@ const scoreToken = (tokenA: string|string[]|RequestField, tokenB: string|string[
                     // if both tokenA and tokenB are arrays
                     // compare field by field, first field error lead to greater penalty (cf ** (1/(i+1)))
                     let min = blindNameScore;
+                    let previous = 0;
                     s = mean((tokenA as string[]).filter((token,i) => (i<tokenB.length))
                         .map((token, i) => {
-                        const current = tokenB[i] ? fuzzyScore(token, tokenB[i],option) ** (1/(i+1)) : min;
-                        if (min > current) { min = current }
-                        return current;
+                        const current = fuzzyRatio(token, tokenB[i],option);
+                        previous = previous ? 0.5*(previous + current) : current;
+                        return previous;
                     }))
                 }
             }
