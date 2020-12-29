@@ -732,5 +732,37 @@ describe('server.ts - Express application', () => {
       expect(res.body).to.have.lengthOf(inputArray.length);
     }).timeout(5000);
 
+    it('bulk customize pruneScore', async () => {
+      let res;
+      const inputArray = [
+        ['Prenom', 'Nom', 'Date', 'Sexe'],
+        ['jean', 'pierre', '04/08/1908', 'M'],
+        ['georges', 'michel', '12/03/1903', 'M']
+      ]
+      const buf = await writeToBuffer(inputArray)
+      res = await chai.request(app)
+        .post(`${process.env.BACKEND_PROXY_PATH}/search/csv`)
+        .field('sep', ',')
+        .field('firstName', 'Prenom')
+        .field('lastName', 'Nom')
+        .field('pruneScore', '0.1')
+        .field('candidateNumber', '5')
+        .attach('csv', buf, 'file.csv')
+      const { body : { id: jobId } } = res
+      res = await chai.request(app)
+        .get(`${process.env.BACKEND_PROXY_PATH}/search/json/${jobId}`)
+      while (res.body.status === 'created' || res.body.status === 'waiting' || res.body.status === 'active') {
+        res = await chai.request(app)
+          .get(`${process.env.BACKEND_PROXY_PATH}/search/json/${jobId}`)
+      }
+      expect(res).to.have.status(200);
+      const source1 = res.body
+        .filter((x:any) => x.metadata && x.metadata.sourceLineNumber && x.metadata.sourceLineNumber === 1 )
+      const source2 = res.body
+        .filter((x:any) => x.metadata && x.metadata.sourceLineNumber && x.metadata.sourceLineNumber === 2 )
+      expect(source1.length).to.above(2);
+      expect(source2.length).to.above(2);
+    }).timeout(5000);
+
   })
 });
