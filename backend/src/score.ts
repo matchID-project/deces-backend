@@ -424,9 +424,9 @@ const scoreCity = (cityA: string|string[]|RequestField, cityB: string|string[]):
         const cityNormB = cityNorm(cityB);
         let score;
         if (typeof(cityNormB) === 'string') {
-            score = fuzzyScore(cityNormA, cityNormB as string, jw);
+            score = fuzzyRatio(cityNormA, cityNormB, jw);
         } else {
-            score = Math.max(...cityNormB.map(city => fuzzyScore(cityNormA, city as string,jw)));
+            score = Math.max(...cityNormB.map(city => fuzzyRatio(cityNormA, city,jw)));
         }
         if ((score === 1) && Array.isArray(cityNormB) && cityNorm(cityNormB[0]) === 'paris') {
             if (extractBouroughNumber(cityA) !== extractBouroughNumber(cityB[1])) {
@@ -453,9 +453,9 @@ const scoreCountry = (countryA: string|string[]|RequestField, countryB: string|s
     if (typeof(countryA) === 'string') {
         const countryNormA = countryNorm(countryA) as string;
         if (typeof(countryB) === 'string') {
-            return fuzzyScore(countryNormA, countryNorm(countryB) as string, fuzzSetRatio);
+            return fuzzyRatio(countryNormA, countryNorm(countryB) as string, fuzzSetRatio);
         } else {
-            return Math.max(...countryB.map(country => fuzzyScore(countryNormA, countryNorm(country) as string, fuzzSetRatio)),
+            return Math.max(...countryB.map(country => fuzzyRatio(countryNormA, countryNorm(country) as string, fuzzSetRatio)),
                 fuzzSetRatio(countryNormA, countryB.join(' '))
                 );
         }
@@ -536,12 +536,12 @@ const scoreDateRaw = (dateRangeA: any, dateStringB: string): number => {
                 : (/(^0000|0000$)/.test(dateStringB) ? uncertainDateScore : minDateScore);
         } else {
             if (dateStringB.startsWith("0000")) {
-                return Math.min(uncertainDateScore * levNormScore(dateTransformMask(dateRangeA).substring(4,8),dateStringB.substring(4,8)));
+                return Math.min(uncertainDateScore * levRatio(dateTransformMask(dateRangeA).substring(4,8),dateStringB.substring(4,8), damlev));
             }
             if (dateStringB.endsWith("0000")) {
-                return Math.min(uncertainDateScore * levNormScore(dateTransformMask(dateRangeA).substring(0,4),dateStringB.substring(0,4)));
+                return Math.min(uncertainDateScore * levRatio(dateTransformMask(dateRangeA).substring(0,4),dateStringB.substring(0,4), damlev));
             }
-            return levNormScore(dateTransformMask(dateRangeA), dateStringB);
+            return levRatio(dateTransformMask(dateRangeA), dateStringB, damlev);
         }
     } else {
         return blindDateScore;
@@ -557,11 +557,11 @@ const scoreSex = (sexA: any, sexB: string): number => {
 
 const scoreGeo = (latA: number, lonA: number, latB: number, lonB: number): number => {
     return 0.01*Math.round(
-        Math.max(0, 100/(100 + distance(latA, lonA, latB, lonB)))
+        Math.max(0, 100/(100 + geoDistance(latA, lonA, latB, lonB)))
     )
 };
 
-const distance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+const geoDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
 	if ((lat1 === lat2) && (lon1 === lon2)) {
 		return 0;
 	}
