@@ -296,7 +296,7 @@ const scoreName = (nameA: Name, nameB: Name, sex: string): any => {
     const lastB = normalize(nameB.last as string|string[]);
     let firstFirstA; let firstFirstB; let scoreFirstALastB; let fuzzScore;
     const scoreFirst = round(scoreToken(firstA, firstB as string|string[]));
-    const scoreLast = round(scoreToken(lastA, lastB as string|string[]));
+    const scoreLast = round(scoreToken(lastA, lastB));
     score = round(Math.max(
                 scoreFirst * (scoreLast ** lastNamePenalty),
                 Math.max(
@@ -391,7 +391,7 @@ const scoreToken = (tokenA: string|string[]|RequestField, tokenB: string|string[
                 } else {
                     // if both tokenA and tokenB are arrays
                     // compare field by field, first field error lead to greater penalty (cf ** (1/(i+1)))
-                    let min = blindNameScore;
+                    const min = blindNameScore;
                     let previous = 0;
                     s = mean((tokenA as string[]).filter((token,i) => (i<tokenB.length))
                         .map((token, i) => {
