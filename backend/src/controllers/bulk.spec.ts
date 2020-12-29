@@ -16,13 +16,17 @@ describe('bulk.ts - Process chunk', () => {
 
   it('Passing only first and last name', async () => {
     const result = await processChunk(
-      [{firstName: 'jean', lastName: 'pierre'}, {firstName: 'georges', lastName: 'michel'}],
+      [{firstName: 'jean', lastName: 'petit'}, {firstName: 'georges', lastName: 'michel'}],
       'DD/MM/YYYY',
-      5
+      5,
+      0.01
     )
-    expect(result[0]).to.contain.all.keys(['0','1'])
+    expect(result[0].length).to.above(2)
+    expect(result[1].length).to.above(2)
     expect(result[0][0].name.first).to.contain('Jean')
-    expect(result[0][0].name.last).to.equal('Pierre')
+    expect(result[0][0].name.last).to.equal('Petit')
+    expect(result[1][0].name.first).to.contain('Georges')
+    expect(result[1][0].name.last).to.equal('Michel')
   });
 
   it('Alternative date format', async () => {
