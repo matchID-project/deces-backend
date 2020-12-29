@@ -1,6 +1,7 @@
 import { RequestBody } from './models/requestInput';
 import { Person, Location, Name, RequestField } from './models/entities';
-import levenshtein from 'js-levenshtein';
+import { distance } from 'fastest-levenshtein';
+import damlev from 'damlev';
 import jw from 'jaro-winkler';
 import fuzz from 'fuzzball';
 import moment from 'moment';
@@ -59,31 +60,34 @@ const normalize = (token: string|string[]): string|string[] => {
     }
 }
 
-const fuzzyScore = (tokenA: string, tokenB: string, option?: any): number => {
-    const compare = option || levNormScore;
+const levRatio = (tokenA: string, tokenB: string, option?: any): number => {
+    const lev = option || distance;
+    if (!tokenA || !tokenB) { return 0 }
+    if (tokenA === tokenB) {
+        return 1
+    } else {
+        if (tokenA.length < tokenB.length) {
+            return levRatio(tokenB, tokenA, option)
+        }
+        return round((1 - (lev(tokenA, tokenB) / tokenA.length)));
+    }
+}
+
+const fuzzyRatio = (tokenA: string, tokenB: string, option?: any): number => {
+    const compare = option || levRatio;
     if (!tokenA || !tokenB) {
         return 0;
     }
     const a:string = normalize(tokenA) as string;
     const b:string = normalize(tokenB) as string;
     if (a === b) {return 1}
-    const s = 0.01 * Math.round(
-        100 * ((compare(a, b)) ** ((soundex(a) === soundex(b)) ? (1/boostSoundex) : boostSoundex ** 2) )
-    );
-    return s;
-};
-
-const levNormScore = (tokenA: string, tokenB: string): number => {
-    if (!tokenA || !tokenB) { return 0 }
-    if (tokenA === tokenB) {
-        return 1
-    } else {
-        if (tokenA.length < tokenB.length) {
-            return levNormScore(tokenB, tokenA)
-        }
-        return 0.01 * Math.round(100 * (1 - (levenshtein(normalize(tokenA) as string, normalize(tokenB) as string) / tokenA.length)));
+    let s = compare(a, b);
+    if (s === 1) { return 1}
+    if (! option) {
+        s = s ** ((soundex(a) === soundex(b)) ? (1/boostSoundex) : boostSoundex );
     }
-}
+    return round(s);
+};
 
 const fuzzSetRatio = (a: string, b: string) => {
     return 0.01 * fuzz.token_set_ratio(a,b);
