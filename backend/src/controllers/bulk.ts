@@ -336,7 +336,7 @@ export const processCsv =  async (job: Queue.Job<any>, jobFile: any): Promise<an
   }
 }
 
-export const processChunk = async (chunk: any, dateFormat: string, candidateNumber: number) => {
+export const processChunk = async (chunk: any, dateFormat: string, candidateNumber: number, pruneScore: number = 0.3) => {
   const bulkRequest = chunk.map((row: any) => { // TODO: type
     const requestInput = new RequestInput(row.q, row.firstName, row.lastName, row.legalName, row.sex, row.birthDate, row.birthCity, row.birthDepartment, row.birthCountry, row.birthGeoPoint, row.deathDate, row.deathCity, row.deathDepartment, row.deathCountry, row.deathGeoPoint, row.deathAge, row.lastSeenAliveDate, row.scroll, row.scrollId, row.size, row.page, row.fuzzy, row.sort, row.block, dateFormat);
     return [JSON.stringify({index: "deces"}), JSON.stringify(buildRequest(requestInput))];
@@ -346,7 +346,7 @@ export const processChunk = async (chunk: any, dateFormat: string, candidateNumb
   if (result.data.responses.length > 0) {
     return result.data.responses.map((item: ResultRawES, idx: number) => {
       if (item.hits.hits.length > 0) {
-        const scoredResults = scoreResults(chunk[idx], item.hits.hits.map(buildResultSingle), dateFormat)
+        const scoredResults = scoreResults(chunk[idx], item.hits.hits.map(buildResultSingle), {dateFormat, pruneScore})
         if (scoredResults && scoredResults.length > 0) {
           const selectedCanditates = scoredResults.slice(0, candidateNumber)
           return selectedCanditates.map((selectedCanditate: any) => {

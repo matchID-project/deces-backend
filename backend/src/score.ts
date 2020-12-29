@@ -1,5 +1,5 @@
 import { RequestBody } from './models/requestInput';
-import { Person, Location, Name, RequestField } from './models/entities';
+import { Person, Location, Name, RequestField, ScoreParams } from './models/entities';
 import { distance } from 'fastest-levenshtein';
 import damlev from 'damlev';
 import jw from 'jaro-winkler';
@@ -47,7 +47,7 @@ const blindLocationScore = 0.8;
 
 const boostSoundex = 1.5;
 
-const pruneScore = 0.3;
+const defaultPruneScore = 0.3;
 
 const multyiply = (a:number, b: number): number => a*b;
 const max = (a:number, b: number): number => Math.max(a*b);
@@ -142,7 +142,8 @@ const scoreReduce = (score:any):number => {
     }
 }
 
-export const scoreResults = (request: RequestBody, results: Person[], dateFormat: string): Person[] => {
+export const scoreResults = (request: RequestBody, results: Person[], params: ScoreParams): Person[] => {
+    let pruneScore = params.pruneScore !== undefined ? params.pruneScore : defaultPruneScore
     let maxScore = 0;
     let perfectScoreNumber = 0;
     let perfectNameScore = false;
@@ -156,7 +157,7 @@ export const scoreResults = (request: RequestBody, results: Person[], dateFormat
             .filter((result:any) => result.score > 0)
             .map((result:any) => {
                 try {
-                    result.scores = new ScoreResult(request, result, dateFormat);
+                    result.scores = new ScoreResult(request, result, params);
                     result.scores.score =  round(scoreReduce(result.scores) ** (requestMeaningArgsNumber/(Object.keys(result.scores).length || 1)));
                 } catch(err) {
                     result.scores = {};
@@ -220,9 +221,10 @@ export class ScoreResult {
   sex?: number;
   location?: number;
 
-  constructor(request: RequestBody, result: Person, dateFormat?: string) {
+  constructor(request: RequestBody, result: Person, params: ScoreParams = {}) {
+    let pruneScore = params.pruneScore !== undefined ? params.pruneScore : defaultPruneScore
     if (request.birthDate) {
-      this.date = scoreDate(request.birthDate, result.birth.date, dateFormat);
+      this.date = scoreDate(request.birthDate, result.birth.date, params.dateFormat);
     }
     if (request.firstName || request.lastName) {
       if ((pruneScore < scoreReduce(this)) || !this.date) {
