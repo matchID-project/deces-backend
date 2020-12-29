@@ -48,6 +48,7 @@ const multyiply = (a:number, b: number): number => a*b;
 const max = (a:number, b: number): number => Math.max(a*b);
 const sum = (a:number, b: number): number => a+b;
 const mean = (table: number[]): number => (table.length ? table.reduce(sum)/table.length : 0);
+const round = (s: number) => 0.01 * Math.round(100 * s);
 
 const normalize = (token: string|string[]): string|string[] => {
     if ((token === undefined) || (token === null)) {
