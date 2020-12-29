@@ -264,14 +264,13 @@ const scoreName = (nameA: Name, nameB: Name, sex: string): any => {
     if ((!nameA.first && !nameA.last) || (!nameB.first && !nameB.last)) { return blindNameScore }
     let score:any;
     const firstA = tokenize(normalize(nameA.first as string|string[]), true);
-    const lastA = tokenize(normalize(nameA.last as string|string[]));
+    const lastA = normalize(nameA.last as string|string[]);
     const firstB = tokenize(normalize(nameB.first as string|string[]), true);
-    const lastB = tokenize(normalize(nameB.last as string|string[]));
+    const lastB = normalize(nameB.last as string|string[]);
     let firstFirstA; let firstFirstB; let scoreFirstALastB; let fuzzScore;
-    const scoreFirst = 0.01 * Math.round(100 * scoreToken(firstA, firstB as string|string[]));
-    const scoreLast = 0.01 * Math.round(100 * scoreToken(lastA, lastB as string|string[]));
-    score = 0.01 * Math.round(100*
-            Math.max(
+    const scoreFirst = round(scoreToken(firstA, firstB as string|string[]));
+    const scoreLast = round(scoreToken(lastA, lastB as string|string[]));
+    score = round(Math.max(
                 scoreFirst * (scoreLast ** lastNamePenalty),
                 Math.max(
                     /* missing first name */
@@ -283,12 +282,11 @@ const scoreName = (nameA: Name, nameB: Name, sex: string): any => {
           );
     if (score < blindNameScore) {
         if ( ((scoreFirst >= blindNameScore) || (scoreLast >= blindNameScore))
-            && (Array.isArray(lastA) || Array.isArray(lastB)) && (Array.isArray(firstA) || Array.isArray(firstB)) ) {
+            && (Array.isArray(tokenize(lastA)) || Array.isArray(tokenize(lastB))) && (Array.isArray(firstA) || Array.isArray(firstB)) ) {
             // backoff to fuzzball set ratio for complex names situations
             const partA = lastA.toString()+" "+firstA.toString();
             const partB = lastB.toString()+" "+firstB.toString();
-            fuzzScore = 0.01 * Math.round(100 *
-                (tokenPlacePenalty * fuzzyScore(partA, partB , fuzzSetRatio) ** jwPenalty)
+            fuzzScore = round((tokenPlacePenalty * fuzzyRatio(partA, partB , fuzzSetRatio) ** jwPenalty)
             );
             if (fuzzScore > blindNameScore) {
                 score = Math.max(
@@ -320,22 +318,21 @@ const scoreName = (nameA: Name, nameB: Name, sex: string): any => {
     const lastStopB = tokenize(filterStopNames(normalize(nameB.last as string|string[])));
 
     if ((lastA !== lastStopA) && (lastB !== lastStopB)) {
-        score.score = Math.max(
-            score,
-            stopNamePenalty * (0.01 * Math.round(100*
-                scoreFirst * (scoreToken(lastStopA, lastStopB as string) ** lastNamePenalty)
-            )));
-        if (score.score < blindNameScore) {
+        let particleScore = stopNamePenalty * (round(scoreFirst * (scoreToken(lastStopA, lastStopB as string) ** lastNamePenalty)));
+        if (particleScore < blindNameScore) {
             firstFirstA = firstFirstA || (Array.isArray(firstA) ? firstA[0] : firstA);
             scoreFirstALastB = scoreToken(firstFirstA, lastStopB as string);
             if (scoreFirstALastB >= blindNameScore) {
                 firstFirstB = firstFirstB || (Array.isArray(firstB) ? firstB[0] : firstB);
-                score.score = Math.max(
-                    score,
-                    stopNamePenalty * (0.01 * Math.round(100*
-                        nameInversionPenalty * (scoreFirstALastB ** lastNamePenalty) * scoreToken(lastStopB, firstFirstB as string|string[]) ** lastNamePenalty
+                particleScore = Math.max(
+                    particleScore,
+                    stopNamePenalty * (round(nameInversionPenalty * (scoreFirstALastB ** lastNamePenalty) * scoreToken(lastStopB, firstFirstB as string|string[]) ** lastNamePenalty
                     )));
             }
+        }
+        if (particleScore > score.score) {
+            score.score = particleScore;
+            score.particleScore = particleScore;
         }
     }
     return score;
@@ -352,13 +349,13 @@ const scoreToken = (tokenA: string|string[]|RequestField, tokenB: string|string[
                     if (tokenA === tokenB) {
                         s = 1;
                     } else {
-                        s = fuzzyScore(tokenA, tokenB, option);
+                        s = fuzzyRatio(tokenA, tokenB, option);
                     }
                 } else {
                     s = Math.max(
-                        fuzzyScore(tokenA, tokenB[0], option),
+                        fuzzyRatio(tokenA, tokenB[0], option),
                         ( tokenB.length > 1 )
-                            ? tokenPlacePenalty * tokenB.slice(1, tokenB.length).map(token => fuzzyScore(tokenA, token, option)).reduce(max) : 0
+                            ? tokenPlacePenalty * tokenB.slice(1, tokenB.length).map(token => fuzzyRatio(tokenA, token, option)).reduce(max) : 0
                     );
                 }
             } else {
