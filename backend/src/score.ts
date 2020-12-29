@@ -9,10 +9,11 @@ import { dateTransformMask, isDateRange } from './masks';
 import soundex from '@thejellyfish/soundex-fr';
 
 const perfectScoreThreshold = 0.7;
-const multiplePerfectScorePenalty = 0.9;
+const multiplePerfectScorePenalty = 0.1;
+const multipleBestScorePenalty = 0.15;
 const multipleErrorPenalty = 0.8;
-const secondaryCandidatePenaltyPow = 1.5;
-const secondaryCandidateThreshold = 0.5;
+const secondaryCandidatePenaltyPow = 2;
+const secondaryCandidateThreshold = 0.4;
 
 const tokenPlacePenalty = 0.7;
 const blindTokenScore = 0.5;
@@ -29,8 +30,8 @@ const wrongLastNamePenalty = {
 const lastNamePenalty = 1.5;
 
 const minSexScore = 0.5;
-const firstNameSexPenalty = 0.75;
-const blindSexScore = 1;
+const firstNameSexPenalty = 0.65;
+const blindSexScore = 0.99;
 
 const minDateScore = 0.2;
 const blindDateScore = 0.8;
@@ -38,11 +39,11 @@ const uncertainDateScore = 0.7;
 const datePenalty = 3
 
 const minLocationScore = 0.2;
-const boroughLocationPenalty = 0.80;
+const boroughLocationPenalty = 0.9;
 const minDepScore = 0.85;
 const minNotFrCityScore = 0.5;
 const minNotFrCountryScore = 0.5;
-const blindLocationScore = 0.7;
+const blindLocationScore = 0.8;
 
 const boostSoundex = 1.5;
 
@@ -128,61 +129,74 @@ const scoreReduce = (score:any):number => {
         return 0;
     }
     if (score.score) {
-        return 0.01 * Math.round(100 * score.score);
+        return round(score.score);
     } else {
         const r:any = Object.keys(score).map(k => {
             if (typeof(score[k]) === 'number') {
-                return  0.01 * Math.round(100 * score[k]);
+                return  round(score[k]);
             } else {
-                return  0.01 * Math.round(100 * score[k].score) || scoreReduce(score[k]);
+                return  round(score[k].score) || scoreReduce(score[k]);
             }
         });
-        return r.length ? (0.01 * Math.round(100 * r.reduce(multyiply) ** ( multipleErrorPenalty * ( 2 - (r.filter((s: number) => s === 1).length)/r.length)))) : 0;
+        return r.length ? (round(r.reduce(multyiply) ** ( multipleErrorPenalty * ( 2 - (r.filter((s: number) => s >= perfectScoreThreshold).length)/r.length)))) : 0;
     }
 }
 
 export const scoreResults = (request: RequestBody, results: Person[], dateFormat: string): Person[] => {
     let maxScore = 0;
     let perfectScoreNumber = 0;
+    let bestScoreNumber = 0;
     let filteredResultsNumber = 0;
+    // following count of meaning arguments (sex not taken as such) used to reduce penalty of blind scoring penalties
+    const requestMeaningArgsNumber = ((request.fullText || request.lastName || request.firstName || request.lastName) ? 1 : 0)
+        + (request.birthDate ? 1 : 0)
+        + ((request.birthCity || request.birthCountry || request.birthDepartment || request.birthGeoPoint) ? 1 : 0)
     const resultsWithScores: any = results
             .filter((result:any) => result.score > 0)
             .map((result:any) => {
                 try {
                     result.scores = new ScoreResult(request, result, dateFormat);
-                    result.scores.score =  0.01 * Math.round(100 * scoreReduce(result.scores) ** (3/(Object.keys(result.scores).length || 1)));
+                    result.scores.score =  round(scoreReduce(result.scores) ** (requestMeaningArgsNumber/(Object.keys(result.scores).length || 1)));
                 } catch(err) {
                     result.scores = {};
                 }
                 result.scores.es = 0.005 * Math.round(Math.min(200, result.score));
-                result.score = (result.scores.score !== undefined) ?  0.01 * Math.round(100 * result.scores.score) : result.scores.es;
+                result.score = (result.scores.score !== undefined) ?  round(result.scores.score) : result.scores.es;
                 if (result.score > maxScore) { maxScore = result.score }
                 if (result.score >= perfectScoreThreshold) { perfectScoreNumber++ }
                 return result;
             })
             .filter((result: any) => result.score >= pruneScore)
-            .map((result: any) => { filteredResultsNumber++; return result })
+            .map((result: any) => {
+                if (result.score === maxScore) { bestScoreNumber++; }
+                filteredResultsNumber++;
+                return result;
+            })
             .sort((a: any, b: any) => (a.score < b.score) ? 1 : ( (a.score > b.score) ? -1 : 0 ))
             .map((result: any) => {
                 if (perfectScoreNumber > 0) {
                     if (result.score < perfectScoreThreshold) {
-                        result.score = 0.01 * Math.round(100 * (
-                            ((perfectScoreNumber > 1) ? multiplePerfectScorePenalty : 1) * result.score ** (secondaryCandidatePenaltyPow + (filteredResultsNumber - perfectScoreNumber))
+                        result.score = round((
+                            (1 - multiplePerfectScorePenalty * (perfectScoreNumber-1)) * result.score ** (secondaryCandidatePenaltyPow + (filteredResultsNumber - perfectScoreNumber))
                         ));
                     } else {
-                        if (perfectScoreNumber > 1) {
-                            result.score = result.score * multiplePerfectScorePenalty;
-                        }
-                    }
-                    if (result.score < secondaryCandidateThreshold) {
-                        result.score = 0;
+                        result.score = round(
+                            result.score * (1 - multiplePerfectScorePenalty * (perfectScoreNumber-1)) ** (result.score < maxScore ? secondaryCandidatePenaltyPow : 1)
+                        );
+                        result.scores.multiMatchPenalty = round(result.score / (result.scores.score || 1));
+                        result.scores.score = result.score;
                     }
                 } else {
                     if (filteredResultsNumber > 1) {
-                        result.score = 0.01 * Math.round(100 * (
-                            result.score ** (secondaryCandidatePenaltyPow - 2 + filteredResultsNumber)
+                        result.score = round((
+                            result.score * (1 - multipleBestScorePenalty * (bestScoreNumber-1)) ** (result.score < maxScore ? secondaryCandidatePenaltyPow : 1)
                         ));
+                        result.scores.multiMatchPenalty = round(result.score / (result.scores.score || 1));
+                        result.scores.score = result.score;
                     }
+                }
+                if (result.score < secondaryCandidateThreshold) {
+                    result.score = 0;
                 }
                 return result;
             })
