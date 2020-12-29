@@ -16,6 +16,7 @@ import { buildRequest } from '../buildRequest';
 import { runBulkRequest } from '../runRequest';
 import { buildResultSingle, ResultRawES } from '../models/result';
 import { scoreResults } from '../score';
+import { ScoreParams } from '../models/entities'
 
 const encryptioniv = crypto.randomBytes(16);
 const salt = crypto.randomBytes(128);
@@ -336,9 +337,10 @@ export const processCsv =  async (job: Queue.Job<any>, jobFile: any): Promise<an
   }
 }
 
-export const processChunk = async (chunk: any, dateFormat: string, candidateNumber: number, pruneScore: number = 0.3) => {
+// export const processChunk = async (chunk: any, dateFormat: string, candidateNumber: number, pruneScore: number = 0.3) => {
+export const processChunk = async (chunk: any, candidateNumber: number, params: ScoreParams) => {
   const bulkRequest = chunk.map((row: any) => { // TODO: type
-    const requestInput = new RequestInput(row.q, row.firstName, row.lastName, row.legalName, row.sex, row.birthDate, row.birthCity, row.birthDepartment, row.birthCountry, row.birthGeoPoint, row.deathDate, row.deathCity, row.deathDepartment, row.deathCountry, row.deathGeoPoint, row.deathAge, row.lastSeenAliveDate, row.scroll, row.scrollId, row.size, row.page, row.fuzzy, row.sort, row.block, dateFormat);
+    const requestInput = new RequestInput(row.q, row.firstName, row.lastName, row.legalName, row.sex, row.birthDate, row.birthCity, row.birthDepartment, row.birthCountry, row.birthGeoPoint, row.deathDate, row.deathCity, row.deathDepartment, row.deathCountry, row.deathGeoPoint, row.deathAge, row.lastSeenAliveDate, row.scroll, row.scrollId, row.size, row.page, row.fuzzy, row.sort, row.block, params.dateFormat);
     return [JSON.stringify({index: "deces"}), JSON.stringify(buildRequest(requestInput))];
   })
   const msearchRequest = bulkRequest.map((x: any) => x.join('\n\r')).join('\n\r') + '\n';
@@ -346,7 +348,7 @@ export const processChunk = async (chunk: any, dateFormat: string, candidateNumb
   if (result.data.responses.length > 0) {
     return result.data.responses.map((item: ResultRawES, idx: number) => {
       if (item.hits.hits.length > 0) {
-        const scoredResults = scoreResults(chunk[idx], item.hits.hits.map(buildResultSingle), {dateFormat, pruneScore})
+        const scoredResults = scoreResults(chunk[idx], item.hits.hits.map(buildResultSingle), {dateFormat: params.dateFormat, pruneScore: params.pruneScore})
         if (scoredResults && scoredResults.length > 0) {
           const selectedCanditates = scoredResults.slice(0, candidateNumber)
           return selectedCanditates.map((selectedCanditate: any) => {
@@ -365,7 +367,7 @@ export const processChunk = async (chunk: any, dateFormat: string, candidateNumb
 }
 
 chunkQueue.process(Number(process.env.BACKEND_CHUNK_CONCURRENCY), async (chunkJob: Queue.Job<any>) => {
-  return await processChunk(chunkJob.data.chunk, chunkJob.data.dateFormat, chunkJob.data.candidateNumber);
+  return await processChunk(chunkJob.data.chunk, chunkJob.data.candidateNumber, {dateFormat: chunkJob.data.dateFormat, pruneScore: chunkJob.data.dateFormat});
 })
 
 jobQueue.process(Number(process.env.BACKEND_JOB_CONCURRENCY), (job: Queue.Job<any>) => {
@@ -451,6 +453,7 @@ router.post('/csv', multerSingle, async (req: any, res: express.Response) => {
     options.inputHeaders = [];
     options.outputHeaders = {};
     options.candidateNumber = options.candidateNumber || 1;
+    options.pruneScore = options.pruneScore !== undefined ? options.pruneScore : undefined;
     options.mapField = {};
     validFields.forEach(key => options.mapField[options[key] || key] = key );
 
