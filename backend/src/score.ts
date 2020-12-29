@@ -22,7 +22,11 @@ const jwPenalty = 1.5;
 const stopNamePenalty = 0.8;
 const minNameScore = 0.1;
 const blindNameScore = 0.5;
-const lastNamePenalty = 2;
+const wrongLastNamePenalty = {
+    M: 0.1,
+    F: 0.65
+}
+const lastNamePenalty = 1.5;
 
 const minSexScore = 0.5;
 const firstNameSexPenalty = 0.75;
@@ -276,7 +280,7 @@ const scoreName = (nameA: Name, nameB: Name, sex: string): any => {
                     /* missing first name */
                     (!nameA.first || !nameB.last) ? (scoreLast ** lastNamePenalty) * (blindNameScore ** 2): 0,
                     /* wrong last name, give a chance for legal Name */
-                    scoreFirst * blindNameScore ** (sex === 'F' ? 1 : lastNamePenalty)
+                    scoreFirst * wrongLastNamePenalty[sex as 'F'|'M']
                 )
             ),
           );
