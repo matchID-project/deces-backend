@@ -516,6 +516,32 @@ const extractboroughNumber = (city: string): string => {
     return undefined;
 }
 
+const depCodeRexExp = [
+    [/^0?2[ab]$/,'20'],
+    [/^0*([1-9]+0?)$/, '$1'],
+    [/^(\D*|99|0)$/,'']
+];
+
+const scoreDepCode = (depCodeA: string|string[]|RequestField, depCodeB: string|RequestField, sameCity: boolean ) => {
+    const normDepCodeA = applyRegex(depCodeA as string|string[], depCodeRexExp);
+    const normDepCodeB = applyRegex(depCodeB as string|string[], depCodeRexExp);
+    if (!normDepCodeA || !normDepCodeB) {
+        return undefined;
+    }
+    if (normDepCodeA === normDepCodeB) {
+        return 1;
+    } else {
+        if (sameCity && (['75','78'].indexOf(normDepCodeB as string) >=0) && (['78','91','92','93','94','95'].indexOf(normDepCodeA as string) >=0)) {
+            return 1;
+        } else {
+            if (normDepCodeA === '97') {
+                return round((3+minDepScore)/4);
+            } else {
+                return minDepScore;
+            }
+        }
+    }
+}
 
 const countryRegExp = [
     [ /(^|\s)(de|en|les|le|la|a|aux|au|du|de la|s|sous|sur|l|d|des)\s/g, ' '],
