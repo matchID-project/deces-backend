@@ -96,8 +96,24 @@ const fuzzyRatio = (tokenA: string, tokenB: string, option?: any): number => {
     return round(s);
 };
 
-const fuzzSetRatio = (a: string, b: string) => {
+const fuzzballPartialTokenSortRatio = (a: string, b: string) => {
+    return 0.01 * fuzz.token_sort_ratio(a,b);
+}
+
+const fuzzballTokenSetRatio = (a: string, b: string) => {
     return 0.01 * fuzz.token_set_ratio(a,b);
+}
+
+const fuzzballRatio = (a: string, b: string) => {
+    return 0.01 * fuzz.ratio(a,b);
+}
+
+const fuzzMixRatio = (a: string, b: string) => {
+    if (Array.isArray(tokenize(a)) || Array.isArray(tokenize(b))) {
+        return 0.01 * fuzz.token_set_ratio(a,b);
+    } else {
+        return levRatio(a,b);
+    }
 }
 
 const applyRegex = (a: string|string[], reTable: any): string|string[] => {
