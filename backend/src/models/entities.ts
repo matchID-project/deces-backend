@@ -69,4 +69,5 @@ export interface Person {
 export interface ScoreParams {
   dateFormat?: string;
   pruneScore?: number;
-}
+  candidateNumber?: number;
+};

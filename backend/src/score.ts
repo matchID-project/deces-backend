@@ -8,7 +8,8 @@ import moment from 'moment';
 import { dateTransformMask, isDateRange } from './masks';
 import soundex from '@thejellyfish/soundex-fr';
 
-const perfectScoreThreshold = 0.7;
+const perfectScoreThreshold = 0.75;
+const multipleMatchPenalty = 1;
 const multiplePerfectScorePenalty = 0.1;
 const multipleBestScorePenalty = 0.15;
 const multipleErrorPenalty = 0.8;
@@ -144,6 +145,7 @@ const scoreReduce = (score:any):number => {
 
 export const scoreResults = (request: RequestBody, results: Person[], params: ScoreParams): Person[] => {
     const pruneScore = params.pruneScore !== undefined ? params.pruneScore : defaultPruneScore
+    const candidateNumber = params.candidateNumber || 1;
     let maxScore = 0;
     let perfectScoreNumber = 0;
     let perfectNameScore = false;
@@ -183,28 +185,30 @@ export const scoreResults = (request: RequestBody, results: Person[], params: Sc
                         result.score = 0;
                 }
                 if (result.score > 0) {
-                    if (perfectScoreNumber > 0) {
-                        if (result.score < perfectScoreThreshold) {
-                            result.score = round((
-                                (1 - multiplePerfectScorePenalty * (perfectScoreNumber-1)) * result.score ** (secondaryCandidatePenaltyPow + (filteredResultsNumber - perfectScoreNumber))
-                            ));
+                    if (filteredResultsNumber > 1) {
+                        if (perfectScoreNumber > 0) {
+                            if (result.score < perfectScoreThreshold) {
+                                result.score = round((
+                                    (1 - multiplePerfectScorePenalty * (perfectScoreNumber - 1 + multipleMatchPenalty*(filteredResultsNumber - perfectScoreNumber)/candidateNumber)) * result.score ** (secondaryCandidatePenaltyPow + (filteredResultsNumber - perfectScoreNumber))
+                                ));
+                            } else {
+                                result.score = round(
+                                    (1 - multiplePerfectScorePenalty * (perfectScoreNumber - 1 + multipleMatchPenalty*(filteredResultsNumber - perfectScoreNumber)/candidateNumber)) * result.score ** (result.score < maxScore ? secondaryCandidatePenaltyPow : 1)
+                                );
+                                result.scores.multiMatchPenalty = round(result.score / (result.scores.score || 1));
+                                result.scores.multiMatch = filteredResultsNumber;
+                                result.scores.score = result.score;
+                            }
                         } else {
-                            result.score = round(
-                                result.score * (1 - multiplePerfectScorePenalty * (perfectScoreNumber-1)) ** (result.score < maxScore ? secondaryCandidatePenaltyPow : 1)
-                            );
-                            result.scores.multiMatchPenalty = round(result.score / (result.scores.score || 1));
-                            result.scores.score = result.score;
-                        }
-                    } else {
-                        if (filteredResultsNumber > 1) {
-                            result.score = round((
-                                result.score * (1 - multipleBestScorePenalty * (bestScoreNumber-1)) ** (result.score < maxScore ? secondaryCandidatePenaltyPow : 1)
-                            ));
-                            result.scores.multiMatchPenalty = round(result.score / (result.scores.score || 1));
-                            result.scores.score = result.score;
+                                result.score = round((
+                                    (1 - multipleBestScorePenalty * (bestScoreNumber - 1 + multipleMatchPenalty*(filteredResultsNumber - bestScoreNumber)/candidateNumber)) * result.score ** (result.score < maxScore ? secondaryCandidatePenaltyPow + (filteredResultsNumber - bestScoreNumber) : 1)
+                                ));
+                                result.scores.multiMatchPenalty = round(result.score / (result.scores.score || 1));
+                                result.scores.multiMatch = filteredResultsNumber;
+                                result.scores.score = result.score;
                         }
                     }
-                    if (result.score < secondaryCandidateThreshold) {
+                    if ((result.score < maxScore) && (result.score < secondaryCandidateThreshold)) {
                         result.score = 0;
                     }
                 }

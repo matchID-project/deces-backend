@@ -350,7 +350,7 @@ export const processChunk = async (chunk: any, candidateNumber: number, params: 
   if (result.data.responses.length > 0) {
     return result.data.responses.map((item: ResultRawES, idx: number) => {
       if (item.hits.hits.length > 0) {
-        const scoredResults = scoreResults(chunk[idx], item.hits.hits.map(buildResultSingle), {dateFormat: params.dateFormat, pruneScore: params.pruneScore})
+        const scoredResults = scoreResults(chunk[idx], item.hits.hits.map(buildResultSingle), {...params})
         if (scoredResults && scoredResults.length > 0) {
           const selectedCanditates = scoredResults.slice(0, candidateNumber)
           return selectedCanditates.map((selectedCanditate: any) => {
@@ -369,7 +369,7 @@ export const processChunk = async (chunk: any, candidateNumber: number, params: 
 }
 
 chunkQueue.process(Number(process.env.BACKEND_CHUNK_CONCURRENCY), async (chunkJob: Queue.Job<any>) => {
-  return await processChunk(chunkJob.data.chunk, chunkJob.data.candidateNumber, {dateFormat: chunkJob.data.dateFormat, pruneScore: chunkJob.data.pruneScore});
+  return await processChunk(chunkJob.data.chunk, chunkJob.data.candidateNumber, {dateFormat: chunkJob.data.dateFormat, pruneScore: chunkJob.data.pruneScore, candidateNumber: chunkJob.data.candidateNumber});
 })
 
 jobQueue.process(Number(process.env.BACKEND_JOB_CONCURRENCY), (job: Queue.Job<any>) => {
