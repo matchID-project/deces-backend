@@ -194,7 +194,9 @@ export const scoreResults = (request: RequestBody, results: Person[], params: Sc
             .filter((result: any) => result.score >= pruneScore)
             .map((result: any) => {
                 if (result.score === maxScore) { bestScoreNumber++; }
-                filteredResultsNumber++;
+                if (result.sex && (result.sex === 'M') || !perfectNameScore || (result.scores && result.scores.name && result.scores.name.score > wrongLastNamePenalty.F)) {
+                    filteredResultsNumber++;
+                }
                 return result;
             })
             .sort((a: any, b: any) => (a.score < b.score) ? 1 : ( (a.score > b.score) ? -1 : 0 ))
