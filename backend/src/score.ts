@@ -9,12 +9,13 @@ import { dateTransformMask, isDateRange } from './masks';
 import soundex from '@thejellyfish/soundex-fr';
 
 const perfectScoreThreshold = 0.75;
-const multipleMatchPenalty = 1;
+const multipleMatchPenaltyMax = 0.5;
 const multiplePerfectScorePenalty = 0.1;
 const multipleBestScorePenalty = 0.15;
-const multipleErrorPenalty = 0.8;
 const secondaryCandidatePenaltyPow = 2;
 const secondaryCandidateThreshold = 0.4;
+
+const multipleErrorPenalty = 0.8;
 
 const tokenPlacePenalty = 0.7;
 const blindTokenScore = 0.5;
@@ -36,13 +37,13 @@ const blindSexScore = 0.99;
 
 const minDateScore = 0.2;
 const blindDateScore = 0.85;
-const uncertainDateScore = 0.9;
+const uncertainDateScore = 0.95;
 const datePenalty = 2.5;
 
 const minLocationScore = 0.2;
 const boroughLocationPenalty = 0.9;
 const minDepScore = 0.7;
-const minNotFrCityScore = 0.6;
+const minNotFrCityScore = 0.65;
 const minNotFrCountryScore = 0.4;
 const minNotFrScore = 0.4;
 const blindLocationScore = 0.75;
@@ -209,26 +210,23 @@ export const scoreResults = (request: RequestBody, results: Person[], params: Sc
                 }
                 if (result.score > 0) {
                     if (filteredResultsNumber > 1) {
-                        if (perfectScoreNumber > 0) {
-                            if (result.score < perfectScoreThreshold) {
-                                result.score = round((
-                                    (1 - multiplePerfectScorePenalty * (perfectScoreNumber - 1 + multipleMatchPenalty*(filteredResultsNumber - perfectScoreNumber)/candidateNumber)) * result.score ** (secondaryCandidatePenaltyPow + (filteredResultsNumber - perfectScoreNumber))
-                                ));
-                            } else {
-                                result.score = round(
-                                    (1 - multiplePerfectScorePenalty * (perfectScoreNumber - 1 + multipleMatchPenalty*(filteredResultsNumber - perfectScoreNumber)/candidateNumber)) * result.score ** (result.score < maxScore ? secondaryCandidatePenaltyPow : 1)
-                                );
-                                result.scores.multiMatchPenalty = round(result.score / (result.scores.score || 1));
-                                result.scores.multiMatch = filteredResultsNumber;
-                                result.scores.score = result.score;
-                            }
-                        } else {
-                                result.score = round((
-                                    (1 - multipleBestScorePenalty * (bestScoreNumber - 1 + multipleMatchPenalty*(filteredResultsNumber - bestScoreNumber)/candidateNumber)) * result.score ** (result.score < maxScore ? secondaryCandidatePenaltyPow + (filteredResultsNumber - bestScoreNumber) : 1)
-                                ));
-                                result.scores.multiMatchPenalty = round(result.score / (result.scores.score || 1));
-                                result.scores.multiMatch = filteredResultsNumber;
-                                result.scores.score = result.score;
+                        const myMultipleMatchPenalty = Math.max(multipleMatchPenaltyMax,
+                            perfectScoreNumber ? (1 - multiplePerfectScorePenalty * (perfectScoreNumber - 1 + (filteredResultsNumber - perfectScoreNumber)/candidateNumber))
+                                :                 (1 - multipleBestScorePenalty * (bestScoreNumber - 1 + (filteredResultsNumber - bestScoreNumber)/candidateNumber))
+                            );
+                        const myMultipleMatchPenaltyPow = (result.score === maxScore) ?
+                            1 : (
+                            secondaryCandidatePenaltyPow + (
+                                (result.score >= perfectScoreThreshold) ?
+                                    1 :
+                                    filteredResultsNumber - (perfectScoreNumber || bestScoreNumber)
+                                )
+                            );
+                        result.score = round(myMultipleMatchPenalty * result.score ** myMultipleMatchPenaltyPow);
+                        if (result.score !== result.scores.score) {
+                            result.scores.multiMatchPenalty = round(result.score / (result.scores.score || 1));
+                            result.scores.multiMatch = filteredResultsNumber;
+                            result.scores.score = result.score;
                         }
                     }
                     if ((result.score < maxScore) && (result.score < secondaryCandidateThreshold)) {
@@ -616,7 +614,7 @@ const scoreLocation = (locA: Location, locB: Location): any => {
         }
         if (normalize(locA.city as string|string[]) && locB.city) {
             const sCity = scoreCity(locA.city, locB.city as string|string[]);
-            score.city = Math.max(minNotFrCityScore, sCity)
+            score.city = score.country >= perfectScoreThreshold ? Math.max(minNotFrCityScore, sCity) : sCity
         }
         score.score = Math.max(minNotFrScore, scoreReduce(score));
     }
