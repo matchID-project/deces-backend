@@ -141,7 +141,7 @@ const tokenize = (sentence: string|string[]|RequestField, tokenizeArray?: boolea
     }
 }
 
-const scoreReduce = (score:any):number => {
+const scoreReduce = (score:any, multiplePenalty?: boolean ):number => {
     if (!score) {
         return 0;
     }
@@ -152,10 +152,14 @@ const scoreReduce = (score:any):number => {
             if (typeof(score[k]) === 'number') {
                 return  round(score[k]);
             } else {
-                return  round(score[k].score) || scoreReduce(score[k]);
+                return  round(score[k].score) || scoreReduce(score[k], multiplePenalty);
             }
         });
-        return r.length ? (round(r.reduce(multyiply) ** ( multipleErrorPenalty * ( 2 - (r.filter((s: number) => s >= perfectScoreThreshold).length)/r.length)))) : 0;
+        return r.length ?
+            (round(r.reduce(multyiply) ** (multiplePenalty ?
+                ( multipleErrorPenalty * ( 2 - (r.filter((s: number) => s >= perfectScoreThreshold).length)/r.length))
+                : 1 )))
+            : 0;
     }
 }
 
