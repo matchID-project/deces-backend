@@ -507,7 +507,7 @@ describe('index.ts - Express application', () => {
         .field('birthDate', 'Date')
         .field('chunkSize', 20)
         .attach('csv', buf, 'file.csv')
-      const { body : { id: jobId } } = res
+      const { body : { id: jobId } }: { body: { id: string} } = res
 
       while (res.body.status === 'created' || res.body.status === 'waiting' || res.body.msg === 'started') {
         res = await chai.request(app)
@@ -537,7 +537,7 @@ describe('index.ts - Express application', () => {
       let index: number;
       const readStream: any = fs.createReadStream('/deces-backend/tests/clients_test.csv',  {encoding: 'utf8'})
       readStream
-        .on('data', function (chunk: string) {
+        .on('data', (chunk: string) => {
           index = chunk.indexOf('\n');
           data += chunk;
           if (index > 10) {
@@ -559,7 +559,7 @@ describe('index.ts - Express application', () => {
         .field('birthDate', 'Date')
         .field('chunkSize', 20)
         .attach('csv', buf, 'file.csv')
-      const { body : { id: jobId } } = res
+      const { body : { id: jobId } }: { body: { id: string} } = res
 
       while (res.body.status === 'created' || res.body.status === 'waiting' || res.body.status === 'active' || res.body.msg === 'started') {
         res = await chai.request(app)
@@ -592,7 +592,7 @@ describe('index.ts - Express application', () => {
         .field('birthDate', 'Date')
         .field('sex', 'Sex')
         .attach('csv', buf, 'file.csv')
-      const { body : { id: jobId } } = res
+      const { body : { id: jobId } }: { body: { id: string} } = res
       res = await chai.request(app)
         .get(`${process.env.BACKEND_PROXY_PATH}/search/csv/${jobId}?order=true`)
       while (res.body.status === 'created' || res.body.status === 'waiting' || res.body.status === 'active') {
@@ -625,7 +625,7 @@ describe('index.ts - Express application', () => {
         .field('birthDate', 'Date')
         .field('sex', 'Sex')
         .attach('csv', buf, 'file.csv')
-      const { body : { id: jobId } } = res
+      const { body : { id: jobId } }: { body: { id: string} } = res
       res = await chai.request(app)
         .get(`${process.env.BACKEND_PROXY_PATH}/search/csv/${jobId}`)
       while (res.body.status === 'created' || res.body.status === 'waiting' || res.body.status === 'active') {
@@ -653,7 +653,7 @@ describe('index.ts - Express application', () => {
         .field('lastName', 'Nom')
         .field('birthDate', 'Date')
         .attach('csv', buf, 'file.csv')
-      const { body : { id: jobId } } = res
+      const { body : { id: jobId } }: { body: { id: string} } = res
       res = await chai.request(app)
         .get(`${process.env.BACKEND_PROXY_PATH}/search/csv/${jobId}`)
       while (res.body.status === 'created' || res.body.status === 'waiting' || res.body.status === 'active') {
@@ -681,7 +681,7 @@ describe('index.ts - Express application', () => {
         .field('birthDate', 'Date')
         .field('sex', 'Sexe')
         .attach('csv', buf, 'file.csv')
-      const { body : { id: jobId } } = res
+      const { body : { id: jobId } }: { body: { id: string} } = res
       res = await chai.request(app)
         .get(`${process.env.BACKEND_PROXY_PATH}/search/csv/${jobId}`)
       while (res.body.status === 'created' || res.body.status === 'waiting' || res.body.status === 'active') {
@@ -721,7 +721,7 @@ describe('index.ts - Express application', () => {
         .field('birthDate', 'Date')
         .field('sex', 'Sexe')
         .attach('csv', buf, 'file.csv')
-      const { body : { id: jobId } } = res
+      const { body : { id: jobId } }: { body: { id: string} } = res
       res = await chai.request(app)
         .get(`${process.env.BACKEND_PROXY_PATH}/search/json/${jobId}`)
       while (res.body.status === 'created' || res.body.status === 'waiting' || res.body.status === 'active') {

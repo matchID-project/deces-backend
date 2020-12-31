@@ -199,7 +199,7 @@ export class RequestInput {
     Object.keys(this).map(field => {
       if (this[field] && this[field].mask && this[field].mask.validation) {
         if (!this[field].mask.validation(this[field].value)) {
-          this.errors.push(`invalid ${field} value: ${this[field].value}`);
+          this.errors.push(`invalid ${field} value: ${this[field].value as string}`);
         }
       }
     });
