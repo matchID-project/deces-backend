@@ -1,81 +1,120 @@
 import { RequestBody } from './models/requestInput';
-import { Person, Location, Name, RequestField } from './models/entities';
-import levenshtein from 'js-levenshtein';
+import { Person, Location, Name, RequestField, ScoreParams } from './models/entities';
+import { distance } from 'fastest-levenshtein';
+import damlev from 'damlev';
+import jw from 'jaro-winkler';
+import fuzz from 'fuzzball';
 import moment from 'moment';
 import { dateTransformMask, isDateRange } from './masks';
 import soundex from '@thejellyfish/soundex-fr';
 
-const perfectScoreThreshold = 0.95;
-const multiplePerfectScorePenalty = 0.8;
-const secondaryCandidatePenaltyPow = 1.5;
-const secondaryCandidateThreshold = 0.5;
+const perfectScoreThreshold = 0.75;
+const multipleMatchPenaltyMax = 0.5;
+const multiplePerfectScorePenalty = 0.1;
+const multipleBestScorePenalty = 0.15;
+const secondaryCandidatePenaltyPow = 2;
+const secondaryCandidateThreshold = 0.4;
+
+const multipleErrorPenalty = 0.8;
 
 const tokenPlacePenalty = 0.7;
 const blindTokenScore = 0.5;
 
 const nameInversionPenalty = 0.7;
+const fuzzPenalty = 1.5;
 const stopNamePenalty = 0.8;
 const minNameScore = 0.1;
 const blindNameScore = 0.5;
-const lastNamePenalty = 3
+const wrongLastNamePenalty = {
+    M: 0.1,
+    F: 0.65
+}
+const lastNamePenalty = 1.5;
 
 const minSexScore = 0.5;
-const firstNameSexPenalty = 0.75;
-const blindSexScore = 1;
+const firstNameSexPenalty = 0.65;
+const blindSexScore = 0.99;
 
 const minDateScore = 0.2;
-const blindDateScore = 0.8;
-const uncertainDateScore = 0.7;
-const datePenalty = 3
+const blindDateScore = 0.85;
+const uncertainDateScore = 0.95;
+const datePenalty = 2.5;
 
 const minLocationScore = 0.2;
-const minDepScore = 0.8;
-const minNotFrCityScore = 0.5;
-const minNotFrCountryScore = 0.5;
-const blindLocationScore = 0.7;
+const boroughLocationPenalty = 0.9;
+const minDepScore = 0.7;
+const minNotFrCityScore = 0.65;
+const minNotFrCountryScore = 0.4;
+const minNotFrScore = 0.4;
+const blindLocationScore = 0.75;
 
 const boostSoundex = 1.5;
 
-const pruneScore = 0.25;
+const defaultPruneScore = 0.3;
 
 const multyiply = (a:number, b: number): number => a*b;
 const max = (a:number, b: number): number => Math.max(a*b);
 const sum = (a:number, b: number): number => a+b;
 const mean = (table: number[]): number => (table.length ? table.reduce(sum)/table.length : 0);
+const round = (s: number): number => parseFloat(s.toFixed(2));
 
 const normalize = (token: string|string[]): string|string[] => {
     if ((token === undefined) || (token === null)) {
         return '';
     }
     if (typeof(token) === 'string') {
-        return token.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase().replace(/[^a-z0-9]+/g, ' ').replace(/\s+/g,' ').replace(/^\s*$/,'');
+        return token.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').replace(/\s+/g,' ').replace(/^\s*$/,'');
     } else {
         return token.map(t => normalize(t) as string);
     }
 }
 
-const fuzzyScore = (tokenA: string, tokenB: string): number => {
+const levRatio = (tokenA: string, tokenB: string, option?: any): number => {
+    const lev = option || distance;
+    if (!tokenA || !tokenB) { return 0 }
+    if (tokenA === tokenB) {
+        return 1
+    } else {
+        if (tokenA.length < tokenB.length) {
+            return levRatio(tokenB, tokenA, option)
+        }
+        return round((1 - (lev(tokenA, tokenB) / tokenA.length)));
+    }
+}
+
+const fuzzyRatio = (tokenA: string, tokenB: string, option?: any): number => {
+    const compare = option || levRatio;
     if (!tokenA || !tokenB) {
         return 0;
     }
     const a:string = normalize(tokenA) as string;
     const b:string = normalize(tokenB) as string;
     if (a === b) {return 1}
-    const s = 0.01 * Math.round(
-        100 * (levNormScore(a, b) ** ((soundex(a) === soundex(b)) ? (1/boostSoundex) : boostSoundex ** 2) )
-    );
-    return s;
+    let s = compare(a, b);
+    if (s === 1) { return 1}
+    if (! option) {
+        s = s ** ((soundex(a) === soundex(b)) ? (1/boostSoundex) : boostSoundex );
+    }
+    return round(s);
 };
 
-const levNormScore = (tokenA: string, tokenB: string): number => {
-    if (!tokenA || !tokenB) { return 0 }
-    if (tokenA === tokenB) {
-        return 1
+const fuzzballPartialTokenSortRatio = (a: string, b: string) => {
+    return 0.01 * fuzz.token_sort_ratio(a,b);
+}
+
+const fuzzballTokenSetRatio = (a: string, b: string) => {
+    return 0.01 * fuzz.token_set_ratio(a,b);
+}
+
+const fuzzballRatio = (a: string, b: string) => {
+    return 0.01 * fuzz.ratio(a,b);
+}
+
+const fuzzMixRatio = (a: string, b: string) => {
+    if (Array.isArray(tokenize(a)) || Array.isArray(tokenize(b))) {
+        return 0.01 * fuzz.token_set_ratio(a,b);
     } else {
-        if (tokenA.length < tokenB.length) {
-            return levNormScore(tokenB, tokenA)
-        }
-        return 0.01 * Math.round(100 * (1 - (levenshtein(normalize(tokenA) as string, normalize(tokenB) as string) / tokenA.length)));
+        return levRatio(a,b);
     }
 }
 
@@ -89,69 +128,109 @@ const applyRegex = (a: string|string[], reTable: any): string|string[] => {
     }
 }
 
-const tokenize = (sentence: string|string[]|RequestField, tokenizeArray?: boolean): string|string[]|RequestField => {
+const tokenize = (sentence: string|string[], tokenizeArray?: boolean): string|string[] => {
     if (typeof(sentence) === 'string') {
         const s = sentence.split(/,\s*|\s+/);
         return s.length === 1 ? s[0] : s ;
     } else {
         if (tokenizeArray) {
-            return ((sentence as string[]).map(s => tokenize(s)) as any).flat();
+            return ((sentence).map(s => tokenize(s)) as any).flat();
         } else {
             // default dont tokenize if string[]
-            return sentence as string[];
+            return sentence;
         }
 
     }
 }
 
-const scoreReduce = (score:any):number => {
+const scoreReduce = (score:any, multiplePenalty?: boolean ):number => {
+    if (!score) {
+        return 0;
+    }
     if (score.score) {
-        return 0.01 * Math.round(100 * score.score);
+        return round(score.score);
     } else {
         const r:any = Object.keys(score).map(k => {
             if (typeof(score[k]) === 'number') {
-                return  0.01 * Math.round(100 * score[k]);
+                return  round(score[k]);
             } else {
-                return  0.01 * Math.round(100 * score[k].score) || scoreReduce(score[k]);
+                return  round(score[k].score) || scoreReduce(score[k], multiplePenalty);
             }
         });
-        return r.length ? 0.01 * Math.round(100 * r.reduce(multyiply)) : 0;
+        return r.length ?
+            (round(r.reduce(multyiply) ** (multiplePenalty ?
+                ( multipleErrorPenalty * ( 2 - (r.filter((s: number) => s >= perfectScoreThreshold).length)/r.length))
+                : 1 )))
+            : 0;
     }
 }
 
-export const scoreResults = (request: RequestBody, results: Person[], dateFormat: string): Person[] => {
+export const scoreResults = (request: RequestBody, results: Person[], params: ScoreParams): Person[] => {
+    const pruneScore = params.pruneScore !== undefined ? params.pruneScore : defaultPruneScore
+    const candidateNumber = params.candidateNumber || 1;
     let maxScore = 0;
     let perfectScoreNumber = 0;
+    let perfectNameScore = false;
+    let bestScoreNumber = 0;
+    let filteredResultsNumber = 0;
+    // following count of meaning arguments (sex not taken as such) used to reduce penalty of blind scoring penalties
+    const requestMeaningArgsNumber = ((request.fullText || request.lastName || request.firstName || request.lastName) ? 1 : 0)
+        + (request.birthDate ? 1 : 0)
+        + ((request.birthCity || request.birthCountry || request.birthDepartment || request.birthGeoPoint) ? 1 : 0)
     const resultsWithScores: any = results
             .filter((result:any) => result.score > 0)
             .map((result:any) => {
                 try {
-                    result.scores = new ScoreResult(request, result, dateFormat);
-                    result.scores.score =  0.01 * Math.round(100 * scoreReduce(result.scores) ** (3/(Object.keys(result.scores).length || 1)));
+                    result.scores = new ScoreResult(request, result, params);
+                    result.scores.score =  round(scoreReduce(result.scores, true) ** (requestMeaningArgsNumber/(Object.keys(result.scores).length || 1)));
                 } catch(err) {
                     result.scores = {};
                 }
-                result.scores.es = 0.005 * Math.round(Math.min(200, result.score));
-                result.score = (result.scores.score !== undefined) ?  0.01 * Math.round(100 * result.scores.score) : result.scores.es;
+                result.scores.es = round(0.005 * Math.min(200, result.score));
+                result.score = (result.scores.score !== undefined) ?  round(result.scores.score) : result.scores.es;
                 if (result.score > maxScore) { maxScore = result.score }
                 if (result.score >= perfectScoreThreshold) { perfectScoreNumber++ }
+                if ((result.sex && (result.sex === 'F')) && (result.scores && result.scores.name && (result.scores.name.score > wrongLastNamePenalty.F))) { perfectNameScore = true; }
                 return result;
             })
             .filter((result: any) => result.score >= pruneScore)
+            .map((result: any) => {
+                if (result.score === maxScore) { bestScoreNumber++; }
+                if (result.sex && (result.sex === 'M') || !perfectNameScore || (result.scores && result.scores.name && result.scores.name.score > wrongLastNamePenalty.F)) {
+                    filteredResultsNumber++;
+                }
+                return result;
+            })
             .sort((a: any, b: any) => (a.score < b.score) ? 1 : ( (a.score > b.score) ? -1 : 0 ))
             .map((result: any) => {
-                if (perfectScoreNumber) {
-                    if (result.score < perfectScoreThreshold) {
-                        result.score = 0.01 * Math.round(100 * (
-                            ((perfectScoreNumber > 1) ? multiplePerfectScorePenalty : 1) * result.score ** secondaryCandidatePenaltyPow)
-                        );
-                        if (result.score < secondaryCandidateThreshold) {
-                            result.score = 0;
-                        };
-                    } else {
-                        if (perfectScoreNumber > 1) {
-                            result.score = result.score * multiplePerfectScorePenalty;
+                if (perfectNameScore && filteredResultsNumber &&
+                    result.scores && result.scores.name && (result.scores.name.score <= wrongLastNamePenalty.F)) {
+                    // filter alteratives with wrong last name if a good one is present in results list
+                        result.score = 0;
+                }
+                if (result.score > 0) {
+                    if (filteredResultsNumber > 1) {
+                        const myMultipleMatchPenalty = Math.max(multipleMatchPenaltyMax,
+                            perfectScoreNumber ? (1 - multiplePerfectScorePenalty * (perfectScoreNumber - 1 + (filteredResultsNumber - perfectScoreNumber)/candidateNumber))
+                                :                 (1 - multipleBestScorePenalty * (bestScoreNumber - 1 + (filteredResultsNumber - bestScoreNumber)/candidateNumber))
+                            );
+                        const myMultipleMatchPenaltyPow = (result.score === maxScore) ?
+                            1 : (
+                            secondaryCandidatePenaltyPow + (
+                                (result.score >= perfectScoreThreshold) ?
+                                    1 :
+                                    filteredResultsNumber - (perfectScoreNumber || bestScoreNumber)
+                                )
+                            );
+                        result.score = round(myMultipleMatchPenalty * result.score ** myMultipleMatchPenaltyPow);
+                        if (result.score !== result.scores.score) {
+                            result.scores.multiMatchPenalty = round(result.score / (result.scores.score || 1));
+                            result.scores.multiMatch = filteredResultsNumber;
+                            result.scores.score = result.score;
                         }
+                    }
+                    if ((result.score < maxScore) && (result.score < secondaryCandidateThreshold)) {
+                        result.score = 0;
                     }
                 }
                 return result;
@@ -167,25 +246,30 @@ export class ScoreResult {
   sex?: number;
   location?: number;
 
-  constructor(request: RequestBody, result: Person, dateFormat?: string) {
+  constructor(request: RequestBody, result: Person, params: ScoreParams = {}) {
+    const pruneScore = params.pruneScore !== undefined ? params.pruneScore : defaultPruneScore
     if (request.birthDate) {
-      this.date = scoreDate(request.birthDate, result.birth.date, dateFormat);
+      this.date = scoreDate(request.birthDate, result.birth.date, params.dateFormat,
+        result.birth && result.birth.location && result.birth.location.countryCode && (result.birth.location.countryCode !== 'FRA')
+        );
     }
     if (request.firstName || request.lastName) {
-      if ((pruneScore < scoreReduce(this)) || !this.date) {
-        if (request.sex && request.sex === 'F') {
-          const scoreLastName = scoreName({first: request.firstName, last: request.lastName}, result.name);
-          const scoreLegalName = scoreName({first: request.firstName, last: request.legalName}, result.name);
-          this.name = Math.max(scoreLastName, scoreLegalName);
+      if ((pruneScore < scoreReduce(this, true)) || !this.date) {
+        if (result.sex && result.sex === 'F') {
+            if (request.legalName) {
+                this.name = scoreName({first: request.firstName, last: [request.lastName, request.legalName]}, result.name, 'F');
+            } else {
+                this.name = scoreName({first: request.firstName, last: request.lastName}, result.name, 'F');
+            }
         } else {
-          this.name = scoreName({first: request.firstName, last: request.lastName}, result.name);
+          this.name = scoreName({first: request.firstName, last: request.lastName}, result.name, 'M');
         }
       } else {
         this.score = 0
       }
     }
     if (request.sex) {
-      if (pruneScore < scoreReduce(this)) {
+      if (pruneScore < scoreReduce(this, true)) {
         this.sex = scoreSex(request.sex, result.sex);
       } else {
         this.score = 0
@@ -193,29 +277,44 @@ export class ScoreResult {
     } else if (request.firstName && firstNameSexMismatch(request.firstName, result.name.first as string)) {
         this.sex = firstNameSexPenalty;
     }
-    if (request.birthCity || request.birthCityCode || request.birthDepartment || request.latitude || request.longitude) {
-      if (pruneScore < scoreReduce(this)) {
-        this.location = scoreLocation({
-          city: request.birthCity,
-          cityCode: request.birthCityCode,
-          departmentCode: request.birthDepartment,
-          country: request.birthCountry,
-          latitude: request.latitude,
-          longitude: request.longitude
-        }, result.birth.location);
-      } else {
-        this.score = 0
-      }
+    // location
+    if (pruneScore < scoreReduce(this, true)) {
+    this.location = scoreLocation({
+        city: request.birthCity,
+        cityCode: request.birthCityCode,
+        departmentCode: request.birthDepartment,
+        country: request.birthCountry,
+        latitude: request.latitude,
+        longitude: request.longitude
+    }, result.birth.location);
+    } else {
+    this.score = 0
     }
     if (!this.score) {
-      this.score = scoreReduce(this)
+      this.score = scoreReduce(this, true)
     }
   }
 }
 
+const firstNameRegExp = [[/^(inconnu|spc?|sans prenom( connu)?|X+)$/,'']]
+
+const firstNameNorm = (name: string|string[]): string|string[] => {
+    return tokenize(applyRegex(name, firstNameRegExp), true);
+}
+
+const lastNameRegExp = [
+    [/^(mr|mme|mlle|monsieur|madame|mademoiselle)\s+/,''],
+    [/^(inconnu|snc?|sans nom( connu)?|X+)$/,'']
+]
+
+const lastNameNorm = (name: string|string[]): string|string[] => {
+    return applyRegex(name, lastNameRegExp);
+}
+
 export const stopNames = [
     [/(^|\s)de (los|la)\s+/,'$1'],
-    [/(^|\s)(du|de|l|d|dos|del|le|el)\s+/, '$1'],
+    [/(^|\s)(baron|marquis|duc|vicomte|prince|chevalier)\s+/,'$1'],
+    [/(^|\s)(ait|ben|du|de|l|d|dos|del|le|el)\s+/, '$1'],
     [/\s+(du|de la|des|de|le|aux|de los|del|l|d)\s+/,' '],
     [/(^|\s)st\s+/, '$1saint ']
 ];
@@ -225,71 +324,114 @@ const filterStopNames = (name: string|string[]): string|string[] => {
 }
 
 const firstNameSexMismatch = (firstNameA: string, firstNameB: string): boolean => {
-    let firstA = tokenize(normalize(firstNameA as string|string[]), true);
-    firstA = typeof(firstA) === 'string' ? firstA : (firstA as string[])[0];
-    let firstB = tokenize(normalize(firstNameB as string|string[]), true);
-    firstB = typeof(firstB) === 'string' ? firstB : (firstB as string[])[0];
-    return /.?e/.test(firstA.replace(firstB, '')) || /.?e/.test(firstB.replace(firstA, ''));
+    let firstA = firstNameNorm(firstNameA);
+    firstA = typeof(firstA) === 'string' ? firstA : (firstA)[0];
+    let firstB = firstNameNorm(firstNameB);
+    firstB = typeof(firstB) === 'string' ? firstB : (firstB)[0];
+    return /^.?(e|a)$/.test(firstA.replace(firstB, '')) || /^.?(e|a)$/.test(firstB.replace(firstA, ''));
 }
 
-const scoreName = (nameA: Name, nameB: Name): number => {
+const scoreName = (nameA: Name, nameB: Name, sex: string): any => {
     if ((!nameA.first && !nameA.last) || (!nameB.first && !nameB.last)) { return blindNameScore }
-    let score = 0;
-    const firstA = tokenize(normalize(nameA.first as string|string[]), true);
-    let lastA = tokenize(normalize(nameA.last as string|string[]));
-    const firstB = tokenize(normalize(nameB.first as string|string[]), true);
-    let lastB = tokenize(normalize(nameB.last as string|string[]));
-
-    const scoreFirst = scoreToken(firstA, firstB as string|string[]);
-    const scoreLast = scoreToken(lastA, lastB as string|string[]);
-    score = 0.01 * Math.round(100*
-      Math.max(
-        Math.max(
-          Math.max(
-            scoreFirst * (scoreLast ** lastNamePenalty),
-            Math.max(
-              scoreFirst * (blindNameScore ** 0.5),
-              (scoreLast ** lastNamePenalty) * (blindNameScore ** 0.5)
-            )
-          ),
-          nameInversionPenalty * (scoreToken(firstA, lastB as string) ** lastNamePenalty) * scoreToken(lastA, firstB as string|string[]) ** lastNamePenalty
-        ),
-        minNameScore
-      )
-    );
-
-    if (score === 1) return 1;
-
-    lastA = tokenize(filterStopNames(normalize(nameA.last as string|string[])));
-    lastB = tokenize(filterStopNames(normalize(nameB.last as string|string[])));
-
-    return Math.max(
-        score,
-        stopNamePenalty * (0.01 * Math.round(100*
-            Math.max(
+    let score:any;
+    const firstA = firstNameNorm(nameA.first as string|string[]);
+    const lastA = lastNameNorm(nameA.last as string|string[]);
+    const firstB = firstNameNorm(nameB.first as string|string[]);
+    const lastB = lastNameNorm(nameB.last as string|string[]);
+    const lastAtokens = tokenize(lastA);
+    const lastBtokens = tokenize(lastB);
+    // reduce lastNamePenalty for long names
+    const thisLastNamePenalty = ((Array.isArray(lastAtokens) && (lastAtokens.length > 2)) ||
+        (Array.isArray(lastBtokens) && (lastBtokens.length > 2))) ? 1 : lastNamePenalty;
+    let firstFirstA; let firstFirstB; let scoreFirstALastB; let fuzzScore;
+    const scoreFirst = round(scoreToken(firstA, firstB));
+    const scoreLast = round(scoreToken(lastA, lastB));
+    score = round(Math.max(
+                scoreFirst * (scoreLast ** thisLastNamePenalty),
                 Math.max(
-                    scoreFirst * (scoreToken(lastA, lastB as string) ** lastNamePenalty),
-                    nameInversionPenalty * (scoreToken(firstA, lastB as string) ** lastNamePenalty) * scoreToken(lastA, firstB as string|string[]) ** lastNamePenalty
-                ),
-            minNameScore
-        )))
-    );
+                    /* missing first name */
+                    (!nameA.first || !nameB.last) ? (scoreLast ** thisLastNamePenalty) * (blindNameScore ** 2): 0,
+                    /* wrong last name, give a chance for legal Name */
+                    scoreFirst * wrongLastNamePenalty[sex as 'F'|'M']
+                )
+            ),
+          );
+    if (score < blindNameScore) {
+        if ( ((scoreFirst >= blindNameScore) || (scoreLast >= blindNameScore))
+            && (Array.isArray(lastAtokens) || Array.isArray(lastBtokens)) && (Array.isArray(firstA) || Array.isArray(firstB)) ) {
+            // backoff to fuzzball set ratio for complex names situations
+            const partA = filterStopNames(lastA.toString()+" "+firstA.toString());
+            const partB = filterStopNames(lastB.toString()+" "+firstB.toString());
+            fuzzScore = round((tokenPlacePenalty * fuzzyRatio(partA as string, partB as string , fuzzballPartialTokenSortRatio) ** fuzzPenalty)
+            );
+            if (fuzzScore > blindNameScore) {
+                score = Math.max(
+                    score,
+                    fuzzScore
+                );
+            }
+        }
+        // first / last name inversion
+        firstFirstA = Array.isArray(firstA) ? firstA[0] : firstA ;
+        scoreFirstALastB = scoreToken(firstFirstA, lastB as string);
+        if (scoreFirstALastB >= blindNameScore) {
+            firstFirstB = Array.isArray(firstB) ? firstB[0] : firstB ;
+            score = Math.max(
+                score,
+                Math.max(
+                    minNameScore,
+                    nameInversionPenalty * (scoreFirstALastB ** thisLastNamePenalty) * scoreToken(lastA, firstFirstB) ** thisLastNamePenalty
+                )
+            );
+        }
+    }
+    score = { score, first: scoreFirst, last: scoreLast };
+    if (fuzzScore) { score.fuzz = fuzzScore}
+    if (score.score === 1) return score;
+
+    // give a chance to particle names
+    const lastStopA = filterStopNames(lastA);
+    const lastStopB = filterStopNames(lastB);
+
+    if ((lastA !== lastStopA) && (lastB !== lastStopB)) {
+        let particleScore = stopNamePenalty * (round(scoreFirst * (scoreToken(lastStopA, lastStopB as string) ** thisLastNamePenalty)));
+        if (particleScore < blindNameScore) {
+            firstFirstA = firstFirstA || (Array.isArray(firstA) ? firstA[0] : firstA);
+            scoreFirstALastB = scoreToken(firstFirstA, lastStopB as string);
+            if (scoreFirstALastB >= blindNameScore) {
+                firstFirstB = firstFirstB || (Array.isArray(firstB) ? firstB[0] : firstB);
+                particleScore = Math.max(
+                    particleScore,
+                    stopNamePenalty * (round(nameInversionPenalty * (scoreFirstALastB ** thisLastNamePenalty) * scoreToken(lastStopB, firstFirstB as string|string[]) ** thisLastNamePenalty
+                    )));
+            }
+        }
+        if (particleScore > score.score) {
+            score.score = particleScore;
+            score.particleScore = particleScore;
+        }
+    }
+    return score;
 }
 
-const scoreToken = (tokenA: string|string[]|RequestField, tokenB: string|string[], option?: string): number => {
+const scoreToken = (tokenA: string|string[], tokenB: string|string[], option?: any): number => {
     let s:number;
     try {
         if (!tokenA || !tokenB) {
-            s = blindTokenScore
+            s = blindTokenScore;
         } else {
             if (typeof(tokenA) === 'string') {
                 if (typeof(tokenB) === 'string') {
-                    s = fuzzyScore(tokenA, tokenB);
+                    if (tokenA === tokenB) {
+                        s = 1;
+                    } else {
+                        s = fuzzyRatio(tokenA, tokenB, option);
+                    }
                 } else {
                     s = Math.max(
-                        fuzzyScore(tokenA, tokenB[0]),
+                        fuzzyRatio(tokenA, tokenB[0], option),
                         ( tokenB.length > 1 )
-                            ? (option === 'any' ? 1 : tokenPlacePenalty) * tokenB.slice(1, tokenB.length).map(token => fuzzyScore(tokenA, token)).reduce(max) : 0
+                            ? tokenPlacePenalty * tokenB.slice(1, tokenB.length).map(token => fuzzyRatio(tokenA, token, option)).reduce(max) : 0
                     );
                 }
             } else {
@@ -297,29 +439,25 @@ const scoreToken = (tokenA: string|string[]|RequestField, tokenB: string|string[
                     s = scoreToken(tokenB, tokenA as string|string[], option);
                 } else {
                     // if both tokenA and tokenB are arrays
-                    if (option === 'any') {
-                        s = (tokenA as string[]).map(a => tokenB.map(b => fuzzyScore(a,b)).reduce(max)).reduce(max);
-                    } else {
-                    // compare field by field
-                        let min = blindNameScore;
-                        s = mean((tokenA as string[]).map((token, i) => {
-                            const current = tokenB[i] ? fuzzyScore(token, tokenB[i]) : min;
-                            if (min > current) { min = current }
-                            return current;
-                        }))
-                    }
+                    // compare field by field, first field error lead to greater penalty (cf ** (1/(i+1)))
+                    let previous = 0;
+                    s = mean((tokenA).filter((token,i) => (i<tokenB.length))
+                        .map((token, i) => {
+                        const current = fuzzyRatio(token, tokenB[i],option);
+                        previous = previous ? 0.5*(previous + current) : current;
+                        return previous;
+                    }))
                 }
             }
         }
     } catch(err) {
-        s = err;
+        s = 0;
     }
     return s;
 }
 
 const cityRegExp = [
     [ /^\s*(lyon|marseille|paris)(\s.*|\s*\d\d*.*|.*art.*|.*arr.*)$/, '$1'],
-    [ /montreuil s.* bois/, 'montreuil'],
     [ /(^|\s)ste(\s|$)/, '$1sainte$2'],
     [ /(^|\s)st(\s|$)/, '$1saint$2'],
     [ /^aix pce$/, 'aix provence'],
@@ -332,6 +470,8 @@ const cityRegExp = [
     [ /^.*inconnu.*$/, ''],
     [ /sainte clotilde/, 'saint denis'],
     [ /berck mer/, 'berck'],
+    [ /montreuil s.* bois/, 'montreuil'],
+    [ /asnieres s.* seine/, 'asnieres'],
     [ /clichy garenne.*/, 'clichy'],
     [ /belleville saone/, 'belleville'],
     [ /^levallois$/, 'levallois perret'],
@@ -346,20 +486,66 @@ const cityNorm = (city: string|string[]): string|string[] => {
 const scoreCity = (cityA: string|string[]|RequestField, cityB: string|string[]): number => {
     if (typeof(cityA) === 'string') {
         const cityNormA = cityNorm(cityA) as string;
-        if (typeof(cityB) === 'string') {
-            return fuzzyScore(cityNormA, cityNorm(cityB) as string);
+        const cityNormB = cityNorm(cityB);
+        let score;
+        if (typeof(cityNormB) === 'string') {
+            score = fuzzyRatio(cityNormA, cityNormB, fuzzMixRatio);
         } else {
-            return Math.max(...cityB.map(city => fuzzyScore(cityNormA, cityNorm(city) as string)));
+            score = Math.max(...cityNormB.map(city => fuzzyRatio(cityNormA, city, fuzzMixRatio)));
         }
+        if ((score === 1) && Array.isArray(cityNormB) && cityNormB[0] === 'paris') {
+            const boroughA = extractboroughNumber(cityA);
+            if (boroughA && (boroughA !== extractboroughNumber(cityB[1]))) {
+                return boroughLocationPenalty;
+            }
+        }
+        return score;
     } else {
         const cityNormB = cityNorm(cityB);
         return Math.max(...(cityA as string[]).map(city => scoreCity(cityNorm(city), cityNormB)));
     }
 }
 
+const boroughRegExp = [[/^\D*0*([1-9]+0?)\D*$/, '$1']];
+
+const extractboroughNumber = (city: string): string => {
+    const borough = applyRegex(city, boroughRegExp);
+    if (borough !== normalize(city)) { return borough as string; }
+    return undefined;
+}
+
+const depCodeRexExp = [
+    [/^0?2[ab]$/,'20'],
+    [/^0*([1-9]+0?)$/, '$1'],
+    [/^(\D*|99|0)$/,'']
+];
+
+const scoreDepCode = (depCodeA: string|string[]|RequestField, depCodeB: string|RequestField, sameCity: boolean ) => {
+    const normDepCodeA = applyRegex(depCodeA as string|string[], depCodeRexExp);
+    const normDepCodeB = applyRegex(depCodeB as string|string[], depCodeRexExp);
+    if (!normDepCodeA || !normDepCodeB) {
+        return undefined;
+    }
+    if (normDepCodeA === normDepCodeB) {
+        return 1;
+    } else {
+        if (sameCity && (['75','78'].includes(normDepCodeB as string)) && (['78','91','92','93','94','95'].includes(normDepCodeA as string))) {
+            return 1;
+        } else {
+            if (normDepCodeA === '97') {
+                return round((3+minDepScore)/4);
+            } else {
+                return minDepScore;
+            }
+        }
+    }
+}
+
 const countryRegExp = [
     [ /(^|\s)(de|en|les|le|la|a|aux|au|du|de la|s|sous|sur|l|d|des)\s/g, ' '],
     [ /hollande/, 'pays-bas'],
+    [ /(angleterre|grande bretagne)/, 'royaume-uni'],
+    [ /(vietnam)/, 'viet nam']
 ];
 
 const countryNorm = (country: string|string[]): string|string[] => {
@@ -370,38 +556,55 @@ const scoreCountry = (countryA: string|string[]|RequestField, countryB: string|s
     if (typeof(countryA) === 'string') {
         const countryNormA = countryNorm(countryA) as string;
         if (typeof(countryB) === 'string') {
-            return fuzzyScore(countryNormA, countryNorm(countryB) as string);
+            return fuzzyRatio(countryNormA, countryNorm(countryB) as string, fuzzballTokenSetRatio);
         } else {
-            return Math.max(...countryB.map(country => fuzzyScore(countryNormA, countryNorm(country) as string)));
+            return Math.max(...countryB.map(country => fuzzyRatio(countryNormA, countryNorm(country) as string, fuzzballTokenSetRatio)),
+                fuzzballTokenSetRatio(countryNormA, countryB.join(' '))
+                );
         }
     } else {
         const countryNormB = countryNorm(countryB);
-        return Math.max(...(countryA as string[]).map(country => scoreCountry(countryNorm(country), countryNormB)));
+        return Math.max(...(countryA as string[]).map(country => scoreCountry(countryNorm(country), countryNormB)),
+            fuzzballTokenSetRatio((countryA as string[]).join(' '), Array.isArray(countryNormB) ? countryNormB.join(' ') : countryNormB)
+        );
     }
 }
 
 
 const scoreLocation = (locA: Location, locB: Location): any => {
     const score: any = {};
-    if (locB.country && (scoreCountry('FRANCE', locB.country as string|string[]) === 1)) {
+    const BisFrench = locB.countryCode && (locB.countryCode === 'FRA');
+    if (BisFrench) {
         if (normalize(locA.country as string|string[])) {
-            score.country = scoreCountry(locA.country, tokenize(locB.country as string) as string|string[]);
+            score.country = scoreCountry(locA.country, tokenize(locB.country as string));
         }
         if (normalize(locA.city as string|string[]) && locB.city) {
             score.city = scoreCity(locA.city, locB.city as string|string[]);
         }
         if (normalize(locA.departmentCode as string|string[]) && locB.departmentCode) {
-            if (locB.country && (scoreCountry('FRANCE', locB.country as string|string[]) === 1)) {
-                score.department = (locA.departmentCode === locB.departmentCode) ? 1 : minDepScore;
+            if (BisFrench) {
+                const sDep = scoreDepCode(locA.departmentCode, locB.departmentCode, (score.city >= perfectScoreThreshold));
+                if (sDep) {
+                    score.department = sDep;
+                } else {
+                    if (locA.departmentCode === '99') {
+                        if (score.country < perfectScoreThreshold) {
+                            score.country = minLocationScore;
+                        }
+                        else {
+                            score.department = minDepScore;
+                        }
+                    }
+                }
             }
         }
-        score.score = (score.country || score.city || score.department) ? Math.max(minLocationScore, scoreReduce(score)) : blindLocationScore;
+        score.score = ((score.country < 1) || score.city || score.department) ? Math.max(minLocationScore, scoreReduce(score)) : blindLocationScore;
     } else {
         if (normalize(locA.country as string|string[])) {
-            score.country = scoreCountry(locA.country, tokenize(locB.country as string) as string|string[]);
+            score.country = scoreCountry(locA.country, tokenize(locB.country as string));
         } else {
             if (normalize(locA.city as string|string[])) {
-                const sCountry = scoreCountry(locA.city, tokenize(locB.country as string) as string|string[]);
+                const sCountry = scoreCountry(locA.city, tokenize(locB.country as string));
                 if (sCountry > minNotFrCountryScore) {
                     score.country = sCountry;
                 }
@@ -410,22 +613,22 @@ const scoreLocation = (locA: Location, locB: Location): any => {
             }
         }
         if (normalize(locA.city as string|string[]) && locB.city) {
-            const sCity = scoreCity(locA.city, tokenize(locB.city) as string|string[]);
-            if (sCity > minNotFrCityScore) { score.city = sCity; }
+            const sCity = scoreCity(locA.city, locB.city as string|string[]);
+            score.city = score.country >= perfectScoreThreshold ? Math.max(minNotFrCityScore, sCity) : sCity
         }
-        score.score = Math.max(minNotFrCountryScore, score.country, scoreReduce(score));
+        score.score = Math.max(minNotFrScore, scoreReduce(score));
     }
     return score;
 }
 
-const scoreDate = (dateRangeA: any, dateStringB: string, dateFormat: string): number => {
+const scoreDate = (dateRangeA: any, dateStringB: string, dateFormat: string, foreignDate: boolean): number => {
   if (dateFormat) {
     dateRangeA = moment(dateRangeA.toString(), dateFormat).format("YYYYMMDD");
   }
-  return 0.01 * Math.round((scoreDateRaw(dateRangeA, dateStringB) ** datePenalty) * 100);
+  return 0.01 * Math.round((scoreDateRaw(dateRangeA, dateStringB, foreignDate) ** datePenalty) * 100);
 }
 
-const scoreDateRaw = (dateRangeA: any, dateStringB: string): number => {
+const scoreDateRaw = (dateRangeA: any, dateStringB: string, foreignDate: boolean): number => {
     if (/^00000000$/.test(dateStringB) || !dateStringB || !dateRangeA) {
         return blindDateScore;
     }
@@ -436,19 +639,24 @@ const scoreDateRaw = (dateRangeA: any, dateStringB: string): number => {
         if (isDateRange(dateRangeA)) {
             const dateArrayA = dateRangeA.split(/-/);
             if (dateArrayA[0] === dateArrayA[1]) {
-                return scoreDateRaw(dateArrayA[0], dateStringB);
+                return scoreDateRaw(dateArrayA[0], dateStringB, foreignDate);
             }
             return ((dateArrayA[0] <= dateStringB) && (dateArrayA[2] >= dateStringB))
                 ? uncertainDateScore
                 : (/(^0000|0000$)/.test(dateStringB) ? uncertainDateScore : minDateScore);
         } else {
             if (dateStringB.startsWith("0000")) {
-                return Math.min(uncertainDateScore * levNormScore(dateTransformMask(dateRangeA).substring(4,8),dateStringB.substring(4,8)));
+                return round(uncertainDateScore * levRatio(dateTransformMask(dateRangeA).substring(4,8),dateStringB.substring(4,8), damlev));
             }
             if (dateStringB.endsWith("0000")) {
-                return Math.min(uncertainDateScore * levNormScore(dateTransformMask(dateRangeA).substring(0,4),dateStringB.substring(0,4)));
+                return round(uncertainDateScore * levRatio(dateTransformMask(dateRangeA).substring(0,4),dateStringB.substring(0,4), damlev));
             }
-            return levNormScore(dateTransformMask(dateRangeA), dateStringB);
+            if (foreignDate && dateStringB.endsWith("0101") && (dateStringB.substring(0,4) < "1990")
+                && dateTransformMask(dateRangeA).endsWith("0101")) {
+                // old foreign birth date place to 1st of january are often uncertain dates, leading to lot of confusion
+                return round(uncertainDateScore * levRatio(dateTransformMask(dateRangeA).substring(0,4),dateStringB.substring(0,4), damlev));
+            }
+            return levRatio(dateTransformMask(dateRangeA), dateStringB, damlev);
         }
     } else {
         return blindDateScore;
@@ -464,11 +672,11 @@ const scoreSex = (sexA: any, sexB: string): number => {
 
 const scoreGeo = (latA: number, lonA: number, latB: number, lonB: number): number => {
     return 0.01*Math.round(
-        Math.max(0, 100/(100 + distance(latA, lonA, latB, lonB)))
+        Math.max(0, 100/(100 + geoDistance(latA, lonA, latB, lonB)))
     )
 };
 
-const distance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+const geoDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
 	if ((lat1 === lat2) && (lon1 === lon2)) {
 		return 0;
 	}
