@@ -35,16 +35,17 @@ const firstNameSexPenalty = 0.65;
 const blindSexScore = 0.99;
 
 const minDateScore = 0.2;
-const blindDateScore = 0.8;
-const uncertainDateScore = 0.7;
-const datePenalty = 3
+const blindDateScore = 0.85;
+const uncertainDateScore = 0.9;
+const datePenalty = 2.5;
 
 const minLocationScore = 0.2;
 const boroughLocationPenalty = 0.9;
-const minDepScore = 0.85;
-const minNotFrCityScore = 0.5;
-const minNotFrCountryScore = 0.5;
-const blindLocationScore = 0.8;
+const minDepScore = 0.7;
+const minNotFrCityScore = 0.6;
+const minNotFrCountryScore = 0.4;
+const minNotFrScore = 0.4;
+const blindLocationScore = 0.75;
 
 const boostSoundex = 1.5;
 
