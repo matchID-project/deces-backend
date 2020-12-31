@@ -184,7 +184,7 @@ export const scoreResults = (request: RequestBody, results: Person[], params: Sc
                 } catch(err) {
                     result.scores = {};
                 }
-                result.scores.es = 0.005 * Math.round(Math.min(200, result.score));
+                result.scores.es = round(0.005 * Math.min(200, result.score));
                 result.score = (result.scores.score !== undefined) ?  round(result.scores.score) : result.scores.es;
                 if (result.score > maxScore) { maxScore = result.score }
                 if (result.score >= perfectScoreThreshold) { perfectScoreNumber++ }
