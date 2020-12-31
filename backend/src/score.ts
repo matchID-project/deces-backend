@@ -481,12 +481,6 @@ const cityRegExp = [
     [ /^\s*/, '']
 ];
 
-const bouroughRegExp = /^.*0?([1-9]?\d).*$/;
-
-const extractBouroughNumber = (city: string): string => {
-    return city.replace(bouroughRegExp, '$1');
-}
-
 const cityNorm = (city: string|string[]): string|string[] => {
     return applyRegex(city, cityRegExp);
 }
@@ -497,12 +491,13 @@ const scoreCity = (cityA: string|string[]|RequestField, cityB: string|string[]):
         const cityNormB = cityNorm(cityB);
         let score;
         if (typeof(cityNormB) === 'string') {
-            score = fuzzyRatio(cityNormA, cityNormB, jw);
+            score = fuzzyRatio(cityNormA, cityNormB, fuzzMixRatio);
         } else {
-            score = Math.max(...cityNormB.map(city => fuzzyRatio(cityNormA, city,jw)));
+            score = Math.max(...cityNormB.map(city => fuzzyRatio(cityNormA, city, fuzzMixRatio)));
         }
-        if ((score === 1) && Array.isArray(cityNormB) && cityNorm(cityNormB[0]) === 'paris') {
-            if (extractBouroughNumber(cityA) !== extractBouroughNumber(cityB[1])) {
+        if ((score === 1) && Array.isArray(cityNormB) && cityNormB[0] === 'paris') {
+            const boroughA = extractboroughNumber(cityA);
+            if (boroughA && (boroughA !== extractboroughNumber(cityB[1]))) {
                 return boroughLocationPenalty;
             }
         }
@@ -512,6 +507,15 @@ const scoreCity = (cityA: string|string[]|RequestField, cityB: string|string[]):
         return Math.max(...(cityA as string[]).map(city => scoreCity(cityNorm(city), cityNormB)));
     }
 }
+
+const boroughRegExp = [[/^\D*0*([1-9]+0?)\D*$/, '$1']];
+
+const extractboroughNumber = (city: string): string => {
+    const borough = applyRegex(city, boroughRegExp);
+    if (borough !== normalize(city)) { return borough as string; }
+    return undefined;
+}
+
 
 const countryRegExp = [
     [ /(^|\s)(de|en|les|le|la|a|aux|au|du|de la|s|sous|sur|l|d|des)\s/g, ' '],
