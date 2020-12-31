@@ -133,10 +133,10 @@ const tokenize = (sentence: string|string[], tokenizeArray?: boolean): string|st
         return s.length === 1 ? s[0] : s ;
     } else {
         if (tokenizeArray) {
-            return ((sentence as string[]).map(s => tokenize(s)) as any).flat();
+            return ((sentence).map(s => tokenize(s)) as any).flat();
         } else {
             // default dont tokenize if string[]
-            return sentence as string[];
+            return sentence;
         }
 
     }
@@ -327,9 +327,9 @@ const filterStopNames = (name: string|string[]): string|string[] => {
 
 const firstNameSexMismatch = (firstNameA: string, firstNameB: string): boolean => {
     let firstA = firstNameNorm(firstNameA);
-    firstA = typeof(firstA) === 'string' ? firstA : (firstA as string[])[0];
+    firstA = typeof(firstA) === 'string' ? firstA : (firstA)[0];
     let firstB = firstNameNorm(firstNameB);
-    firstB = typeof(firstB) === 'string' ? firstB : (firstB as string[])[0];
+    firstB = typeof(firstB) === 'string' ? firstB : (firstB)[0];
     return /^.?(e|a)$/.test(firstA.replace(firstB, '')) || /^.?(e|a)$/.test(firstB.replace(firstA, ''));
 }
 
@@ -345,8 +345,8 @@ const scoreName = (nameA: Name, nameB: Name, sex: string): any => {
     // reduce lastNamePenalty for long names
     const thisLastNamePenalty = ((Array.isArray(lastAtokens) && (lastAtokens.length > 2)) ||
         (Array.isArray(lastBtokens) && (lastBtokens.length > 2))) ? 1 : lastNamePenalty;
-    let firstFirstA, firstFirstB, scoreFirstALastB, fuzzScore;
-    const scoreFirst = round(scoreToken(firstA, firstB as string|string[]));
+    let firstFirstA; let firstFirstB; let scoreFirstALastB; let fuzzScore;
+    const scoreFirst = round(scoreToken(firstA, firstB));
     const scoreLast = round(scoreToken(lastA, lastB));
     score = round(Math.max(
                 scoreFirst * (scoreLast ** thisLastNamePenalty),
@@ -375,14 +375,14 @@ const scoreName = (nameA: Name, nameB: Name, sex: string): any => {
         }
         // first / last name inversion
         firstFirstA = Array.isArray(firstA) ? firstA[0] : firstA ;
-        scoreFirstALastB = scoreToken(firstFirstA as string, lastB as string);
+        scoreFirstALastB = scoreToken(firstFirstA, lastB as string);
         if (scoreFirstALastB >= blindNameScore) {
             firstFirstB = Array.isArray(firstB) ? firstB[0] : firstB ;
             score = Math.max(
                 score,
                 Math.max(
                     minNameScore,
-                    nameInversionPenalty * (scoreFirstALastB ** thisLastNamePenalty) * scoreToken(lastA, firstFirstB as string) ** thisLastNamePenalty
+                    nameInversionPenalty * (scoreFirstALastB ** thisLastNamePenalty) * scoreToken(lastA, firstFirstB) ** thisLastNamePenalty
                 )
             );
         }
@@ -443,7 +443,7 @@ const scoreToken = (tokenA: string|string[], tokenB: string|string[], option?: a
                     // if both tokenA and tokenB are arrays
                     // compare field by field, first field error lead to greater penalty (cf ** (1/(i+1)))
                     let previous = 0;
-                    s = mean((tokenA as string[]).filter((token,i) => (i<tokenB.length))
+                    s = mean((tokenA).filter((token,i) => (i<tokenB.length))
                         .map((token, i) => {
                         const current = fuzzyRatio(token, tokenB[i],option);
                         previous = previous ? 0.5*(previous + current) : current;
@@ -531,7 +531,7 @@ const scoreDepCode = (depCodeA: string|string[]|RequestField, depCodeB: string|R
     if (normDepCodeA === normDepCodeB) {
         return 1;
     } else {
-        if (sameCity && (['75','78'].indexOf(normDepCodeB as string) >=0) && (['78','91','92','93','94','95'].indexOf(normDepCodeA as string) >=0)) {
+        if (sameCity && (['75','78'].includes(normDepCodeB as string)) && (['78','91','92','93','94','95'].includes(normDepCodeA as string))) {
             return 1;
         } else {
             if (normDepCodeA === '97') {
@@ -578,7 +578,7 @@ const scoreLocation = (locA: Location, locB: Location): any => {
     const BisFrench = locB.countryCode && (locB.countryCode === 'FRA');
     if (BisFrench) {
         if (normalize(locA.country as string|string[])) {
-            score.country = scoreCountry(locA.country, tokenize(locB.country as string) as string|string[]);
+            score.country = scoreCountry(locA.country, tokenize(locB.country as string));
         }
         if (normalize(locA.city as string|string[]) && locB.city) {
             score.city = scoreCity(locA.city, locB.city as string|string[]);
@@ -603,10 +603,10 @@ const scoreLocation = (locA: Location, locB: Location): any => {
         score.score = ((score.country < 1) || score.city || score.department) ? Math.max(minLocationScore, scoreReduce(score)) : blindLocationScore;
     } else {
         if (normalize(locA.country as string|string[])) {
-            score.country = scoreCountry(locA.country, tokenize(locB.country as string) as string|string[]);
+            score.country = scoreCountry(locA.country, tokenize(locB.country as string));
         } else {
             if (normalize(locA.city as string|string[])) {
-                const sCountry = scoreCountry(locA.city, tokenize(locB.country as string) as string|string[]);
+                const sCountry = scoreCountry(locA.city, tokenize(locB.country as string));
                 if (sCountry > minNotFrCountryScore) {
                     score.country = sCountry;
                 }
