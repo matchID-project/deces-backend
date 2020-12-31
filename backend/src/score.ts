@@ -180,7 +180,7 @@ export const scoreResults = (request: RequestBody, results: Person[], params: Sc
             .map((result:any) => {
                 try {
                     result.scores = new ScoreResult(request, result, params);
-                    result.scores.score =  round(scoreReduce(result.scores) ** (requestMeaningArgsNumber/(Object.keys(result.scores).length || 1)));
+                    result.scores.score =  round(scoreReduce(result.scores, true) ** (requestMeaningArgsNumber/(Object.keys(result.scores).length || 1)));
                 } catch(err) {
                     result.scores = {};
                 }
@@ -253,7 +253,7 @@ export class ScoreResult {
       this.date = scoreDate(request.birthDate, result.birth.date, params.dateFormat);
     }
     if (request.firstName || request.lastName) {
-      if ((pruneScore < scoreReduce(this)) || !this.date) {
+      if ((pruneScore < scoreReduce(this, true)) || !this.date) {
         if (result.sex && result.sex === 'F') {
             if (request.legalName) {
                 this.name = scoreName({first: request.firstName, last: [request.lastName, request.legalName]}, result.name, 'F');
@@ -268,7 +268,7 @@ export class ScoreResult {
       }
     }
     if (request.sex) {
-      if (pruneScore < scoreReduce(this)) {
+      if (pruneScore < scoreReduce(this, true)) {
         this.sex = scoreSex(request.sex, result.sex);
       } else {
         this.score = 0
@@ -277,7 +277,7 @@ export class ScoreResult {
         this.sex = firstNameSexPenalty;
     }
     // location
-    if (pruneScore < scoreReduce(this)) {
+    if (pruneScore < scoreReduce(this, true)) {
     this.location = scoreLocation({
         city: request.birthCity,
         cityCode: request.birthCityCode,
