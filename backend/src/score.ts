@@ -558,16 +558,16 @@ const scoreCountry = (countryA: string|string[]|RequestField, countryB: string|s
     if (typeof(countryA) === 'string') {
         const countryNormA = countryNorm(countryA) as string;
         if (typeof(countryB) === 'string') {
-            return fuzzyRatio(countryNormA, countryNorm(countryB) as string, fuzzSetRatio);
+            return fuzzyRatio(countryNormA, countryNorm(countryB) as string, fuzzballTokenSetRatio);
         } else {
-            return Math.max(...countryB.map(country => fuzzyRatio(countryNormA, countryNorm(country) as string, fuzzSetRatio)),
-                fuzzSetRatio(countryNormA, countryB.join(' '))
+            return Math.max(...countryB.map(country => fuzzyRatio(countryNormA, countryNorm(country) as string, fuzzballTokenSetRatio)),
+                fuzzballTokenSetRatio(countryNormA, countryB.join(' '))
                 );
         }
     } else {
         const countryNormB = countryNorm(countryB);
         return Math.max(...(countryA as string[]).map(country => scoreCountry(countryNorm(country), countryNormB)),
-            fuzzSetRatio((countryA as string[]).join(' '), Array.isArray(countryNormB) ? countryNormB.join(' ') : countryNormB)
+            fuzzballTokenSetRatio((countryA as string[]).join(' '), Array.isArray(countryNormB) ? countryNormB.join(' ') : countryNormB)
         );
     }
 }
@@ -575,7 +575,7 @@ const scoreCountry = (countryA: string|string[]|RequestField, countryB: string|s
 
 const scoreLocation = (locA: Location, locB: Location): any => {
     const score: any = {};
-    const BisFrench = locB.country && (locB.countryCode === 'FRA');
+    const BisFrench = locB.countryCode && (locB.countryCode === 'FRA');
     if (BisFrench) {
         if (normalize(locA.country as string|string[])) {
             score.country = scoreCountry(locA.country, tokenize(locB.country as string) as string|string[]);
@@ -585,15 +585,22 @@ const scoreLocation = (locA: Location, locB: Location): any => {
         }
         if (normalize(locA.departmentCode as string|string[]) && locB.departmentCode) {
             if (BisFrench) {
-                if (locA.departmentCode !== '99') {
-                score.department = (locA.departmentCode === locB.departmentCode) ? 1 :
-                    ( ( (score.city === 1) && (locB.departmentCode === '75') && (['78','91','92','93','94','95'].indexOf(locA.departmentCode as string)) ) ? 1 : minDepScore);
+                const sDep = scoreDepCode(locA.departmentCode, locB.departmentCode, (score.city >= perfectScoreThreshold));
+                if (sDep) {
+                    score.department = sDep;
                 } else {
-                    score.country = minLocationScore;
+                    if (locA.departmentCode == '99') {
+                        if (score.country < perfectScoreThreshold) {
+                            score.country = minLocationScore;
+                        }
+                        else {
+                            score.department = minDepScore;
+                        }
+                    }
                 }
             }
         }
-        score.score = (score.country || score.city || score.department) ? Math.max(minLocationScore, scoreReduce(score)) : blindLocationScore;
+        score.score = ((score.country < 1) || score.city || score.department) ? Math.max(minLocationScore, scoreReduce(score)) : blindLocationScore;
     } else {
         if (normalize(locA.country as string|string[])) {
             score.country = scoreCountry(locA.country, tokenize(locB.country as string) as string|string[]);
@@ -608,10 +615,10 @@ const scoreLocation = (locA: Location, locB: Location): any => {
             }
         }
         if (normalize(locA.city as string|string[]) && locB.city) {
-            const sCity = scoreCity(locA.city, tokenize(locB.city) as string|string[]);
-            if (sCity > minNotFrCityScore) { score.city = sCity; }
+            const sCity = scoreCity(locA.city, locB.city as string|string[]);
+            score.city = Math.max(minNotFrCityScore, sCity)
         }
-        score.score = Math.max(minNotFrCountryScore, score.country, scoreReduce(score));
+        score.score = Math.max(minNotFrScore, scoreReduce(score));
     }
     return score;
 }
