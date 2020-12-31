@@ -19,14 +19,13 @@ describe('bulk.ts - Process chunk', () => {
   it('Passing only first and last name', async () => {
     const result = await processChunk(
       [{firstName: 'jean', lastName: 'petit'}, {firstName: 'georges', lastName: 'michel'}],
-      5,
+      10,
       {
         dateFormat: 'DD/MM/YYYY',
-        pruneScore: 0.01
       },
     )
     expect(result[0].length).to.above(2)
-    expect(result[1].length).to.above(2)
+    expect(result[1].length).to.above(1)
     expect(result[0][0].name.first).to.contain('Jean')
     expect(result[0][0].name.last).to.equal('Petit')
     expect(result[1][0].name.first).to.contain('Georges')
@@ -77,7 +76,7 @@ describe('bulk.ts - Process chunk', () => {
     expect(result.length).to.equal(1)
     expect(result[0][0].name.first).to.contain('Jeanne')
     expect(result[0][0].name.last).to.equal('Marie')
-    expect(result[0][0].scores.name.last).to.above(0.7)
+    expect(result[0][0].scores.name.last).to.above(0.65)
   });
 
 });

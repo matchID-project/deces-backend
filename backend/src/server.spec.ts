@@ -760,8 +760,8 @@ describe('server.ts - Express application', () => {
         .filter((x:any) => x.metadata && x.metadata.sourceLineNumber && x.metadata.sourceLineNumber === 1 )
       const source2 = res.body
         .filter((x:any) => x.metadata && x.metadata.sourceLineNumber && x.metadata.sourceLineNumber === 2 )
-      expect(source1.length).to.above(2);
-      expect(source2.length).to.above(2);
+      expect(source1.length).to.above(1); // there are 2 "exact" matches for 'jean', 'pierre', '04/08/1908', 'M'
+      expect(source2.length).to.above(0); // there is 1 "exact" match 'georges', 'michel', '12/03/1903', 'M'
     }).timeout(5000);
 
   })
