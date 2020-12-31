@@ -442,7 +442,6 @@ const scoreToken = (tokenA: string|string[], tokenB: string|string[], option?: a
                 } else {
                     // if both tokenA and tokenB are arrays
                     // compare field by field, first field error lead to greater penalty (cf ** (1/(i+1)))
-                    const min = blindNameScore;
                     let previous = 0;
                     s = mean((tokenA as string[]).filter((token,i) => (i<tokenB.length))
                         .map((token, i) => {
@@ -590,7 +589,7 @@ const scoreLocation = (locA: Location, locB: Location): any => {
                 if (sDep) {
                     score.department = sDep;
                 } else {
-                    if (locA.departmentCode == '99') {
+                    if (locA.departmentCode === '99') {
                         if (score.country < perfectScoreThreshold) {
                             score.country = minLocationScore;
                         }
