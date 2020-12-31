@@ -54,8 +54,8 @@ const getRangeFilter = (filter: Filter) => {
           filter.values.map((filterValue: RangeFilterValue) => ({
             range: {
               [filter.field]: {
-                lt: filterValue.to,
-                gt: filterValue.from
+                lte: filterValue.to,
+                gte: filterValue.from
               }
             }
           }))
@@ -70,8 +70,8 @@ const getRangeFilter = (filter: Filter) => {
           filter.values.map((filterValue: RangeFilterValue) => ({
             range: {
               [filter.field]: {
-                lt: filterValue.to,
-                gt: filterValue.from
+                lte: filterValue.to,
+                gte: filterValue.from
               }
             }
           }))
