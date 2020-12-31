@@ -250,7 +250,9 @@ export class ScoreResult {
   constructor(request: RequestBody, result: Person, params: ScoreParams = {}) {
     const pruneScore = params.pruneScore !== undefined ? params.pruneScore : defaultPruneScore
     if (request.birthDate) {
-      this.date = scoreDate(request.birthDate, result.birth.date, params.dateFormat);
+      this.date = scoreDate(request.birthDate, result.birth.date, params.dateFormat,
+        result.birth && result.birth.location && result.birth.location.countryCode && (result.birth.location.countryCode !== 'FRA')
+        );
     }
     if (request.firstName || request.lastName) {
       if ((pruneScore < scoreReduce(this, true)) || !this.date) {
@@ -564,14 +566,14 @@ const scoreLocation = (locA: Location, locB: Location): any => {
     return score;
 }
 
-const scoreDate = (dateRangeA: any, dateStringB: string, dateFormat: string): number => {
+const scoreDate = (dateRangeA: any, dateStringB: string, dateFormat: string, foreignDate: boolean): number => {
   if (dateFormat) {
     dateRangeA = moment(dateRangeA.toString(), dateFormat).format("YYYYMMDD");
   }
-  return 0.01 * Math.round((scoreDateRaw(dateRangeA, dateStringB) ** datePenalty) * 100);
+  return 0.01 * Math.round((scoreDateRaw(dateRangeA, dateStringB, foreignDate) ** datePenalty) * 100);
 }
 
-const scoreDateRaw = (dateRangeA: any, dateStringB: string): number => {
+const scoreDateRaw = (dateRangeA: any, dateStringB: string, foreignDate: boolean): number => {
     if (/^00000000$/.test(dateStringB) || !dateStringB || !dateRangeA) {
         return blindDateScore;
     }
@@ -582,17 +584,22 @@ const scoreDateRaw = (dateRangeA: any, dateStringB: string): number => {
         if (isDateRange(dateRangeA)) {
             const dateArrayA = dateRangeA.split(/-/);
             if (dateArrayA[0] === dateArrayA[1]) {
-                return scoreDateRaw(dateArrayA[0], dateStringB);
+                return scoreDateRaw(dateArrayA[0], dateStringB, foreignDate);
             }
             return ((dateArrayA[0] <= dateStringB) && (dateArrayA[2] >= dateStringB))
                 ? uncertainDateScore
                 : (/(^0000|0000$)/.test(dateStringB) ? uncertainDateScore : minDateScore);
         } else {
             if (dateStringB.startsWith("0000")) {
-                return Math.min(uncertainDateScore * levRatio(dateTransformMask(dateRangeA).substring(4,8),dateStringB.substring(4,8), damlev));
+                return round(uncertainDateScore * levRatio(dateTransformMask(dateRangeA).substring(4,8),dateStringB.substring(4,8), damlev));
             }
             if (dateStringB.endsWith("0000")) {
-                return Math.min(uncertainDateScore * levRatio(dateTransformMask(dateRangeA).substring(0,4),dateStringB.substring(0,4), damlev));
+                return round(uncertainDateScore * levRatio(dateTransformMask(dateRangeA).substring(0,4),dateStringB.substring(0,4), damlev));
+            }
+            if (foreignDate && dateStringB.endsWith("0101") && (dateStringB.substring(0,4) < "1990")
+                && dateTransformMask(dateRangeA).endsWith("0101")) {
+                // old foreign birth date place to 1st of january are often uncertain dates, leading to lot of confusion
+                return round(uncertainDateScore * levRatio(dateTransformMask(dateRangeA).substring(0,4),dateStringB.substring(0,4), damlev));
             }
             return levRatio(dateTransformMask(dateRangeA), dateStringB, damlev);
         }
