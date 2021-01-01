@@ -167,13 +167,14 @@ export const buildResult = (result: ResultRawES, requestInput: RequestInput): Re
       if (item === 'name') {
         filteredRequest.firstName = requestInput.name.value && requestInput.name.value.first;
         filteredRequest.lastName = requestInput.name.value && requestInput.name.value.last;
+        filteredRequest.legalName = requestInput.name.value && requestInput.name.value.legal;
       } else {
         filteredRequest[item] = requestInput[item].value
       }
     }
   })
   let filteredResults = result.hits.hits.map(buildResultSingle)
-  scoreResults(filteredRequest, filteredResults, filteredRequest.dateFormat)
+  scoreResults(filteredRequest, filteredResults, {dateFormat: filteredRequest.dateFormat})
   if (requestInput.sort && Object.values(requestInput.sort.value).map(x => Object.keys(x))[0].includes('score')) {
     if (Object.values(requestInput.sort.value).find(x => x.score).score === 'asc') {
       filteredResults = filteredResults.sort((a: Person, b: Person) => a.score - b.score)

@@ -71,6 +71,10 @@ export interface RequestBody {
   */
  lastName?: string;
  /**
+  * Nom d'usage
+  */
+ legalName?: string;
+ /**
   * Sexe
   */
  sex?: 'M'|'F'|'H';
@@ -133,6 +137,7 @@ export class RequestInput {
   fullText?: RequestField;
   firstName?: RequestField;
   lastName?: RequestField;
+  legalName?: RequestField;
   sex?: RequestField;
   birthDate?: RequestField;
   birthCity?: RequestField;
@@ -156,7 +161,7 @@ export class RequestInput {
   dateFormat?: string;
   metadata?: any;
   errors: string[] = [];
-  constructor(q?: string, firstName?: string, lastName?: string, sex?: string, birthDate?: string|number, birthCity?: string, birthDepartment?: string, birthCountry?: string, birthGeoPoint?: GeoPoint, deathDate?: string|number, deathCity?: string, deathDepartment?: string, deathCountry?: string, deathGeoPoint?: GeoPoint, deathAge?: string|number, lastSeenAliveDate?: string, scroll?: string, scrollId?: string, size?: number, page?: number, fuzzy?: string, sort?: string|Sort[], block?: Block, dateFormat?: any, metadata?: any) {
+  constructor(q?: string, firstName?: string, lastName?: string, legalName?: string, sex?: string, birthDate?: string|number, birthCity?: string, birthDepartment?: string, birthCountry?: string, birthGeoPoint?: GeoPoint, deathDate?: string|number, deathCity?: string, deathDepartment?: string, deathCountry?: string, deathGeoPoint?: GeoPoint, deathAge?: string|number, lastSeenAliveDate?: string, scroll?: string, scrollId?: string, size?: number, page?: number, fuzzy?: string, sort?: string|Sort[], block?: Block, dateFormat?: any, metadata?: any) {
     this.size = size ? size : 20;
     this.page = page ? page : 1;
     this.scroll = scroll ? scroll : '';
@@ -175,7 +180,8 @@ export class RequestInput {
     this.fullText = fullTextWithQuery(q, fuzzy);
     this.name = nameWithQuery({
       first: firstName,
-      last: lastName
+      last: lastName,
+      legal: legalName
     }, fuzzy);
     this.sex = sexWithQuery(sex, fuzzy);
     this.birthDate = birthDateWithQuery(birthDateTransformed, fuzzy);
