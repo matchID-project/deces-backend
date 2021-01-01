@@ -748,7 +748,7 @@ describe('server.ts - Express application', () => {
         .field('pruneScore', '0.1')
         .field('candidateNumber', '5')
         .attach('csv', buf, 'file.csv')
-      const { body : { id: jobId } } = res
+      const { body : { id: jobId } }: { body: { id: string} } = res
       res = await chai.request(app)
         .get(`${process.env.BACKEND_PROXY_PATH}/search/json/${jobId}`)
       while (res.body.status === 'created' || res.body.status === 'waiting' || res.body.status === 'active') {
