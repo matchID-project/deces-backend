@@ -28,6 +28,9 @@ RUN if [ ! -z "$http_proxy" ] ; then \
 
 RUN [ -z "${NPM_LATEST}" ] || npm i npm@latest -g
 
+HEALTHCHECK --interval=5m --timeout=2m --start-period=45s \
+   CMD curl -f --silent --retry 6 --max-time 5 --retry-delay 10 --retry-max-time 60 "http://localhost:8080/deces/api/v1/healthcheck" || bash -c 'kill -s 15 -1 && (sleep 10; kill -s 9 -1)'
+
 ################################
 # Step 2: "development" target #
 ################################
