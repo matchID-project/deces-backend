@@ -5,6 +5,8 @@ import { RegisterRoutes } from './routes/routes';
 import loggerStream from './logger';
 import { router as bulk } from './controllers/bulk';
 import { router as documentation } from './controllers/documentation';
+// Manually telling tsoa which controllers to use in the app entry file, route generation faster
+import "./controllers/index.controller";
 
 export const app = express();
 

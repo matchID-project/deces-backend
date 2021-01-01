@@ -578,7 +578,7 @@ router.get('/:format(csv|json)/:id?', async (req: any, res: express.Response) =>
             res.status(400).send({msg: stopJobReason.find(reason => reason.id === job.id).msg});
             return;
           } else {
-            res.status(400).send({msg: `Job ${req.params.id} was cancelled`});
+            res.status(400).send({msg: `Job ${req.params.id as string} was cancelled`});
             return;
           }
         }
@@ -741,12 +741,12 @@ router.delete('/:format(csv|json)/:id?', async (req: any, res: express.Response)
           }
         });
       }, 2000);
-      res.send({msg: `Job ${req.params.id} cancelled`})
+      res.send({msg: `Job ${req.params.id as string} cancelled`})
     } else if (job) {
       if (stopJob.includes(job.id)) {
-        res.send({msg: `Job ${req.params.id} already cancelled`})
+        res.send({msg: `Job ${req.params.id as string} already cancelled`})
       } else {
-        res.send({msg: `job is ${job.status}`})
+        res.send({msg: `job is ${job.status as string}`})
       }
     } else {
       res.send({msg: 'no job found'})
