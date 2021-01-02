@@ -389,14 +389,14 @@ const buildAggregation = (requestInput: RequestInput): any => {
     return aggregation
   })
   const aggregationRequest: any = {
-    myByckets : {
+    myBuckets : {
       composite: {
         size: 10,
         sources: aggregationArray
       }
     }
   }
-  if (requestInput.afterKey !== undefined) aggregationRequest.myByckets.composite.after = requestInput.afterKey
+  if (requestInput.afterKey !== undefined) aggregationRequest.myBuckets.composite.after = requestInput.afterKey
   return aggregationRequest
 }
 

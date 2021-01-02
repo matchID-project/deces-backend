@@ -246,17 +246,17 @@ export class IndexController extends Controller {
       }
       let requestBuild = buildRequest(requestInput);
       let result = await runRequest(requestBuild, null);
-      let { after_key: afterKey } = result.data.aggregations.myByckets
+      let { after_key: afterKey } = result.data.aggregations.myBuckets
       let { took: delay } = result.data
-      let { buckets } = result.data.aggregations.myByckets
-      while ( result.data.aggregations.myByckets.buckets.length > 0 ) {
+      let { buckets } = result.data.aggregations.myBuckets
+      while ( result.data.aggregations.myBuckets.buckets.length > 0 ) {
         requestInput.afterKey = afterKey
         requestBuild = buildRequest(requestInput);
         result = await runRequest(requestBuild, null);
         delay += result.data.took
-        const { buckets: afterBucket } = result.data.aggregations.myByckets
+        const { buckets: afterBucket } = result.data.aggregations.myBuckets
         buckets = buckets.concat(afterBucket)
-        afterKey = result.data.aggregations.myByckets.after_key
+        afterKey = result.data.aggregations.myBuckets.after_key
       }
       const builtResult = buildResultAgg({total: result.data.hits.total.value, delay, buckets}, requestInput)
 
@@ -289,17 +289,17 @@ export class IndexController extends Controller {
       }
       let requestBuild = buildRequest(requestInput);
       let result = await runRequest(requestBuild, null);
-      let { after_key: afterKey } = result.data.aggregations.myByckets
+      let { after_key: afterKey } = result.data.aggregations.myBuckets
       let { took: delay } = result.data
-      let { buckets } = result.data.aggregations.myByckets
-      while ( result.data.aggregations.myByckets.buckets.length > 0 ) {
+      let { buckets } = result.data.aggregations.myBuckets
+      while ( result.data.aggregations.myBuckets.buckets.length > 0 ) {
         requestInput.afterKey = afterKey
         requestBuild = buildRequest(requestInput);
         result = await runRequest(requestBuild, null);
         delay += result.data.took
-        const { buckets: afterBucket } = result.data.aggregations.myByckets
+        const { buckets: afterBucket } = result.data.aggregations.myBuckets
         buckets = buckets.concat(afterBucket)
-        afterKey = result.data.aggregations.myByckets.after_key
+        afterKey = result.data.aggregations.myBuckets.after_key
       }
       const builtResult = buildResultAgg({total: result.data.hits.total.value, delay, buckets}, requestInput)
 
