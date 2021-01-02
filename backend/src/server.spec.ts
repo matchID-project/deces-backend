@@ -586,7 +586,7 @@ describe('server.ts - Express application', () => {
         .on('end', (rowCount: number) => {
           expect(rowCount).to.eql(nrows - 1);
         });
-    }).timeout(5000);
+    }).timeout(10000);
 
     it('bulk ordered', async () => {
       let res;
