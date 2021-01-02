@@ -27,7 +27,7 @@ describe('server.ts - Express application', () => {
     let res = await chai.request(app)
       .get(`${process.env.BACKEND_PROXY_PATH}/search`)
       .query({deathDate: 2020, firstName: 'Harry'})
-    const { id } = res.body.response.persons[0];
+    const { id }: { id: string } = res.body.response.persons[0];
     res = await chai.request(app)
       .get(`${process.env.BACKEND_PROXY_PATH}/id/${id}`)
     expect(res).to.have.status(200);
