@@ -457,6 +457,9 @@ export const buildRequest = (requestInput: RequestInput): BodyResponse|ScrolledR
       size,
       from
     };
+    if (requestInput.aggs.length === 0) {
+       delete body.aggs
+    }
   }
 
   return body;
