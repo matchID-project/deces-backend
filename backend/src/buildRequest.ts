@@ -10,6 +10,8 @@ const buildMatch = (requestInput: RequestInput) => {
   } else {
     if (requestInput.fullText && requestInput.fullText.value) {
       return buildSimpleMatch(requestInput.fullText.value as string)
+    } else if (requestInput.id) {
+      return buildIndexMatch(requestInput.id)
     } else {
       return buildAdvancedMatch(requestInput)
     }
@@ -61,6 +63,20 @@ const buildAdaptativeBlockMatch = (searchInput: RequestInput) => {
     };
   } else {
     return buildAdvancedMatch(searchInput);
+  }
+}
+
+const buildIndexMatch = (id: string) => {
+  return {
+    bool: {
+      must: [
+        {
+          match: {
+            UID: id
+          }
+        }
+      ]
+    }
   }
 }
 
