@@ -268,6 +268,50 @@ export class IndexController extends Controller {
     }
   }
 
+  @Post('/agg')
+  public async aggregationPost(@Body() requestBody: RequestBody): Promise<ResultAgg> {
+    if (Object.keys(requestBody).length > 0) {
+      const validFields = ['q', 'firstName', 'lastName', 'legalName', 'sex', 'birthDate', 'birthCity', 'birthDepartment', 'birthCountry', 'birthGeoPoint', 'deathDate', 'deathCity', 'deathDepartment', 'deathCountry', 'deathGeoPoint', 'deathAge', 'lastSeenAliveDate', 'aggs']
+      const notValidFields = Object.keys(requestBody).filter((item: string) => !validFields.includes(item))
+      if (notValidFields.length > 0) {
+        this.setStatus(400);
+        return  { msg: "error - unknown field" };
+      }
+      if ((requestBody.firstName || requestBody.lastName || requestBody.legalName || requestBody.birthDate || requestBody.birthCity || requestBody.birthDepartment || requestBody.birthCountry || requestBody.birthGeoPoint || requestBody.deathDate || requestBody.deathCity || requestBody.deathDepartment || requestBody.deathCountry || requestBody.deathAge || requestBody.deathGeoPoint || requestBody.lastSeenAliveDate ) && requestBody.q) {
+        this.setStatus(400);
+        return  { msg: "error - simple and complex request at the same time" };
+      }
+      requestBody.size = 0
+      const requestInput = new RequestInput(requestBody);
+      if (requestInput.errors.length) {
+        this.setStatus(400);
+        return  { msg: requestInput.errors };
+      }
+      let requestBuild = buildRequest(requestInput);
+      let result = await runRequest(requestBuild, null);
+      let { after_key: afterKey } = result.data.aggregations.myByckets
+      let { took: delay } = result.data
+      let { buckets } = result.data.aggregations.myByckets
+      while ( result.data.aggregations.myByckets.buckets.length > 0 ) {
+        requestInput.afterKey = afterKey
+        requestBuild = buildRequest(requestInput);
+        result = await runRequest(requestBuild, null);
+        delay += result.data.took
+        const { buckets: afterBucket } = result.data.aggregations.myByckets
+        buckets = buckets.concat(afterBucket)
+        afterKey = result.data.aggregations.myByckets.after_key
+      }
+      const builtResult = buildResultAgg({total: result.data.hits.total.value, delay, buckets}, requestInput)
+
+      this.setStatus(200);
+      return  builtResult;
+    } else {
+      this.setStatus(400);
+      return  { msg: "error - empty request" };
+    }
+  }
+
+
   @Response<HealthcheckResponse>('200', 'OK')
   @Tags('Check')
   @Get('/healthcheck')

@@ -140,6 +140,10 @@ export interface RequestBody {
   * Langage entête
   */
  headerLang?: string;
+ /**
+  * Aggregation parameter
+  */
+ aggs?: string[];
 };
 
 
@@ -170,7 +174,7 @@ interface RequestInputParams {
   page?: number;
   fuzzy?: string|boolean;
   sort?: string|Sort[];
-  aggs?: string;
+  aggs?: string|string[];
   block?: Block;
   dateFormat?: any;
 }
@@ -218,7 +222,7 @@ export class RequestInput {
     this.aggs = params.aggs
       ? typeof(params.aggs) === 'string'
         ? JSON.parse(params.aggs)
-        : [] // if object should return input object
+        : params.aggs
       : [];
     this.block = params.block;
     this.id = params.id;
