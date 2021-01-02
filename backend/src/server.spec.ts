@@ -805,4 +805,26 @@ describe('server.ts - Express application', () => {
     }).timeout(5000);
 
   })
+
+  describe('/agg GET', () => {
+    it('aggregations', async () => {
+      const res = await chai.request(app)
+        .get(`${process.env.BACKEND_PROXY_PATH}/agg`)
+        .query({deathDate: 2020, firstName: 'Harry', aggs: '["birthCountry"]'})
+      expect(res).to.have.status(200);
+      expect(res.body.response.aggregations.length).to.above(0);
+    });
+  })
+
+  describe('/agg POST', () => {
+    it('aggregations', async () => {
+      const res = await chai.request(app)
+        .post(`${process.env.BACKEND_PROXY_PATH}/agg`)
+        .send({deathDate: 2020, firstName: 'Harry', aggs: ["birthCountry"]})
+      expect(res).to.have.status(200);
+      expect(res.body.response.aggregations.length).to.above(0);
+    });
+  })
+
+
 });
