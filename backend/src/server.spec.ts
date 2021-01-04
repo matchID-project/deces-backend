@@ -806,23 +806,58 @@ describe('server.ts - Express application', () => {
 
   })
 
+
   describe('/agg GET', () => {
-    it('aggregations', async () => {
-      const res = await chai.request(app)
-        .get(`${process.env.BACKEND_PROXY_PATH}/agg`)
-        .query({deathDate: 2020, firstName: 'Harry', aggs: '["birthCountry"]'})
-      expect(res).to.have.status(200);
-      expect(res.body.response.aggregations.length).to.above(0);
+    const tests = [
+      {fieldName: 'sex', expected: 'M'},
+      {fieldName: 'birthDate', expected: '19251107'},
+      {fieldName: 'birthCity', expected: 'paris'},
+      {fieldName: 'birthDepartment', expected: '75'},
+      {fieldName: 'birthCountry', expected: 'france'},
+      {fieldName: 'deathDate', expected: '20200113'},
+      {fieldName: 'deathCity', expected: 'bagnolet'},
+      {fieldName: 'deathDepartment', expected: '30'},
+      {fieldName: 'deathCountry', expected: 'france'},
+      {fieldName: 'deathAge', expected: 64},
+    ];
+
+    tests.forEach(function(test) {
+      it(`${test.fieldName} should include the bucket ${test.expected}`, async () => {
+        const res = await chai.request(app)
+          .get(`${process.env.BACKEND_PROXY_PATH}/agg`)
+          .query({deathDate: 2020, firstName: 'Harry', aggs: `["${test.fieldName}"]`})
+        expect(res).to.have.status(200);
+        expect(res.body.response.aggregations.length).to.above(0);
+        expect(res.body.response.aggregations.map((bucket: any) => bucket.key[test.fieldName])).to.include(test.expected);
+      });
     });
   })
 
+
   describe('/agg POST', () => {
-    it('aggregations', async () => {
-      const res = await chai.request(app)
-        .post(`${process.env.BACKEND_PROXY_PATH}/agg`)
-        .send({deathDate: 2020, firstName: 'Harry', aggs: ["birthCountry"]})
-      expect(res).to.have.status(200);
-      expect(res.body.response.aggregations.length).to.above(0);
+
+    const tests = [
+      {fieldName: 'sex', expected: 'M'},
+      {fieldName: 'birthDate', expected: '19251107'},
+      {fieldName: 'birthCity', expected: 'paris'},
+      {fieldName: 'birthDepartment', expected: '75'},
+      {fieldName: 'birthCountry', expected: 'france'},
+      {fieldName: 'deathDate', expected: '20200113'},
+      {fieldName: 'deathCity', expected: 'bagnolet'},
+      {fieldName: 'deathDepartment', expected: '30'},
+      {fieldName: 'deathCountry', expected: 'france'},
+      {fieldName: 'deathAge', expected: 64},
+    ];
+
+    tests.forEach(function(test) {
+      it(`${test.fieldName} should include the bucket ${test.expected}`, async () => {
+        const res = await chai.request(app)
+          .post(`${process.env.BACKEND_PROXY_PATH}/agg`)
+          .send({deathDate: 2020, firstName: 'Harry', aggs: [test.fieldName]})
+        expect(res).to.have.status(200);
+        expect(res.body.response.aggregations.length).to.above(0);
+        expect(res.body.response.aggregations.map((bucket: any) => bucket.key[test.fieldName])).to.include(test.expected);
+      });
     });
   })
 
