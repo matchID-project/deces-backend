@@ -229,13 +229,12 @@ export class IndexController extends Controller {
     @Query() deathDepartment?: string,
     @Query() deathCountry?: string,
     @Query() deathAge?: StrAndNumber,
-    @Query() lastSeenAliveDate?: string,
     @Query() fuzzy?: 'true'|'false',
     @Query() aggs?: string,
   ): Promise<ResultAgg> {
-    if (q || firstName || lastName || legalName || sex || birthDate || birthCity || birthDepartment || birthCountry || deathDate || deathCity || deathDepartment || deathCountry || deathAge || lastSeenAliveDate) {
+    if (q || firstName || lastName || legalName || sex || birthDate || birthCity || birthDepartment || birthCountry || deathDate || deathCity || deathDepartment || deathCountry || deathAge) {
       // http://localhost:8084/deces/api/v1/agg?q=jean&aggs=[%22birthCountry%22]
-      const requestInput = new RequestInput({q, firstName, lastName, legalName, sex, birthDate, birthCity, birthDepartment, birthCountry, deathDate, deathCity, deathDepartment, deathCountry, deathAge, lastSeenAliveDate, fuzzy, size: 0, aggs});
+      const requestInput = new RequestInput({q, firstName, lastName, legalName, sex, birthDate, birthCity, birthDepartment, birthCountry, deathDate, deathCity, deathDepartment, deathCountry, deathAge, fuzzy, size: 0, aggs});
       if (requestInput.errors.length) {
         this.setStatus(400);
         return  { msg: requestInput.errors };
@@ -271,13 +270,13 @@ export class IndexController extends Controller {
   @Post('/agg')
   public async aggregationPost(@Body() requestBody: RequestBody): Promise<ResultAgg> {
     if (Object.keys(requestBody).length > 0) {
-      const validFields = ['q', 'firstName', 'lastName', 'legalName', 'sex', 'birthDate', 'birthCity', 'birthDepartment', 'birthCountry', 'birthGeoPoint', 'deathDate', 'deathCity', 'deathDepartment', 'deathCountry', 'deathGeoPoint', 'deathAge', 'lastSeenAliveDate', 'aggs']
+      const validFields = ['q', 'firstName', 'lastName', 'legalName', 'sex', 'birthDate', 'birthCity', 'birthDepartment', 'birthCountry', 'deathDate', 'deathCity', 'deathDepartment', 'deathCountry', 'deathAge', 'aggs']
       const notValidFields = Object.keys(requestBody).filter((item: string) => !validFields.includes(item))
       if (notValidFields.length > 0) {
         this.setStatus(400);
         return  { msg: "error - unknown field" };
       }
-      if ((requestBody.firstName || requestBody.lastName || requestBody.legalName || requestBody.birthDate || requestBody.birthCity || requestBody.birthDepartment || requestBody.birthCountry || requestBody.birthGeoPoint || requestBody.deathDate || requestBody.deathCity || requestBody.deathDepartment || requestBody.deathCountry || requestBody.deathAge || requestBody.deathGeoPoint || requestBody.lastSeenAliveDate ) && requestBody.q) {
+      if ((requestBody.firstName || requestBody.lastName || requestBody.legalName || requestBody.birthDate || requestBody.birthCity || requestBody.birthDepartment || requestBody.birthCountry || requestBody.birthGeoPoint || requestBody.deathDate || requestBody.deathCity || requestBody.deathDepartment || requestBody.deathCountry || requestBody.deathAge || requestBody.deathGeoPoint ) && requestBody.q) {
         this.setStatus(400);
         return  { msg: "error - simple and complex request at the same time" };
       }
