@@ -342,7 +342,7 @@ export const processCsv =  async (job: Queue.Job<any>, jobFile: any): Promise<an
 
 export const processChunk = async (chunk: any, candidateNumber: number, params: ScoreParams) => {
   const bulkRequest = chunk.map((row: any) => { // TODO: type
-    const requestInput = new RequestInput(row.q, row.firstName, row.lastName, row.legalName, row.sex, row.birthDate, row.birthCity, row.birthDepartment, row.birthCountry, row.birthGeoPoint, row.deathDate, row.deathCity, row.deathDepartment, row.deathCountry, row.deathGeoPoint, row.deathAge, row.lastSeenAliveDate, row.scroll, row.scrollId, row.size, row.page, row.fuzzy, row.sort, row.block, params.dateFormat);
+    const requestInput = new RequestInput({...row, dateFormat: params.dateFormat});
     return [JSON.stringify({index: "deces"}), JSON.stringify(buildRequest(requestInput))];
   })
   const msearchRequest = bulkRequest.map((x: any) => x.join('\n\r')).join('\n\r') + '\n';
@@ -578,7 +578,7 @@ router.get('/:format(csv|json)/:id?', async (req: any, res: express.Response) =>
             res.status(400).send({msg: stopJobReason.find(reason => reason.id === job.id).msg});
             return;
           } else {
-            res.status(400).send({msg: `Job ${req.params.id} was cancelled`});
+            res.status(400).send({msg: `Job ${req.params.id as string} was cancelled`});
             return;
           }
         }
@@ -741,12 +741,12 @@ router.delete('/:format(csv|json)/:id?', async (req: any, res: express.Response)
           }
         });
       }, 2000);
-      res.send({msg: `Job ${req.params.id} cancelled`})
+      res.send({msg: `Job ${req.params.id as string} cancelled`})
     } else if (job) {
       if (stopJob.includes(job.id)) {
-        res.send({msg: `Job ${req.params.id} already cancelled`})
+        res.send({msg: `Job ${req.params.id as string} already cancelled`})
       } else {
-        res.send({msg: `job is ${job.status}`})
+        res.send({msg: `job is ${job.status as string}`})
       }
     } else {
       res.send({msg: 'no job found'})

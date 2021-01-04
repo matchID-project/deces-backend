@@ -84,6 +84,13 @@ module.exports = {
         "@typescript-eslint/type-annotation-spacing": "off",
         "@typescript-eslint/unified-signatures": "error",
         "@typescript-eslint/no-misused-promises": "warn",
+        // from ts 3.9 to 4.1
+        "@typescript-eslint/no-unsafe-call": "off",
+        "@typescript-eslint/no-unsafe-member-access": "off",
+        "@typescript-eslint/no-unsafe-assignment": "off",
+        "@typescript-eslint/no-unsafe-return": "off",
+        "@typescript-eslint/no-floating-promises": "off",
+        "@typescript-eslint/restrict-plus-operands": "off",
         "camelcase": "warn",
         "complexity": "off",
         "constructor-super": "error",

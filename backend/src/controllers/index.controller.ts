@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Route, Query, Response, Tags, Header, Request } from 'tsoa';
+import { Controller, Get, Post, Body, Route, Query, Response, Tags, Header, Request, Path } from 'tsoa';
 import express from 'express';
 import { resultsHeader, jsonPath, prettyString } from './bulk';
 import { runRequest } from '../runRequest';
@@ -64,7 +64,7 @@ export class IndexController extends Controller {
     @Query() sort?: string
   ): Promise<Result> {
     if (q || firstName || lastName || legalName || sex || birthDate || birthCity || birthDepartment || birthCountry || deathDate || deathCity || deathDepartment || deathCountry || deathAge || lastSeenAliveDate || scroll) {
-      const requestInput = new RequestInput(q, firstName, lastName, legalName, sex, birthDate, birthCity, birthDepartment, birthCountry, null, deathDate, deathCity, deathDepartment, deathCountry, null, deathAge, lastSeenAliveDate, scroll, scrollId, size, page, fuzzy, sort);
+      const requestInput = new RequestInput({q, firstName, lastName, legalName, sex, birthDate, birthCity, birthDepartment, birthCountry, deathDate, deathCity, deathDepartment, deathCountry, deathAge, lastSeenAliveDate, scroll, scrollId, size, page, fuzzy, sort});
       if (requestInput.errors.length) {
         this.setStatus(400);
         return  { msg: requestInput.errors };
@@ -106,7 +106,7 @@ export class IndexController extends Controller {
         this.setStatus(400);
         return  { msg: "error - simple and complex request at the same time" };
       }
-      const requestInput = new RequestInput(requestBody.q, requestBody.firstName, requestBody.lastName, requestBody.legalName, requestBody.sex, requestBody.birthDate, requestBody.birthCity, requestBody.birthDepartment, requestBody.birthCountry, requestBody.birthGeoPoint, requestBody.deathDate, requestBody.deathCity, requestBody.deathDepartment, requestBody.deathCountry, requestBody.deathGeoPoint, requestBody.deathAge, requestBody.lastSeenAliveDate, requestBody.scroll, requestBody.scrollId, requestBody.size, requestBody.page, requestBody.fuzzy, requestBody.sort);
+      const requestInput = new RequestInput(requestBody);
       if (requestInput.errors.length) {
         this.setStatus(400);
         return  { msg: requestInput.errors };
@@ -188,6 +188,25 @@ export class IndexController extends Controller {
         ])
       });
     }
+  }
+
+  /**
+   * Search by ID
+   * @summary Use unique identifier to search for people
+   * @param id Person unique identifier
+   */
+  @Response<ErrorResponse>('400', 'Bad request')
+  @Response<Result>('200', 'OK')
+  @Tags('Simple')
+  @Get('/id/{id}')
+  public async searchId(
+    @Path() id: string
+  ): Promise<Result> {
+    const requestInput = new RequestInput({id});
+    const requestBuild = buildRequest(requestInput);
+    const result = await runRequest(requestBuild, requestInput.scroll);
+    const builtResult = buildResult(result.data, requestInput)
+    return builtResult
   }
 
   @Response<HealthcheckResponse>('200', 'OK')
