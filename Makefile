@@ -13,6 +13,7 @@ export MAKE = ${MAKEBIN} --no-print-directory -s
 export DC := /usr/local/bin/docker-compose
 export DC_DIR=${APP_PATH}
 export DC_FILE=${DC_DIR}/docker-compose
+export DC_BACKEND=${DC} -f $(DC_FILE).yml
 export DC_PREFIX := $(shell echo ${APP} | tr '[:upper:]' '[:lower:]' | tr '_' '-')
 export DC_NETWORK := $(shell echo ${APP} | tr '[:upper:]' '[:lower:]')
 
@@ -232,17 +233,17 @@ docker-check:
 
 # build
 backend-dist:
-	export EXEC_ENV=development; ${DC} -f $(DC_FILE)-dev-backend.yml run -T --no-deps --rm backend npm run build  && tar czvf ${BACKEND}/${FILE_BACKEND_DIST_APP_VERSION} -C ${BACKEND} dist
+	export EXEC_ENV=development; ${DC_BACKEND} -f $(DC_FILE)-dev-backend.yml run -T --no-deps --rm backend npm run build  && tar czvf ${BACKEND}/${FILE_BACKEND_DIST_APP_VERSION} -C ${BACKEND} dist
 
 backend-build-image: ${BACKEND}/${FILE_BACKEND_DIST_APP_VERSION}
-	export EXEC_ENV=production; ${DC} -f $(DC_FILE).yml build backend
+	export EXEC_ENV=production; ${DC_BACKEND} build backend
 
 backend-build-all: network backend-dist backend-build-image
 
 # production mode
 backend-start:
 	@echo docker-compose up backend for production ${VERSION}
-	@export EXEC_ENV=production; ${DC} -f ${DC_FILE}.yml up -d 2>&1 | grep -v orphan
+	@export EXEC_ENV=production; ${DC_BACKEND} up -d 2>&1 | grep -v orphan
 	@timeout=${BACKEND_TIMEOUT} ; ret=1 ;\
 		until [ "$$timeout" -le 0 -o "$$ret" -eq "0"  ] ; do\
 			(docker exec -i ${USE_TTY} ${APP} curl -s --fail -X GET http://localhost:${BACKEND_PORT}/deces/api/v1/version > /dev/null) ;\
@@ -256,7 +257,7 @@ backend-start:
 
 backend-stop:
 	@echo docker-compose down backend for production ${VERSION}
-	@export EXEC_ENV=production; ${DC} -f ${DC_FILE}.yml down  --remove-orphan
+	@export EXEC_ENV=production; ${DC_BACKEND} down --remove-orphan
 
 backend-test:
 	@echo Testing API parameters
@@ -265,7 +266,7 @@ backend-test:
 backend-test-mocha:
 	@echo Testing API with mocha tests 
 	@export EXEC_ENV=development; export BACKEND_LOG_LEVEL=error; \
-		${DC} -f ${DC_FILE}-dev-backend.yml run --rm backend npm run test
+		${DC_BACKEND} -f ${DC_FILE}-dev-backend.yml run --rm backend npm run test
 
 backend/tests/clients_test.csv:
 	curl -L https://github.com/matchID-project/examples/raw/master/data/clients_test.csv -o backend/tests/clients_test.csv
@@ -279,10 +280,10 @@ test-perf-v1:
 backend-dev:
 	@echo docker-compose up backend for dev
 	@export EXEC_ENV=development;\
-		${DC} -f ${DC_FILE}-dev-backend.yml up --build -d --force-recreate 2>&1 | grep -v orphan
+		${DC_BACKEND} -f ${DC_FILE}-dev-backend.yml up --build -d --force-recreate 2>&1 | grep -v orphan
 
 backend-dev-stop:
-	@export EXEC_ENV=development; ${DC} -f ${DC_FILE}-dev-backend.yml down
+	@export EXEC_ENV=development; ${DC_BACKEND} -f ${DC_FILE}-dev-backend.yml down
 
 backend-dev-test:
 	@echo Testing API parameters

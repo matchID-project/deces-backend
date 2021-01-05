@@ -31,12 +31,18 @@ services:
       - BACKEND_PROXY_PATH=${BACKEND_PROXY_PATH}
       - BACKEND_JOB_CONCURRENCY=${BACKEND_JOB_CONCURRENCY}
       - BACKEND_CHUNK_CONCURRENCY=${BACKEND_CHUNK_CONCURRENCY}
+      - BACKEND_LOG_LEVEL=${BACKEND_LOG_LEVEL}
       - API_URL=${API_URL}
       - API_SSL=${API_SSL}
       - API_EMAIL=${API_EMAIL}
+      - DATAGOUV_CATALOG_URL=${DATAGOUV_CATALOG_URL}
+      - DATAGOUV_RESOURCES_URL=${DATAGOUV_RESOURCES_URL}
+      - DATAGOUV_PROXY_PATH=${DATAGOUV_PROXY_PATH}
       - ES_URL=${ES_HOST}:${ES_PORT}
       - ES_INDEX=${ES_INDEX}
     restart: always
+    depends_on:
+      - "redis"
   redis:
     image: redis:alpine
     container_name: ${APP}-redis
