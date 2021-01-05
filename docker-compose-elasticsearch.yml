@@ -24,5 +24,8 @@ services:
     # ports:
     #   - 9200:9200
     restart: always
-
-
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s --fail -XGET localhost:9200/_cat/indices"]
+      interval: 1m
+      timeout: 10s
+      retries: 3

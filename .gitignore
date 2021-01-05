@@ -11,6 +11,7 @@ deces-dataprep
 .dataprep.sha1
 redisdata
 clients_test.csv
+docker-compose-elasticsearch-huge.yml
 
 # backup
 data
