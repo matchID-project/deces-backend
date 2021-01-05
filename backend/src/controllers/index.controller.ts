@@ -213,6 +213,7 @@ export class IndexController extends Controller {
     return builtResult
   }
 
+  @Tags('Simple')
   @Get('/agg')
   public async aggregation(
     @Query() q?: string,
@@ -233,7 +234,10 @@ export class IndexController extends Controller {
     @Query() aggs?: string,
   ): Promise<ResultAgg> {
     if (q || firstName || lastName || legalName || sex || birthDate || birthCity || birthDepartment || birthCountry || deathDate || deathCity || deathDepartment || deathCountry || deathAge) {
-      // http://localhost:8084/deces/api/v1/agg?q=jean&aggs=[%22birthCountry%22]
+      if (aggs === undefined) {
+        this.setStatus(400);
+        return  { msg: "error - missing aggs parameter" };
+      }
       const requestInput = new RequestInput({q, firstName, lastName, legalName, sex, birthDate, birthCity, birthDepartment, birthCountry, deathDate, deathCity, deathDepartment, deathCountry, deathAge, fuzzy, size: 0, aggs});
       if (requestInput.errors.length) {
         this.setStatus(400);
@@ -267,6 +271,7 @@ export class IndexController extends Controller {
     }
   }
 
+  @Tags('Simple')
   @Post('/agg')
   public async aggregationPost(@Body() requestBody: RequestBody): Promise<ResultAgg> {
     if (Object.keys(requestBody).length > 0) {
@@ -275,6 +280,10 @@ export class IndexController extends Controller {
       if (notValidFields.length > 0) {
         this.setStatus(400);
         return  { msg: "error - unknown field" };
+      }
+      if (requestBody.aggs === undefined) {
+        this.setStatus(400);
+        return  { msg: "error - missing aggs parameter" };
       }
       if ((requestBody.firstName || requestBody.lastName || requestBody.legalName || requestBody.birthDate || requestBody.birthCity || requestBody.birthDepartment || requestBody.birthCountry || requestBody.birthGeoPoint || requestBody.deathDate || requestBody.deathCity || requestBody.deathDepartment || requestBody.deathCountry || requestBody.deathAge || requestBody.deathGeoPoint ) && requestBody.q) {
         this.setStatus(400);
