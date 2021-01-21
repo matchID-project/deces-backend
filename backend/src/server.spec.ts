@@ -821,7 +821,7 @@ describe('server.ts - Express application', () => {
       {fieldName: 'deathAge', expected: 64},
     ];
 
-    tests.forEach(function(test) {
+    tests.forEach((test) => {
       it(`${test.fieldName} should include the bucket ${test.expected}`, async () => {
         const res = await chai.request(app)
           .get(`${process.env.BACKEND_PROXY_PATH}/agg`)
@@ -849,7 +849,7 @@ describe('server.ts - Express application', () => {
       {fieldName: 'deathAge', expected: 64},
     ];
 
-    tests.forEach(function(test) {
+    tests.forEach((test) => {
       it(`${test.fieldName} should include the bucket ${test.expected}`, async () => {
         const res = await chai.request(app)
           .post(`${process.env.BACKEND_PROXY_PATH}/agg`)

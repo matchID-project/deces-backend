@@ -349,8 +349,8 @@ const buildFrom = (current: number, resultsPerPage: number) => {
 
 const referenceSort: any = {
   score: "_score",
-  firstName: "PRENOM.raw",
-  lastName: "NOM.raw",
+  firstName: "PRENOM",
+  lastName: "NOM",
   sex: "SEXE",
   birthDate: "DATE_NAISSANCE.raw",
   birthCity: "COMMUNE_NAISSANCE.raw",
