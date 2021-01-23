@@ -232,7 +232,8 @@ export class IndexController extends Controller {
     @Query() deathCountry?: string,
     @Query() deathAge?: StrAndNumber,
     @Query() fuzzy?: 'true'|'false',
-    @Query() aggs?: string
+    @Query() aggs?: string,
+    @Header('Accept') accept?: string
   ): Promise<ResultAgg> {
     if (q || firstName || lastName || legalName || sex || birthDate || birthCity || birthDepartment || birthCountry || deathDate || deathCity || deathDepartment || deathCountry || deathAge) {
       if (aggs === undefined) {
@@ -248,7 +249,7 @@ export class IndexController extends Controller {
         this.setStatus(400);
         return  { msg: "error - simple and complex request at the same time" };
       }
-      await this.streamAggs((request).res, requestInput)
+      await this.streamAggs((request).res, requestInput, accept)
     } else {
       this.setStatus(400);
       return  { msg: "error - empty request" };
@@ -257,7 +258,7 @@ export class IndexController extends Controller {
 
   @Tags('Simple')
   @Post('/agg')
-  public async aggregationPost(@Body() requestBody: RequestBody, @Request() request: express.Request): Promise<ResultAgg> {
+  public async aggregationPost(@Body() requestBody: RequestBody, @Request() request: express.Request, @Header('Accept') accept?: string): Promise<ResultAgg> {
     if (Object.keys(requestBody).length > 0) {
       const validFields = ['q', 'firstName', 'lastName', 'legalName', 'sex', 'birthDate', 'birthCity', 'birthDepartment', 'birthCountry', 'deathDate', 'deathCity', 'deathDepartment', 'deathCountry', 'deathAge', 'aggs']
       const notValidFields = Object.keys(requestBody).filter((item: string) => !validFields.includes(item))
@@ -279,58 +280,97 @@ export class IndexController extends Controller {
         this.setStatus(400);
         return  { msg: requestInput.errors };
       }
-      await this.streamAggs((request).res, requestInput)
+      await this.streamAggs((request).res, requestInput, accept)
     } else {
       this.setStatus(400);
       return  { msg: "error - empty request" };
     }
   }
 
-  private async streamAggs(response: any, requestInput: any) {
+  private async streamAggs(response: any, requestInput: any, accept: string) {
     let requestBuild = buildRequest(requestInput);
     let result = await runRequest(requestBuild, null);
     let { after_key: afterKey } = result.data.aggregations.myBuckets
     let { took: delay } = result.data
     const { buckets } = result.data.aggregations.myBuckets
-    response.setHeader('Content-Type', 'application/json');
-    const filteredRequest: any = {}
-    Object.keys(requestInput).forEach((item: any) => {
-      if (requestInput[item] && requestInput[item].value) {
-        if (item === 'name') {
-          filteredRequest.firstName = requestInput.name.value && requestInput.name.value.first;
-          filteredRequest.lastName = requestInput.name.value && requestInput.name.value.last;
-          filteredRequest.legalName = requestInput.name.value && requestInput.name.value.legal;
-        } else {
-          filteredRequest[item] = requestInput[item].value
+    if (accept === 'text/csv') {
+      response.setHeader('Content-Type', 'text/csv');
+      const csvStream = format({
+        headers: true,
+        writeHeaders: true,
+        delimiter: ',',
+      });
+      csvStream.pipe(response)
+
+      if (buckets.length > 0) {
+        buckets.forEach((bucketItem: any) => {
+          const aggKeys: any = {}
+          Object.entries(bucketItem.key).forEach(([key, value]) => {
+            aggKeys[key] = value
+          })
+          aggKeys.value = bucketItem.doc_count
+          csvStream.write(aggKeys)
+        })
+      }
+      while ( result.data.aggregations.myBuckets.buckets.length > 0 ) {
+        requestInput.afterKey = afterKey
+        requestBuild = buildRequest(requestInput);
+        result = await runRequest(requestBuild, null);
+        afterKey = result.data.aggregations.myBuckets.after_key
+        delay += result.data.took
+        const { buckets: afterBucket } = result.data.aggregations.myBuckets
+        if (afterBucket.length > 0 ) {
+          afterBucket.forEach((bucketItem: any) => {
+            const aggKeys: any = {}
+            Object.entries(bucketItem.key).forEach(([key, value]) => {
+              aggKeys[key] = value
+            })
+            aggKeys.value = bucketItem.doc_count
+            csvStream.write(aggKeys)
+          })
         }
       }
-    })
-    const composedResult =  {
-      request: filteredRequest,
-      response: {
-        total: result.total,
-        delay: result.delay,
-        aggregations: result.buckets
+    } else {
+      response.setHeader('Content-Type', 'application/json');
+      const filteredRequest: any = {}
+      Object.keys(requestInput).forEach((item: any) => {
+        if (requestInput[item] && requestInput[item].value) {
+          if (item === 'name') {
+            filteredRequest.firstName = requestInput.name.value && requestInput.name.value.first;
+            filteredRequest.lastName = requestInput.name.value && requestInput.name.value.last;
+            filteredRequest.legalName = requestInput.name.value && requestInput.name.value.legal;
+          } else {
+            filteredRequest[item] = requestInput[item].value
+          }
+        }
+      })
+      const composedResult =  {
+        request: filteredRequest,
+        response: {
+          total: result.total,
+          delay: result.delay,
+          aggregations: result.buckets
+        }
       }
-    }
-    response.write(JSON.stringify(composedResult).slice(0,-2) + "\"aggregations\":")
-    if (buckets.length > 0) {
-      const firstItem = buckets.splice(0,1)
-      response.write("[" + JSON.stringify(firstItem[0]))
-      buckets.forEach((bucketItem: any) => response.write("," + JSON.stringify(bucketItem)))
-    }
-    while ( result.data.aggregations.myBuckets.buckets.length > 0 ) {
-      requestInput.afterKey = afterKey
-      requestBuild = buildRequest(requestInput);
-      result = await runRequest(requestBuild, null);
-      afterKey = result.data.aggregations.myBuckets.after_key
-      delay += result.data.took
-      const { buckets: afterBucket } = result.data.aggregations.myBuckets
-      if (afterBucket.length > 0 ) {
-        afterBucket.forEach((bucketItem: any) => response.write("," + JSON.stringify(bucketItem)))
+      response.write(JSON.stringify(composedResult).slice(0,-2) + "\"aggregations\":")
+      if (buckets.length > 0) {
+        const firstItem = buckets.splice(0,1)
+        response.write("[" + JSON.stringify(firstItem[0]))
+        buckets.forEach((bucketItem: any) => response.write("," + JSON.stringify(bucketItem)))
       }
+      while ( result.data.aggregations.myBuckets.buckets.length > 0 ) {
+        requestInput.afterKey = afterKey
+        requestBuild = buildRequest(requestInput);
+        result = await runRequest(requestBuild, null);
+        afterKey = result.data.aggregations.myBuckets.after_key
+        delay += result.data.took
+        const { buckets: afterBucket } = result.data.aggregations.myBuckets
+        if (afterBucket.length > 0 ) {
+          afterBucket.forEach((bucketItem: any) => response.write("," + JSON.stringify(bucketItem)))
+        }
+      }
+      response.write(`],"delay": ${delay as string},"total":${result.data.hits.total.value as string}}}`)
     }
-    response.write(`],"delay": ${delay as string},"total":${result.data.hits.total.value as string}}}`)
   }
 
   @Response<HealthcheckResponse>('200', 'OK')

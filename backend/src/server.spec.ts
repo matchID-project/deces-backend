@@ -819,16 +819,30 @@ describe('server.ts - Express application', () => {
       {fieldName: 'deathDepartment', expected: '30'},
       {fieldName: 'deathCountry', expected: 'france'},
       {fieldName: 'deathAge', expected: 64},
+      {accept: 'text/csv', fieldName: 'birthDate', expected: '19251107', 
+        testFunc: async (res: any) => {
+          expect(res).to.have.status(200);
+          parseString(res.text, { headers: true, delimiter: ','})
+            .on('data', (row: any) => {
+              expect(row).to.include.all.keys('birthDate');
+              expect(row.birthDate).to.match(/\d{8}/);
+            })
+        }},
     ];
 
     tests.forEach((test) => {
-      it(`${test.fieldName} should include the bucket ${test.expected}`, async () => {
+      it(`${test.fieldName} should include the bucket ${test.expected} ${test.accept ? test.accept : ''}`, async () => {
         const res = await chai.request(app)
           .get(`${process.env.BACKEND_PROXY_PATH}/agg`)
+          .set('Accept', test.accept ? test.accept : 'application/json')
           .query({deathDate: 2020, firstName: 'Harry', aggs: `["${test.fieldName}"]`})
-        expect(res).to.have.status(200);
-        expect(res.body.response.aggregations.length).to.above(0);
-        expect(res.body.response.aggregations.map((bucket: any) => bucket.key[test.fieldName])).to.include(test.expected);
+        if (test.testFunc) {
+          await test.testFunc(res)
+        } else {
+          expect(res).to.have.status(200);
+          expect(res.body.response.aggregations.length).to.above(0);
+          expect(res.body.response.aggregations.map((bucket: any) => bucket.key[test.fieldName])).to.include(test.expected);
+        }
       });
     });
   })
@@ -847,16 +861,30 @@ describe('server.ts - Express application', () => {
       {fieldName: 'deathDepartment', expected: '30'},
       {fieldName: 'deathCountry', expected: 'france'},
       {fieldName: 'deathAge', expected: 64},
+      {accept: 'text/csv', fieldName: 'birthDate', expected: '19251107', 
+        testFunc: async (res: any) => {
+          expect(res).to.have.status(200);
+          parseString(res.text, { headers: true, delimiter: ','})
+            .on('data', (row: any) => {
+              expect(row).to.include.all.keys('birthDate');
+              expect(row.birthDate).to.match(/\d{8}/);
+            })
+        }},
     ];
 
     tests.forEach((test) => {
-      it(`${test.fieldName} should include the bucket ${test.expected}`, async () => {
+      it(`${test.fieldName} should include the bucket ${test.expected} ${test.accept ? test.accept : ''}`, async () => {
         const res = await chai.request(app)
           .post(`${process.env.BACKEND_PROXY_PATH}/agg`)
+          .set('Accept', test.accept ? test.accept : 'application/json')
           .send({deathDate: 2020, firstName: 'Harry', aggs: [test.fieldName]})
-        expect(res).to.have.status(200);
-        expect(res.body.response.aggregations.length).to.above(0);
-        expect(res.body.response.aggregations.map((bucket: any) => bucket.key[test.fieldName])).to.include(test.expected);
+        if (test.testFunc) {
+          await test.testFunc(res)
+        } else {
+          expect(res).to.have.status(200);
+          expect(res.body.response.aggregations.length).to.above(0);
+          expect(res.body.response.aggregations.map((bucket: any) => bucket.key[test.fieldName])).to.include(test.expected);
+        }
       });
     });
   })
