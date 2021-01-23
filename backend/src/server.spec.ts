@@ -820,7 +820,7 @@ describe('server.ts - Express application', () => {
       {fieldName: 'deathCountry', expected: 'france'},
       {fieldName: 'deathAge', expected: 64},
       {accept: 'text/csv', fieldName: 'birthDate', expected: '19251107', 
-        testFunc: async (res: any) => {
+        testFunc: (res: any) => {
           expect(res).to.have.status(200);
           parseString(res.text, { headers: true, delimiter: ','})
             .on('data', (row: any) => {
@@ -837,7 +837,7 @@ describe('server.ts - Express application', () => {
           .set('Accept', test.accept ? test.accept : 'application/json')
           .query({deathDate: 2020, firstName: 'Harry', aggs: `["${test.fieldName}"]`})
         if (test.testFunc) {
-          await test.testFunc(res)
+          test.testFunc(res)
         } else {
           expect(res).to.have.status(200);
           expect(res.body.response.aggregations.length).to.above(0);
@@ -862,7 +862,7 @@ describe('server.ts - Express application', () => {
       {fieldName: 'deathCountry', expected: 'france'},
       {fieldName: 'deathAge', expected: 64},
       {accept: 'text/csv', fieldName: 'birthDate', expected: '19251107', 
-        testFunc: async (res: any) => {
+        testFunc: (res: any) => {
           expect(res).to.have.status(200);
           parseString(res.text, { headers: true, delimiter: ','})
             .on('data', (row: any) => {
@@ -879,7 +879,7 @@ describe('server.ts - Express application', () => {
           .set('Accept', test.accept ? test.accept : 'application/json')
           .send({deathDate: 2020, firstName: 'Harry', aggs: [test.fieldName]})
         if (test.testFunc) {
-          await test.testFunc(res)
+          test.testFunc(res)
         } else {
           expect(res).to.have.status(200);
           expect(res.body.response.aggregations.length).to.above(0);
