@@ -819,7 +819,7 @@ describe('server.ts - Express application', () => {
       {fieldName: 'deathDepartment', expected: '30'},
       {fieldName: 'deathCountry', expected: 'france'},
       {fieldName: 'deathAge', expected: 64},
-      {accept: 'text/csv', fieldName: 'birthDate', expected: '19251107', 
+      {accept: 'text/csv', fieldName: 'birthDate', expected: '19251107',
         testFunc: (res: any) => {
           expect(res).to.have.status(200);
           parseString(res.text, { headers: true, delimiter: ','})
@@ -861,7 +861,7 @@ describe('server.ts - Express application', () => {
       {fieldName: 'deathDepartment', expected: '30'},
       {fieldName: 'deathCountry', expected: 'france'},
       {fieldName: 'deathAge', expected: 64},
-      {accept: 'text/csv', fieldName: 'birthDate', expected: '19251107', 
+      {accept: 'text/csv', fieldName: 'birthDate', expected: '19251107',
         testFunc: (res: any) => {
           expect(res).to.have.status(200);
           parseString(res.text, { headers: true, delimiter: ','})
