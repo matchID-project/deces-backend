@@ -1,16 +1,7 @@
 import multer from 'multer';
 import express from 'express';
 import forge from 'node-forge';
-import Queue from 'bee-queue';
-import crypto from 'crypto';
-import loggerStream from '../logger';
-import { Readable, Transform, pipeline, finished } from 'stream';
-import fs from 'fs';
-import { createGzip, createGunzip } from 'zlib';
-import { promisify } from 'util';
-import { parse } from '@fast-csv/parse';
-import { format } from '@fast-csv/format';
-import { Controller, Hidden, Get, Post, Delete, Route, Query, Response, Tags, Header, Request, Path } from 'tsoa';
+import { Controller, Hidden, Get, Post, Delete, Route, Query, Tags, Request, Path } from 'tsoa';
 import { csvHandle, returnBulkResults, deleteThreadJob } from '../processStream';
 
 const validFields: string[] = ['q', 'firstName', 'lastName', 'legalName', 'sex', 'birthDate', 'birthCity', 'birthDepartment', 'birthCountry',
@@ -42,16 +33,56 @@ export class BulkController extends Controller {
    *                  example: ","
    *                firstName:
    *                  type: string
-   *                  description: Prénom
+   *                  description: Colonne du prénom
    *                  example: "Prenom"
    *                lastName:
    *                  type: string
-   *                  description: Nom de famille
+   *                  description: Colonne du nom du nom de famille
    *                  example: "Nom"
+   *                legalName:
+   *                  type: string
+   *                  description: Colonne du nom d'usage
+   *                  example: "NomUsage"
+   *                sex:
+   *                  type: string
+   *                  description: Colonne du sexe de l'identité. Valeurs possibles "M" et "H" pour homme, "F" pour femme.
+   *                  example: "Sexe"
    *                birthDate:
    *                  type: string
-   *                  description: Date de naissance au format JJ/MM/AAAA<br>  <li> Pour une date inconnue les valeurs sont 0000 pour AAAA; 00 pour MM et JJ</li><br>
-   *                  example: "dateColumn"
+   *                  description: Colonne de la date de naissance. Par défaut au format JJ/MM/AAAA. Pour un format indiquer un format different il faut utiliser le paramtre dateFormat
+   *                  example: "Date"
+   *                birthCity:
+   *                  type: string
+   *                  description: Colonne de la commune de naissance
+   *                  example: "ComunneNaissance"
+   *                birthDepartment:
+   *                  type: string
+   *                  description: Colonne du département de naissance
+   *                  example: "DepartementNaissance"
+   *                birthCountry:
+   *                  type: string
+   *                  description: Colonne du pays de naissance
+   *                  example: "PaysNaissance"
+   *                deathDate:
+   *                  type: string
+   *                  description: Colonne de la date de décès
+   *                  example: "DeathDate"
+   *                deathCity:
+   *                  type: string
+   *                  description: Colonne de la commune de décès
+   *                  example: "CommuneDeces"
+   *                deathDepartment:
+   *                  type: string
+   *                  description: Colonne du département de décès
+   *                  example: "DepartementDeces"
+   *                deathCountry:
+   *                  type: string
+   *                  description: Colonne du pays de décès
+   *                  example: "PaysDeces"
+   *                lastSeenAliveDate:
+   *                  type: string
+   *                  description: Colonne de la dernière fois que la personne était vue en vie
+   *                  example: "DerniereVue"
    *                chunkSize:
    *                  type: number
    *                  description: Taille du lot pour le  traitement
@@ -122,7 +153,7 @@ export class BulkController extends Controller {
 
   /**
    * @swagger
-   * /search/csv/:jobId:
+   * /search/csv/{jobId}:
    *    get:
    *      description: Obtenir le statut et le résultat du job
    *      summary: Obtenir le statut et le résultat du traitement
@@ -152,7 +183,7 @@ export class BulkController extends Controller {
    *                description: CSV results
    *                example: Prenom,Nom,Date,score,source,id,name,firstName,lastName,sex,birthDate,birthCity,cityCode,departmentCode,country,countryCode,latitude,longitude,deathDate,certificateId,age,deathCity,cityCode,departmentCode,country,countryCode,latitude,longitude \r\n "DENISE","GERMAN","03/02/1952","142.26564","s3://fichier-des-personnes-decedees/deaths","83ad9a6737289a3abd6f35e3a16996c8a3b21fd2","Denise Josephine","German","F","19520203","Septfontaines","25541","25","France","FRA","46.9739924","6.1738194","19760729","1782","24","Septfontaines","25541","25","France","FRA","46.9739924","6.1738194"\r\n "JEAN PIERRE YANNICK","GOUETI","15/01/1953" \r\n "JOSE","PONSARD","30/12/1952","163.79218","s3://fichier-des-personnes-decedees/deaths","99f809265af83e7ea0d98adff4dace0f5c763d0b","Jose","Ponsard","M","19521230","Saulx","70478","70","France","FRA","47.6962074","6.2758008","20050615","7761","52","Saulx","70478","70","France","FRA","47.6962074","6.2758008" \r\n
    *
-   * /search/json/:jobId:
+   * /search/json/{jobId}:
    *    get:
    *      description: Obtenir le statut et le résultat du job
    *      summary: Obtenir le statut et le résultat du traitement

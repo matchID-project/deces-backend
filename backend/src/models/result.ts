@@ -197,31 +197,6 @@ export const getFromGeoPoint = (geoPoint: string, latOrLon: string): number  => 
   }
 }
 
-
-export const buildResultAgg = (result: any, requestInput: RequestInput): ResultAgg => {
-  const filteredRequest: RequestType = {}
-  Object.keys(requestInput).forEach((item: any) => {
-    if (requestInput[item] && requestInput[item].value) {
-      if (item === 'name') {
-        filteredRequest.firstName = requestInput.name.value && requestInput.name.value.first;
-        filteredRequest.lastName = requestInput.name.value && requestInput.name.value.last;
-        filteredRequest.legalName = requestInput.name.value && requestInput.name.value.legal;
-      } else {
-        filteredRequest[item] = requestInput[item].value
-      }
-    }
-  })
-  const composedResult =  {
-    request: filteredRequest,
-    response: {
-      total: result.total,
-      delay: result.delay,
-      aggregations: result.buckets
-    }
-  }
-  return composedResult
-}
-
 export const buildResult = (result: ResultRawES, requestInput: RequestInput): Result => {
   const filteredRequest: RequestType = {}
   Object.keys(requestInput).forEach((item: any) => {

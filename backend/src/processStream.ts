@@ -1,6 +1,5 @@
 import { Readable, Transform, pipeline, finished } from 'stream';
 import fs from 'fs';
-import express from 'express';
 import forge from 'node-forge';
 import Queue from 'bee-queue';
 import { RequestInput } from './models/requestInput';

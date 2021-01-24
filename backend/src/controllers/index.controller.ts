@@ -4,7 +4,7 @@ import { resultsHeader, jsonPath, prettyString } from '../processStream';
 import { runRequest } from '../runRequest';
 import { buildRequest } from '../buildRequest';
 import { RequestInput, RequestBody } from '../models/requestInput';
-import { buildResult, buildResultAgg } from '../models/result';
+import { buildResult } from '../models/result';
 import { Result, ResultAgg, ErrorResponse, HealthcheckResponse } from '../models/result';
 import { format } from '@fast-csv/format';
 // import getDataGouvCatalog from '../getDataGouvCatalog';
@@ -18,6 +18,7 @@ export class IndexController extends Controller {
    * @param q Nom, prénom, date de naissance ou de décès (JJ/MM/AAAA)
    * @param firstName Prénom
    * @param lastName Nom de famille
+   * @param legalName Nom d'usage
    * @param sex Sexe
    * @param birthDate Date de naissance au format\: JJ/MM/AAAA<br>  <li> Pour une date inconnue les valeurs sont 0000 pour AAAA; 00 pour MM et JJ</li><br> <li> Une recherche par tranche de date est également possible sous la forme: JJ/MM/AAAA - JJ/MM/AAAA</li>
    * @param birthCity Localité\: de naissance en claire (pour les personnes nées en France ou dans les DOM/TOM/COM)
