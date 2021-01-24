@@ -168,7 +168,7 @@ interface RequestInputParams {
   scrollId?: string;
   size?: number;
   page?: number;
-  fuzzy?: string;
+  fuzzy?: string|boolean;
   sort?: string|Sort[];
   block?: Block;
   dateFormat?: any;
@@ -200,7 +200,7 @@ export class RequestInput {
   scroll?: string;
   scrollId?: string;
   page?: number;
-  fuzzy?: string;
+  fuzzy?: string|boolean;
   sort?: RequestField;
   block?: Block;
   dateFormat?: string;
@@ -223,26 +223,27 @@ export class RequestInput {
       deathDateTransformed = params.deathDate && params.dateFormat ? moment(params.deathDate.toString(), params.dateFormat).format("DD/MM/YYYY") : params.deathDate;
     }
 
-    this.fullText = fullTextWithQuery(params.q, params.fuzzy);
+    this.fuzzy = typeof(params.fuzzy) === 'boolean' ? params.fuzzy.toString() : params.fuzzy
+    this.fullText = fullTextWithQuery(params.q, this.fuzzy);
     this.name = nameWithQuery({
       first: params.firstName,
       last: params.lastName,
       legal: params.legalName
-    }, params.fuzzy);
-    this.sex = sexWithQuery(params.sex, params.fuzzy);
-    this.birthDate = birthDateWithQuery(birthDateTransformed, params.fuzzy);
-    this.birthCity = birthCityWithQuery(params.birthCity, params.fuzzy);
-    this.birthLocationCode = birthLocationCodeWithQuery(params.birthLocationCode, params.fuzzy);
-    this.birthDepartment = birthDepartmentWithQuery(params.birthDepartment, params.fuzzy);
-    this.birthCountry = birthCountryWithQuery(params.birthCountry, params.fuzzy);
-    this.birthGeoPoint = birthGeoPointWithQuery(params.birthGeoPoint, params.fuzzy);
-    this.deathDate = deathDateWithQuery(deathDateTransformed, params.fuzzy);
-    this.deathAge = deathAgeWithQuery(params.deathAge, params.fuzzy);
-    this.deathCity = deathCityWithQuery(params.deathCity, params.fuzzy);
-    this.deathLocationCode = deathLocationCodeWithQuery(params.deathLocationCode, params.fuzzy);
-    this.deathDepartment = deathDepartmentWithQuery(params.deathDepartment, params.fuzzy);
-    this.deathCountry = deathCountryWithQuery(params.deathCountry, params.fuzzy);
-    this.deathGeoPoint = deathGeoPointWithQuery(params.deathGeoPoint, params.fuzzy);
+    }, this.fuzzy);
+    this.sex = sexWithQuery(params.sex, this.fuzzy);
+    this.birthDate = birthDateWithQuery(birthDateTransformed, this.fuzzy);
+    this.birthCity = birthCityWithQuery(params.birthCity, this.fuzzy);
+    this.birthLocationCode = birthLocationCodeWithQuery(params.birthLocationCode, this.fuzzy);
+    this.birthDepartment = birthDepartmentWithQuery(params.birthDepartment, this.fuzzy);
+    this.birthCountry = birthCountryWithQuery(params.birthCountry, this.fuzzy);
+    this.birthGeoPoint = birthGeoPointWithQuery(params.birthGeoPoint, this.fuzzy);
+    this.deathDate = deathDateWithQuery(deathDateTransformed, this.fuzzy);
+    this.deathAge = deathAgeWithQuery(params.deathAge, this.fuzzy);
+    this.deathCity = deathCityWithQuery(params.deathCity, this.fuzzy);
+    this.deathLocationCode = deathLocationCodeWithQuery(params.deathLocationCode, this.fuzzy);
+    this.deathDepartment = deathDepartmentWithQuery(params.deathDepartment, this.fuzzy);
+    this.deathCountry = deathCountryWithQuery(params.deathCountry, this.fuzzy);
+    this.deathGeoPoint = deathGeoPointWithQuery(params.deathGeoPoint, this.fuzzy);
 
     Object.keys(this).map(field => {
       if (this[field] && this[field].mask && this[field].mask.validation) {
