@@ -133,6 +133,10 @@ export interface RequestBody {
   */
  deathAge?: string|number;
  /**
+  * Recherche floue ou exacte
+  */
+ fuzzy?: string|boolean;
+ /**
   * Age du décès
   */
  lastSeenAliveDate?: string;
