@@ -38,7 +38,8 @@ export interface GeoPoint {
 
 export interface Location {
     city?: string|string[]|RequestField;
-    cityCode?: string|RequestField;
+    code?: string|RequestField;
+    codeHistory?: string|string[]|RequestField;
     departmentCode?: string|RequestField;
     country?: string|RequestField;
     countryCode?: string|RequestField

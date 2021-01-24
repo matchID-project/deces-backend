@@ -6,12 +6,14 @@ import {
   sortWithQuery,
   birthDateWithQuery,
   birthCityWithQuery,
+  birthLocationCodeWithQuery,
   birthDepartmentWithQuery,
   birthCountryWithQuery,
   birthGeoPointWithQuery,
   deathDateWithQuery,
   deathAgeWithQuery,
   deathCityWithQuery,
+  deathLocationCodeWithQuery,
   deathDepartmentWithQuery,
   deathCountryWithQuery,
   deathGeoPointWithQuery
@@ -83,9 +85,13 @@ export interface RequestBody {
   */
  birthDate?: string|number;
  /**
-  * Localité\: de naissance en claire (pour les personnes nées en France ou dans les DOM/TOM/COM)
+  * Libellé de la commune de naissance (pour les personnes nées en France ou dans les DOM/TOM/COM)
   */
  birthCity?: string;
+ /**
+  * Code INSEE du lieu de naissance (commune pour les personnes nées en France ou dans les DOM/TOM/COM, ou code pays)
+  */
+ birthLocationCode?: string;
  /**
   * Code département du lieu de naissance
   */
@@ -103,9 +109,13 @@ export interface RequestBody {
   */
  deathDate?: string|number;
  /**
-  * Localité de décès en claire** (pour les personnes nées en France ou dans les DOM/TOM/COM)
+  * Libellé de la commune de décès (pour les personnes nées en France ou dans les DOM/TOM/COM)
   */
  deathCity?: string;
+ /**
+  * Code INSEE du lieu de décès (commune pour les personnes décédées en France ou dans les DOM/TOM/COM, ou code pays)
+  */
+ deathLocationCode?: string;
  /**
   * Code département du lieu de décès
   */
@@ -141,11 +151,13 @@ interface RequestInputParams {
   sex?: string;
   birthDate?: string|number;
   birthCity?: string;
+  birthLocationCode?: string;
   birthDepartment?: string;
   birthCountry?: string;
   birthGeoPoint?: GeoPoint;
   deathDate?: string|number;
   deathCity?: string;
+  deathLocationCode?: string;
   deathDepartment?: string;
   deathCountry?: string;
   deathGeoPoint?: GeoPoint;
@@ -171,11 +183,13 @@ export class RequestInput {
   sex?: RequestField;
   birthDate?: RequestField;
   birthCity?: RequestField;
+  birthLocationCode?: RequestField;
   birthDepartment?: RequestField;
   birthCountry?: RequestField;
   birthGeoPoint?: RequestField;
   deathDate?: RequestField;
   deathCity?: RequestField;
+  deathLocationCode?: RequestField;
   deathDepartment?: RequestField;
   deathCountry?: RequestField;
   deathGeoPoint?: RequestField;
@@ -218,12 +232,14 @@ export class RequestInput {
     this.sex = sexWithQuery(params.sex, params.fuzzy);
     this.birthDate = birthDateWithQuery(birthDateTransformed, params.fuzzy);
     this.birthCity = birthCityWithQuery(params.birthCity, params.fuzzy);
+    this.birthLocationCode = birthLocationCodeWithQuery(params.birthLocationCode, params.fuzzy);
     this.birthDepartment = birthDepartmentWithQuery(params.birthDepartment, params.fuzzy);
     this.birthCountry = birthCountryWithQuery(params.birthCountry, params.fuzzy);
     this.birthGeoPoint = birthGeoPointWithQuery(params.birthGeoPoint, params.fuzzy);
     this.deathDate = deathDateWithQuery(deathDateTransformed, params.fuzzy);
     this.deathAge = deathAgeWithQuery(params.deathAge, params.fuzzy);
     this.deathCity = deathCityWithQuery(params.deathCity, params.fuzzy);
+    this.deathLocationCode = deathLocationCodeWithQuery(params.deathLocationCode, params.fuzzy);
     this.deathDepartment = deathDepartmentWithQuery(params.deathDepartment, params.fuzzy);
     this.deathCountry = deathCountryWithQuery(params.deathCountry, params.fuzzy);
     this.deathGeoPoint = deathGeoPointWithQuery(params.deathGeoPoint, params.fuzzy);

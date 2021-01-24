@@ -67,6 +67,13 @@ export const birthCityWithQuery = (value: string, fuzzy: string|boolean) => valu
     fuzzy: (fuzzy && fuzzy === 'false') ? false : "auto"
 };
 
+export const birthLocationCodeWithQuery = (value: string, fuzzy: string|boolean) => value && {
+    value,
+    field: "CODE_INSEE_NAISSANCE_HISTORIQUE",
+    query: matchQuery,
+    fuzzy: false
+};
+
 export const birthDepartmentWithQuery = (value: string, fuzzy: string|boolean) => value && {
     value,
     field: "DEPARTEMENT_NAISSANCE",
@@ -115,6 +122,13 @@ export const deathCityWithQuery = (value: string, fuzzy: string|boolean) => valu
     field: "COMMUNE_DECES",
     query: fuzzyShouldTermQuery,
     fuzzy: (fuzzy && fuzzy === 'false') ? false : "auto"
+};
+
+export const deathLocationCodeWithQuery = (value: string, fuzzy: string|boolean) => value && {
+    value,
+    field: "CODE_INSEE_DECES_HISTORIQUE",
+    query: matchQuery,
+    fuzzy: false
 };
 
 export const deathDepartmentWithQuery = (value: string, fuzzy: string|boolean) => value && {
