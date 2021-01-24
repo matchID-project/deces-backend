@@ -2,7 +2,6 @@ import { RequestBody } from './models/requestInput';
 import { Person, Location, Name, RequestField, ScoreParams } from './models/entities';
 import { distance } from 'fastest-levenshtein';
 import damlev from 'damlev';
-import jw from 'jaro-winkler';
 import fuzz from 'fuzzball';
 import moment from 'moment';
 import { dateTransformMask, isDateRange } from './masks';
