@@ -423,11 +423,11 @@ export const returnBulkResults = async (response: any, id: string, outputFormat:
       if (stopJob.includes(job.id)) {
         if (stopJobReason.map(reason => reason.id).includes(job.id)) {
           response.status(400).send({msg: stopJobReason.find(reason => reason.id === job.id).msg});
-          // self.setStatus(400)
+          return 
           // return {msg: stopJobReason.find(reason => reason.id === job.id).msg}
         } else {
           response.status(400).send({msg: `Job ${id} was cancelled`});
-          // self.setStatus(400)
+          return 
           // return {msg: `Job ${id} was cancelled`};
         }
       }

@@ -126,8 +126,7 @@ export class BulkController extends Controller {
   @Get('/:outputFormat(csv|json)/{id}')
   public async downloadResults(@Request() request: express.Request, @Path() outputFormat: 'csv'|'json', @Path() id: string, @Query() order?: string): Promise<any> {
     if (id) {
-      const response = (request).res;
-      await returnBulkResults(response, id, outputFormat, order)
+      await returnBulkResults((request).res, id, outputFormat, order)
     } else {
       return {msg: 'no job id'}
     }
@@ -137,8 +136,7 @@ export class BulkController extends Controller {
   @Delete('/csv/{id}')
   public async deleteJob(@Request() request: express.Request, @Path() id: string): Promise<any> {
     if (id) {
-      const response = (request).res;
-      await deleteThreadJob(response, id)
+      await deleteThreadJob((request).res, id)
     } else {
       return {msg: 'no job id'}
     }
