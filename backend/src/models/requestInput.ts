@@ -95,7 +95,7 @@ export interface RequestBody {
  /**
   * Code département du lieu de naissance
   */
- birthDepartment?: string;
+ birthDepartment?: string|number;
  /**
   * Libellé de pays de naissance en clair (pour les personnes nées à l'étranger)
   */
@@ -119,7 +119,7 @@ export interface RequestBody {
  /**
   * Code département du lieu de décès
   */
- deathDepartment?: string;
+ deathDepartment?: string|number;
  /**
   * Pays du lieu de décès
   */
@@ -152,13 +152,13 @@ interface RequestInputParams {
   birthDate?: string|number;
   birthCity?: string;
   birthLocationCode?: string;
-  birthDepartment?: string;
+  birthDepartment?: string|number;
   birthCountry?: string;
   birthGeoPoint?: GeoPoint;
   deathDate?: string|number;
   deathCity?: string;
   deathLocationCode?: string;
-  deathDepartment?: string;
+  deathDepartment?: string|number;
   deathCountry?: string;
   deathGeoPoint?: GeoPoint;
   deathAge?: string|number;

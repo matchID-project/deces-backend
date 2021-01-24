@@ -74,7 +74,7 @@ export const birthLocationCodeWithQuery = (value: string, fuzzy: string|boolean)
     fuzzy: false
 };
 
-export const birthDepartmentWithQuery = (value: string, fuzzy: string|boolean) => value && {
+export const birthDepartmentWithQuery = (value: string|number, fuzzy: string|boolean) => value && {
     value,
     field: "DEPARTEMENT_NAISSANCE",
     query: matchQuery,
@@ -131,7 +131,7 @@ export const deathLocationCodeWithQuery = (value: string, fuzzy: string|boolean)
     fuzzy: false
 };
 
-export const deathDepartmentWithQuery = (value: string, fuzzy: string|boolean) => value && {
+export const deathDepartmentWithQuery = (value: string|number, fuzzy: string|boolean) => value && {
     value,
     field: "DEPARTEMENT_DECES",
     query: matchQuery,
