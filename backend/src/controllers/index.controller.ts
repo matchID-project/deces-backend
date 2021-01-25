@@ -292,6 +292,11 @@ export class IndexController extends Controller {
     let requestBuild = buildRequest(requestInput);
     let result = await runRequest(requestBuild, null);
     let { after_key: afterKey } = result.data.aggregations.myBuckets
+    let cardinality: any = {}
+    requestInput.aggs.forEach((agg: string) => {
+      cardinality[agg] = result.data.aggregations[`${agg}_count`].value
+      response.setHeader(`total-results-${agg}`, result.data.aggregations[`${agg}_count`].value);
+    });
     let { took: delay } = result.data
     const { buckets } = result.data.aggregations.myBuckets
     if (accept === 'text/csv') {
@@ -348,12 +353,11 @@ export class IndexController extends Controller {
       const composedResult =  {
         request: filteredRequest,
         response: {
-          total: result.total,
-          delay: result.delay,
-          aggregations: result.buckets
+          total: result.data.hits.total.value,
+          cardinality
         }
       }
-      response.write(JSON.stringify(composedResult).slice(0,-2) + "\"aggregations\":")
+      response.write(JSON.stringify(composedResult).slice(0,-2) + ",\"aggregations\":")
       if (buckets.length > 0) {
         const firstItem = buckets.splice(0,1)
         response.write("[" + JSON.stringify(firstItem[0]))
@@ -370,7 +374,7 @@ export class IndexController extends Controller {
           afterBucket.forEach((bucketItem: any) => response.write("," + JSON.stringify(bucketItem)))
         }
       }
-      response.write(`],"delay": ${delay as string},"total":${result.data.hits.total.value as string}}}`)
+      response.write(`],"delay": ${delay as string}}}`)
     }
   }
 

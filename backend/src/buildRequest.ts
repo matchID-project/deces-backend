@@ -396,7 +396,17 @@ const buildAggregation = (requestInput: RequestInput): any => {
       }
     }
   }
-  if (requestInput.afterKey !== undefined) aggregationRequest.myBuckets.composite.after = requestInput.afterKey
+  if (requestInput.afterKey !== undefined) {
+    aggregationRequest.myBuckets.composite.after = requestInput.afterKey
+  } else {
+    requestInput.aggs.map((agg: string) => {
+      aggregationRequest[`${agg}_count`] = {
+        cardinality: {
+          field: referenceSort[agg]
+        }
+      }
+    })
+  }
   return aggregationRequest
 }
 
