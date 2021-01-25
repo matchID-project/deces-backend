@@ -261,7 +261,7 @@ export class IndexController extends Controller {
   @Post('/agg')
   public async aggregationPost(@Body() requestBody: RequestBody, @Request() request: express.Request, @Header('Accept') accept?: string): Promise<ResultAgg> {
     if (Object.keys(requestBody).length > 0) {
-      const validFields = ['q', 'firstName', 'lastName', 'legalName', 'sex', 'birthDate', 'birthCity', 'birthDepartment', 'birthCountry', 'deathDate', 'deathCity', 'deathDepartment', 'deathCountry', 'deathAge', 'aggs']
+      const validFields = ['q', 'firstName', 'lastName', 'legalName', 'sex', 'birthDate', 'birthCity', 'birthDepartment', 'birthCountry', 'deathDate', 'deathCity', 'deathDepartment', 'deathCountry', 'deathAge', 'fuzzy', 'aggs']
       const notValidFields = Object.keys(requestBody).filter((item: string) => !validFields.includes(item))
       if (notValidFields.length > 0) {
         this.setStatus(400);
