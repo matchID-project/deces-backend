@@ -163,7 +163,7 @@ else
     echo -e "\e[31mdeathCountry: KO!\e[0m"
     exit 1
 fi
-if curl -s -X POST -H "Content-Type: application/json" -d '{"deathDate":"2020","deathGeoPoint":{"latitude":48.5,"longitude":3.4,"distance":"10km"}}' http://localhost:${BACKEND_PORT}/deces/api/v1/search | grep -q 'cityCode":"10268"'; then
+if curl -s -X POST -H "Content-Type: application/json" -d '{"deathDate":"2020","deathGeoPoint":{"latitude":48.5,"longitude":3.4,"distance":"10km"}}' http://localhost:${BACKEND_PORT}/deces/api/v1/search | grep -q 'code":"10268"'; then
     echo "deathGeoPoint: OK"
 else
     echo -e "\e[31mdeathGeoPoint: KO!\e[0m"
