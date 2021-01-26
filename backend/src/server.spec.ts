@@ -16,7 +16,7 @@ const finishedAsync:any = promisify(finished);
 describe('server.ts - Express application', () => {
   let totalPersons: number;
   const apiPath = (api: string): string => {
-    return `${process.env.BACKEND_PROXY_PATH}/api`
+    return `${process.env.BACKEND_PROXY_PATH}/${api}`
   };
 
   it('/healthcheck', async () => {
