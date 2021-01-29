@@ -16,6 +16,13 @@ export class JobsController extends Controller {
       }
     });
     const jobs = await jobQueue.checkHealth();
-    return { jobs };
+    const checkStalledJobs = new Promise((resolve, reject) => {
+      jobQueue.checkStalledJobs((err, numStalled) => { 
+        if (err) reject(err.toString())
+        resolve(numStalled) 
+      })
+    });
+    const stalled = await checkStalledJobs
+    return { ...jobs, stalled };
   }
 }
