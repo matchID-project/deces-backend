@@ -549,30 +549,31 @@ describe('server.ts - Express application', () => {
   })
 
 
-  describe('/agg GET', () => {
-    const tests = [
-      {fieldName: 'sex', expected: 'M'},
-      {fieldName: 'birthDate', expected: '19251107'},
-      {fieldName: 'birthCity', expected: 'paris'},
-      {fieldName: 'birthDepartment', expected: '75'},
-      {fieldName: 'birthCountry', expected: 'france'},
-      {fieldName: 'deathDate', expected: '20200113'},
-      {fieldName: 'deathCity', expected: 'bagnolet'},
-      {fieldName: 'deathDepartment', expected: '30'},
-      {fieldName: 'deathCountry', expected: 'france'},
-      {fieldName: 'deathAge', expected: 64},
-      {accept: 'text/csv', fieldName: 'birthDate', expected: '19251107',
-        testFunc: (res: any) => {
-          expect(res).to.have.status(200);
-          parseString(res.text, { headers: true, delimiter: ','})
-            .on('data', (row: any) => {
-              expect(row).to.include.all.keys('birthDate');
-              expect(row.birthDate).to.match(/\d{8}/);
-            })
-        }},
-    ];
+  const fixtureAggregations = [
+    {fieldName: 'sex', expected: 'M'},
+    {fieldName: 'birthDate', rowName: 'key_as_string', expected: '19251107'},
+    {fieldName: 'birthCity', expected: 'paris'},
+    {fieldName: 'birthDepartment', expected: '75'},
+    {fieldName: 'birthCountry', expected: 'france'},
+    {fieldName: 'deathDate', rowName: 'key_as_string', expected: '20200113'},
+    {fieldName: 'deathCity', expected: 'bagnolet'},
+    {fieldName: 'deathDepartment', expected: '30'},
+    {fieldName: 'deathCountry', expected: 'france'},
+    {fieldName: 'deathAge', expected: 64},
+    {accept: 'text/csv', fieldName: 'birthDate', expected: '19251107',
+      testFunc: (res: any) => {
+        expect(res).to.have.status(200);
+        parseString(res.text, { headers: true, delimiter: ','})
+          .on('data', (row: any) => {
+            expect(row).to.include.all.keys('key');
+            expect(row.key).to.match(/\d{8}/);
+          })
+      }},
+  ];
 
-    tests.forEach((test) => {
+
+  describe('/agg GET', () => {
+    fixtureAggregations.forEach((test) => {
       it(`${test.fieldName} should include the bucket ${test.expected} ${test.accept ? test.accept : ''}`, async () => {
         const res = await chai.request(app)
           .get(`${process.env.BACKEND_PROXY_PATH}/agg`)
@@ -583,38 +584,18 @@ describe('server.ts - Express application', () => {
         } else {
           expect(res).to.have.status(200);
           expect(res.body.response.aggregations.length).to.above(0);
-          expect(res.body.response.aggregations.map((bucket: any) => bucket.key[test.fieldName])).to.include(test.expected);
+          if (test.rowName) {
+            expect(res.body.response.aggregations.map((bucket: any) => bucket.key_as_string)).to.match(/\d{8}/);
+          } else {
+            expect(res.body.response.aggregations.map((bucket: any) => bucket.key[test.fieldName])).to.include(test.expected);
+          }
         }
       });
     });
   })
 
-
   describe('/agg POST', () => {
-
-    const tests = [
-      {fieldName: 'sex', expected: 'M'},
-      {fieldName: 'birthDate', expected: '19251107'},
-      {fieldName: 'birthCity', expected: 'paris'},
-      {fieldName: 'birthDepartment', expected: '75'},
-      {fieldName: 'birthCountry', expected: 'france'},
-      {fieldName: 'deathDate', expected: '20200113'},
-      {fieldName: 'deathCity', expected: 'bagnolet'},
-      {fieldName: 'deathDepartment', expected: '30'},
-      {fieldName: 'deathCountry', expected: 'france'},
-      {fieldName: 'deathAge', expected: 64},
-      {accept: 'text/csv', fieldName: 'birthDate', expected: '19251107',
-        testFunc: (res: any) => {
-          expect(res).to.have.status(200);
-          parseString(res.text, { headers: true, delimiter: ','})
-            .on('data', (row: any) => {
-              expect(row).to.include.all.keys('birthDate');
-              expect(row.birthDate).to.match(/\d{8}/);
-            })
-        }},
-    ];
-
-    tests.forEach((test) => {
+    fixtureAggregations.forEach((test) => {
       it(`${test.fieldName} should include the bucket ${test.expected} ${test.accept ? test.accept : ''}`, async () => {
         const res = await chai.request(app)
           .post(`${process.env.BACKEND_PROXY_PATH}/agg`)
@@ -625,7 +606,11 @@ describe('server.ts - Express application', () => {
         } else {
           expect(res).to.have.status(200);
           expect(res.body.response.aggregations.length).to.above(0);
-          expect(res.body.response.aggregations.map((bucket: any) => bucket.key[test.fieldName])).to.include(test.expected);
+          if (test.rowName) {
+            expect(res.body.response.aggregations.map((bucket: any) => bucket.key_as_string)).to.match(/\d{8}/);
+          } else {
+            expect(res.body.response.aggregations.map((bucket: any) => bucket.key[test.fieldName])).to.include(test.expected);
+          }
         }
       });
     });
