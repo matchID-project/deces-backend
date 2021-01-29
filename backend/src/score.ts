@@ -532,7 +532,7 @@ const depCodeRexExp = [
     [/^(\D*|99|0)$/,'']
 ];
 
-const scoreDepCode = (depCodeA: string|string[]|RequestField, depCodeB: string|RequestField, sameCity: boolean ) => {
+const scoreDepCode = (depCodeA: number|string|string[]|RequestField, depCodeB: number|string|RequestField, sameCity: boolean ) => {
     const normDepCodeA = applyRegex(depCodeA as string|string[], depCodeRexExp);
     const normDepCodeB = applyRegex(depCodeB as string|string[], depCodeRexExp);
     if (!normDepCodeA || !normDepCodeB) {

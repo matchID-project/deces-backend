@@ -40,7 +40,7 @@ export interface Location {
     city?: string|string[]|RequestField;
     code?: string|RequestField;
     codeHistory?: string|string[]|RequestField;
-    departmentCode?: string|RequestField;
+    departmentCode?: string|number|RequestField;
     country?: string|RequestField;
     countryCode?: string|RequestField
     latitude?: number;

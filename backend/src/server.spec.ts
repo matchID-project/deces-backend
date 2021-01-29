@@ -74,7 +74,7 @@ describe('server.ts - Express application', () => {
     it('birthDate', async () => {
       const res = await chai.request(app)
         .get(apiPath('search'))
-        .query({deathDate: 2020, birthDate: '23/01/1928', fuzzy: false})
+        .query({deathDate: 2020, birthDate: '23/01/1928'})
       expect(res).to.have.status(200);
       expect(res.body.response.persons[0].birth.date).to.equal('19280123');
     });
@@ -288,6 +288,15 @@ describe('server.ts - Express application', () => {
       expect(res).to.have.status(200);
       expect(res.body.response.persons[0].death.location.country).to.equal('Argentine');
     });
+
+    it('birthDate', async () => {
+      const res = await chai.request(app)
+        .post(apiPath('search'))
+        .send({deathDate: 2020, birthDate: '23/01/1928'})
+      expect(res).to.have.status(200);
+      expect(res.body.response.persons[0].birth.date).to.equal('19280123');
+    });
+
 
     it('deathDate', async () => {
       const res = await chai.request(app)
