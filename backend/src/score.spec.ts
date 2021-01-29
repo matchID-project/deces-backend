@@ -24,7 +24,7 @@ describe('score.ts - Score function', () => {
         date: "19691101",
         location: {
           city: '',
-          cityCode: '',
+          code: '',
           departmentCode: '',
           country: '',
           countryCode: '',
@@ -38,7 +38,7 @@ describe('score.ts - Score function', () => {
         age: +'',
         location: {
           city: '',
-          cityCode: '',
+          code: '',
           departmentCode: '',
           country: '',
           countryCode: '',

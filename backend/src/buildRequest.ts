@@ -354,11 +354,13 @@ const referenceSort: any = {
   sex: "SEXE",
   birthDate: "DATE_NAISSANCE.raw",
   birthCity: "COMMUNE_NAISSANCE.raw",
+  birthLocationCode: "CODE_INSEE_NAISSANCE",
   birthDepartment: "DEPARTEMENT_NAISSANCE",
   birthCountry: "PAYS_NAISSANCE.raw",
   deathDate: "DATE_DECES.raw",
   deathAge: "AGE_DECES",
   deathCity: "COMMUNE_DECES.raw",
+  deathLocationCode: "CODE_INSEE_DECES",
   deathDepartment: "DEPARTEMENT_DECES",
   deathCountry: "PAYS_DECES.raw"
 }
@@ -406,7 +408,7 @@ export const buildRequest = (requestInput: RequestInput): BodyResponse|ScrolledR
       // },
       // https://www.elastic.co/guide/en/elasticsearch/reference/7.x/search-request-source-filtering.html#search-request-source-filtering
       _source: [
-        "CODE_INSEE_DECES","CODE_INSEE_NAISSANCE",
+        "CODE_INSEE_DECES","CODE_INSEE_DECES_HISTORIQUE","CODE_INSEE_NAISSANCE","CODE_INSEE_NAISSANCE_HISTORIQUE",
         "COMMUNE_DECES","COMMUNE_NAISSANCE",
         "DATE_DECES","DATE_NAISSANCE","AGE_DECES",
         "DEPARTEMENT_DECES","DEPARTEMENT_NAISSANCE",

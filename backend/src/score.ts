@@ -2,7 +2,6 @@ import { RequestBody } from './models/requestInput';
 import { Person, Location, Name, RequestField, ScoreParams } from './models/entities';
 import { distance } from 'fastest-levenshtein';
 import damlev from 'damlev';
-import jw from 'jaro-winkler';
 import fuzz from 'fuzzball';
 import moment from 'moment';
 import { dateTransformMask, isDateRange } from './masks';
@@ -42,6 +41,7 @@ const datePenalty = 2.5;
 
 const minLocationScore = 0.2;
 const boroughLocationPenalty = 0.9;
+const minCodeScore = 0.7;
 const minDepScore = 0.7;
 const minNotFrCityScore = 0.65;
 const minNotFrCountryScore = 0.4;
@@ -176,7 +176,7 @@ export const scoreResults = (request: RequestBody, results: Person[], params: Sc
     // following count of meaning arguments (sex not taken as such) used to reduce penalty of blind scoring penalties
     const requestMeaningArgsNumber = ((request.fullText || request.lastName || request.firstName || request.lastName) ? 1 : 0)
         + (request.birthDate ? 1 : 0)
-        + ((request.birthCity || request.birthCountry || request.birthDepartment || request.birthGeoPoint) ? 1 : 0)
+        + ((request.birthCity || request.birthLocationCode || request.birthCountry || request.birthDepartment || request.birthGeoPoint) ? 1 : 0)
     const resultsWithScores: any = results
             .filter((result:any) => result.score > 0)
             .map((result:any) => {
@@ -281,7 +281,7 @@ export class ScoreResult {
     if (pruneScore < scoreReduce(this, true)) {
     this.location = scoreLocation({
         city: request.birthCity,
-        cityCode: request.birthCityCode,
+        code: request.birthLocationCode,
         departmentCode: request.birthDepartment,
         country: request.birthCountry,
         latitude: request.latitude,
@@ -506,6 +506,18 @@ const scoreCity = (cityA: string|string[]|RequestField, cityB: string|string[]):
     }
 }
 
+const scoreLocationCode = (codeA: string|string[]|RequestField, codeB: string|string[]): number => {
+    if (typeof(codeA) === 'string') {
+        if (typeof(codeB) === 'string') {
+            return (codeA === codeB) ? 1 : minCodeScore;
+        } else {
+            return codeB.includes(codeA) ? 1 : minCodeScore;
+        }
+    } else {
+        return Math.max(...((codeA as string[]).map((code) => scoreLocationCode(code, codeB))));
+    }
+};
+
 const boroughRegExp = [[/^\D*0*([1-9]+0?)\D*$/, '$1']];
 
 const extractboroughNumber = (city: string): string => {
@@ -520,7 +532,7 @@ const depCodeRexExp = [
     [/^(\D*|99|0)$/,'']
 ];
 
-const scoreDepCode = (depCodeA: string|string[]|RequestField, depCodeB: string|RequestField, sameCity: boolean ) => {
+const scoreDepCode = (depCodeA: number|string|string[]|RequestField, depCodeB: number|string|RequestField, sameCity: boolean ) => {
     const normDepCodeA = applyRegex(depCodeA as string|string[], depCodeRexExp);
     const normDepCodeB = applyRegex(depCodeB as string|string[], depCodeRexExp);
     if (!normDepCodeA || !normDepCodeB) {
@@ -574,6 +586,9 @@ const scoreCountry = (countryA: string|string[]|RequestField, countryB: string|s
 const scoreLocation = (locA: Location, locB: Location): any => {
     const score: any = {};
     const BisFrench = locB.countryCode && (locB.countryCode === 'FRA');
+    if (locA.code) {
+        score.code = scoreLocationCode(locA.code, locB.codeHistory as string|string[]);
+    }
     if (BisFrench) {
         if (normalize(locA.country as string|string[])) {
             score.country = scoreCountry(locA.country, tokenize(locB.country as string));
@@ -598,7 +613,8 @@ const scoreLocation = (locA: Location, locB: Location): any => {
                 }
             }
         }
-        score.score = ((score.country < 1) || score.city || score.department) ? Math.max(minLocationScore, scoreReduce(score)) : blindLocationScore;
+        score.score = ((score.country && (score.country < 1)) || score.code || score.city || score.department)
+            ? Math.max(minLocationScore, scoreReduce(score)) : blindLocationScore;
     } else {
         if (normalize(locA.country as string|string[])) {
             score.country = scoreCountry(locA.country, tokenize(locB.country as string));
@@ -609,7 +625,9 @@ const scoreLocation = (locA: Location, locB: Location): any => {
                     score.country = sCountry;
                 }
             } else {
-                score.country = blindLocationScore;
+                if (!score.code) {
+                    score.country = blindLocationScore;
+                }
             }
         }
         if (normalize(locA.city as string|string[]) && locB.city) {
