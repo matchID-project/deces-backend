@@ -548,6 +548,9 @@ describe('server.ts - Express application', () => {
 
   })
 
+  const harryRequest = (fieldName: string) => {
+    return {deathDate: 2020, firstName: 'Harry', aggs: `["${fieldName}"]`}
+  }
 
   const fixtureAggregations = [
     {fieldName: 'sex', expected: 'M'},
@@ -560,7 +563,7 @@ describe('server.ts - Express application', () => {
     {fieldName: 'deathDepartment', expected: '30'},
     {fieldName: 'deathCountry', expected: 'france'},
     {fieldName: 'deathAge', expected: 64},
-    {accept: 'text/csv', fieldName: 'birthDate', expected: '19251107',
+    {accept: 'text/csv', fieldName: 'birthDate',
       testFunc: (res: any) => {
         expect(res).to.have.status(200);
         parseString(res.text, { headers: true, delimiter: ','})
@@ -568,6 +571,23 @@ describe('server.ts - Express application', () => {
             expect(row).to.include.all.keys('key');
             expect(row.key).to.match(/\d{8}/);
           })
+          .on('end', (rowCount: number) => {
+            const total = +res.headers['total-results-birthdate']
+            expect(rowCount).to.eql(total);
+          });
+      }},
+    {params: {deathDate: 2020, sex: 'M', aggs: `["birthDate"]`}, accept: 'text/csv', fieldName: 'birthDate',
+      testFunc: (res: any) => {
+        expect(res).to.have.status(200);
+        parseString(res.text, { headers: true, delimiter: ','})
+          .on('data', (row: any) => {
+            expect(row).to.include.all.keys('key');
+            expect(row.key).to.match(/\d{8}/);
+          })
+          .on('end', (rowCount: number) => {
+            const total = +res.headers['total-results-birthdate']
+            expect(rowCount).to.eql(total);
+          });
       }},
   ];
 
@@ -578,7 +598,7 @@ describe('server.ts - Express application', () => {
         const res = await chai.request(app)
           .get(`${process.env.BACKEND_PROXY_PATH}/agg`)
           .set('Accept', test.accept ? test.accept : 'application/json')
-          .query({deathDate: 2020, firstName: 'Harry', aggs: `["${test.fieldName}"]`})
+          .query(test.params ? test.params : harryRequest(test.fieldName))
         if (test.testFunc) {
           test.testFunc(res)
         } else {
