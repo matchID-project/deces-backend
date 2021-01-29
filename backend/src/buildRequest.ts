@@ -352,12 +352,12 @@ const referenceSort: any = {
   firstName: "PRENOM",
   lastName: "NOM",
   sex: "SEXE",
-  birthDate: "DATE_NAISSANCE.raw",
+  birthDate: "DATE_NAISSANCE_NORM",
   birthCity: "COMMUNE_NAISSANCE.raw",
   birthLocationCode: "CODE_INSEE_NAISSANCE",
   birthDepartment: "DEPARTEMENT_NAISSANCE",
   birthCountry: "PAYS_NAISSANCE.raw",
-  deathDate: "DATE_DECES.raw",
+  deathDate: "DATE_DECES_NORM",
   deathAge: "AGE_DECES",
   deathCity: "COMMUNE_DECES.raw",
   deathLocationCode: "CODE_INSEE_DECES",
@@ -379,33 +379,60 @@ export const buildSort = (inputs?: any) => {
 }
 
 const buildAggregation = (requestInput: RequestInput): any => {
-  const aggregationArray = requestInput.aggs.map((agg: string) => {
-    const aggregation: any = {}
-    aggregation[agg] = {
-      terms: {
-        field: referenceSort[agg]
+  const aggregationRequest: any = {}
+  if (JSON.stringify(requestInput.aggs) === JSON.stringify(['birthDate'])) {
+    aggregationRequest.birthDate = {
+      'date_histogram': {
+        field: referenceSort.birthDate,
+        'calendar_interval': 'month',
+        format: 'yyyyMMdd'
       }
     }
-    return aggregation
-  })
-  const aggregationRequest: any = {
-    myBuckets : {
+  } else if (JSON.stringify(requestInput.aggs) === JSON.stringify(['deathDate'])) {
+    aggregationRequest.deathDate = {
+      'date_histogram': {
+        field: referenceSort.deathDate,
+        'calendar_interval': 'month',
+        format: 'yyyyMMdd'
+      }
+    }
+  } else {
+    const aggregationArray = requestInput.aggs.map((agg: string) => {
+      const aggregation: any = {}
+      if (["birthDate", "deathDate"].includes(agg)) {
+        aggregation[agg] = {
+          'date_histogram': {
+            field: referenceSort[agg],
+            'calendar_interval': 'month',
+            format: 'yyyyMMdd'
+          }
+        }
+      } else {
+        aggregation[agg] = {
+          terms: {
+            field: referenceSort[agg]
+          }
+        }
+      }
+      return aggregation
+    })
+    aggregationRequest.myBuckets = {
       composite: {
         size: 10,
         sources: aggregationArray
       }
     }
-  }
-  if (requestInput.afterKey !== undefined) {
-    aggregationRequest.myBuckets.composite.after = requestInput.afterKey
-  } else {
-    requestInput.aggs.map((agg: string) => {
-      aggregationRequest[`${agg}_count`] = {
-        cardinality: {
-          field: referenceSort[agg]
+    if (requestInput.afterKey !== undefined) {
+      aggregationRequest.myBuckets.composite.after = requestInput.afterKey
+    } else {
+      requestInput.aggs.map((agg: string) => {
+        aggregationRequest[`${agg}_count`] = {
+          cardinality: {
+            field: referenceSort[agg]
+          }
         }
-      }
-    })
+      })
+    }
   }
   return aggregationRequest
 }
@@ -443,8 +470,8 @@ export const buildRequest = (requestInput: RequestInput): BodyResponse|ScrolledR
       _source: [
         "CODE_INSEE_DECES","CODE_INSEE_DECES_HISTORIQUE","CODE_INSEE_NAISSANCE","CODE_INSEE_NAISSANCE_HISTORIQUE",
         "COMMUNE_DECES","COMMUNE_NAISSANCE",
-        "DATE_DECES","DATE_NAISSANCE","AGE_DECES",
-        "DEPARTEMENT_DECES","DEPARTEMENT_NAISSANCE",
+        "DATE_DECES", "DATE_DECES_NORM","DATE_NAISSANCE", "DATE_DECES_NORM",
+        "AGE_DECES", "DEPARTEMENT_DECES","DEPARTEMENT_NAISSANCE",
         "NOM","PRENOM","PRENOMS",
         "NUM_DECES",
         "PAYS_DECES","PAYS_DECES_CODEISO3",

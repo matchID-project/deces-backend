@@ -291,14 +291,25 @@ export class IndexController extends Controller {
   private async streamAggs(response: any, requestInput: any, accept: string) {
     let requestBuild = buildRequest(requestInput);
     let result = await runRequest(requestBuild, null);
-    let { after_key: afterKey } = result.data.aggregations.myBuckets
-    let cardinality: any = {}
-    requestInput.aggs.forEach((agg: string) => {
-      cardinality[agg] = result.data.aggregations[`${agg}_count`].value
-      response.setHeader(`total-results-${agg}`, result.data.aggregations[`${agg}_count`].value);
-    });
+
+    let afterKey
+    let buckets
+    const cardinality: any = {}
     let { took: delay } = result.data
-    const { buckets } = result.data.aggregations.myBuckets
+    if (result.data.aggregations.myBuckets) {
+      afterKey = result.data.aggregations.myBuckets.after_key
+      requestInput.aggs.forEach((agg: string) => {
+        cardinality[agg] = result.data.aggregations[`${agg}_count`].value
+        response.setHeader(`total-results-${agg}`, result.data.aggregations[`${agg}_count`].value);
+      });
+      buckets = result.data.aggregations.myBuckets.buckets
+    } else {
+      requestInput.aggs.forEach((agg: string) => {
+        cardinality[agg] = result.data.aggregations[agg].buckets.length
+        response.setHeader(`total-results-${agg}`, result.data.aggregations[agg].buckets.length);
+        buckets = result.data.aggregations[agg].buckets
+      });
+    }
     if (accept === 'text/csv') {
       response.setHeader('Content-Type', 'text/csv');
       const csvStream = format({
@@ -311,14 +322,20 @@ export class IndexController extends Controller {
       if (buckets.length > 0) {
         buckets.forEach((bucketItem: any) => {
           const aggKeys: any = {}
-          Object.entries(bucketItem.key).forEach(([key, value]) => {
-            aggKeys[key] = value
-          })
-          aggKeys.value = bucketItem.doc_count
+          if (result.data.aggregations.myBuckets) {
+            Object.entries(bucketItem.key).forEach(([key, value]) => {
+              aggKeys[key] = value
+            })
+            aggKeys.value = bucketItem.doc_count
+          } else {
+            Object.entries(bucketItem).forEach(([key, value]) => {
+              aggKeys[key] = value
+            })
+          }
           csvStream.write(aggKeys)
         })
       }
-      while ( result.data.aggregations.myBuckets.buckets.length > 0 ) {
+      while (result.data.aggregations.myBuckets && result.data.aggregations.myBuckets.buckets.length > 0 ) {
         requestInput.afterKey = afterKey
         requestBuild = buildRequest(requestInput);
         result = await runRequest(requestBuild, null);
@@ -363,7 +380,7 @@ export class IndexController extends Controller {
         response.write("[" + JSON.stringify(firstItem[0]))
         buckets.forEach((bucketItem: any) => response.write("," + JSON.stringify(bucketItem)))
       }
-      while ( result.data.aggregations.myBuckets.buckets.length > 0 ) {
+      while (result.data.aggregations.myBuckets && result.data.aggregations.myBuckets.buckets.length > 0 ) {
         requestInput.afterKey = afterKey
         requestBuild = buildRequest(requestInput);
         result = await runRequest(requestBuild, null);
