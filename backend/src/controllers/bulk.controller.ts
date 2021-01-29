@@ -9,6 +9,13 @@ const validFields: string[] = ['q', 'firstName', 'lastName', 'legalName', 'sex',
 'size', 'fuzzy', 'block'];
 
 
+/**
+ * @swagger
+ * tags:
+ *   name: Bulk
+ *   description: Rapprochement par lot
+ */
+// tsoa documentation hidden because of non multipart input definition. Keep swagger js docs instead
 @Hidden()
 @Route('search')
 export class BulkController extends Controller {
@@ -143,13 +150,6 @@ export class BulkController extends Controller {
       return {msg: 'no files attached'};
     }
   }
-
-  /**
-   * @swagger
-   * tags:
-   *   name: Bulk
-   *   description: Rapprochement par lot
-   */
 
   /**
    * @swagger

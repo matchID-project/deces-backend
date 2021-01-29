@@ -72,3 +72,5 @@ export interface ScoreParams {
   pruneScore?: number;
   candidateNumber?: number;
 };
+
+export type StrAndNumber = string | number;
