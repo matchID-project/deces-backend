@@ -49,6 +49,15 @@ interface ResType {
  persons: Person[];
 }
 
+interface ResTypeAgg {
+ total: number;
+ /**
+  * délai du traitement
+  */
+ delay: number;
+ aggregations: any;
+}
+
 /**
  * This is a description of a model
  * @tsoaModel
@@ -107,6 +116,25 @@ export interface Result {
   response?: ResType;
 }
 
+/**
+ * This is a description of a model
+ * @tsoaModel
+ * @example
+ * {
+ *   "request": {
+ *    "q": "Georges Pompidou"
+ *   },
+ *   "response": {
+ *    "bucket": "bucket"
+ *   }
+ * }
+ */
+export interface ResultAgg {
+  msg?: string|string[];
+  request?: RequestType;
+  response?: ResTypeAgg;
+}
+
 export interface ResultRawES {
   '_scroll_id'?: string;
   took: number;
@@ -116,6 +144,11 @@ export interface ResultRawES {
     }
     'max_score': number;
     hits:  ResultRawHit[]
+  };
+  aggregations?: {
+    doc_count_error_upper_bound: number;
+    sum_other_doc_count: number;
+    buckets: any[];
   }
 }
 

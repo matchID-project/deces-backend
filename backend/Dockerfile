@@ -37,6 +37,7 @@ HEALTHCHECK --interval=5m --timeout=2m --start-period=45s \
 FROM base as development
 ARG app_ver
 ARG app_path
+ARG app_name
 ARG port
 ARG NPM_FIX
 ARG NPM_VERBOSE

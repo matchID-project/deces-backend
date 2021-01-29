@@ -133,6 +133,10 @@ export interface RequestBody {
   */
  deathAge?: string|number;
  /**
+  * Recherche floue ou exacte
+  */
+ fuzzy?: string|boolean;
+ /**
   * Age du décès
   */
  lastSeenAliveDate?: string;
@@ -140,6 +144,10 @@ export interface RequestBody {
   * Langage entête
   */
  headerLang?: string;
+ /**
+  * Aggregation parameter
+  */
+ aggs?: string[];
 };
 
 
@@ -170,6 +178,7 @@ interface RequestInputParams {
   page?: number;
   fuzzy?: string|boolean;
   sort?: string|Sort[];
+  aggs?: string|string[];
   block?: Block;
   dateFormat?: any;
 }
@@ -201,17 +210,24 @@ export class RequestInput {
   scrollId?: string;
   page?: number;
   fuzzy?: string|boolean;
+  afterKey?: number;
+  aggs?: string[];
   sort?: RequestField;
   block?: Block;
   dateFormat?: string;
   metadata?: any;
   errors: string[] = [];
   constructor(params: RequestInputParams) {
-    this.size = params.size ? params.size : 20;
+    this.size = params.size !== undefined ? params.size : 20;
     this.page = params.page ? params.page : 1;
     this.scroll = params.scroll ? params.scroll : '';
     this.scrollId = params.scrollId ? params.scrollId : '';
     this.sort = params.sort ? sortWithQuery(params.sort) : {value: [{score: 'desc'}]}
+    this.aggs = params.aggs
+      ? typeof(params.aggs) === 'string'
+        ? JSON.parse(params.aggs)
+        : params.aggs
+      : [];
     this.block = params.block;
     this.id = params.id;
     this.dateFormat = params.dateFormat;
