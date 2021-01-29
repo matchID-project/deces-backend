@@ -568,8 +568,8 @@ describe('server.ts - Express application', () => {
         expect(res).to.have.status(200);
         parseString(res.text, { headers: true, delimiter: ','})
           .on('data', (row: any) => {
-            expect(row).to.include.all.keys('key');
-            expect(row.key).to.match(/\d{8}/);
+            expect(row).to.include.all.keys('key_as_string');
+            expect(row.key_as_string).to.match(/\d{8}/);
           })
           .on('end', (rowCount: number) => {
             const total = +res.headers['total-results-birthdate']
@@ -581,8 +581,8 @@ describe('server.ts - Express application', () => {
         expect(res).to.have.status(200);
         parseString(res.text, { headers: true, delimiter: ','})
           .on('data', (row: any) => {
-            expect(row).to.include.all.keys('key');
-            expect(row.key).to.match(/\d{8}/);
+            expect(row).to.include.all.keys('key_as_string');
+            expect(row.key_as_string).to.match(/\d{8}/);
           })
           .on('end', (rowCount: number) => {
             const total = +res.headers['total-results-birthdate']

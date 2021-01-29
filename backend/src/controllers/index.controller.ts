@@ -312,15 +312,8 @@ export class IndexController extends Controller {
     }
     if (accept === 'text/csv') {
       response.setHeader('Content-Type', 'text/csv');
-      const csvStream = format({
-        headers: true,
-        writeHeaders: true,
-        delimiter: ',',
-      });
-      csvStream.pipe(response)
-
       if (buckets.length > 0) {
-        buckets.forEach((bucketItem: any) => {
+        buckets.forEach((bucketItem: any, ind: number) => {
           const aggKeys: any = {}
           if (result.data.aggregations.myBuckets) {
             Object.entries(bucketItem.key).forEach(([key, value]) => {
@@ -332,7 +325,10 @@ export class IndexController extends Controller {
               aggKeys[key] = value
             })
           }
-          csvStream.write(aggKeys)
+          if (ind === 0) {
+            response.write(Object.keys(aggKeys).join(",") + '\n')
+          }
+          response.write(Object.values(aggKeys).join(",") + '\n')
         })
       }
       while (result.data.aggregations.myBuckets && result.data.aggregations.myBuckets.buckets.length > 0 ) {
@@ -349,7 +345,7 @@ export class IndexController extends Controller {
               aggKeys[key] = value
             })
             aggKeys.value = bucketItem.doc_count
-            csvStream.write(aggKeys)
+            response.write(Object.values(aggKeys).join(",") + '\n')
           })
         }
       }
