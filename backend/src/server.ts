@@ -15,6 +15,7 @@ import "./controllers/search.controller";
 import "./controllers/bulk.controller";
 import "./controllers/aggregation.controller";
 import "./controllers/status.controller";
+import "./controllers/job.controller";
 
 const log = (json:any) => {
   loggerStream.write(JSON.stringify({
