@@ -588,7 +588,14 @@ describe('server.ts - Express application', () => {
             const total = +res.headers['total-results-birthdate']
             expect(rowCount).to.eql(total);
           });
-      }},
+      }
+    },
+    {params: {deathDate: 2020, sex: 'M', aggs: `["birthDate"]`}, accept: 'application/json', fieldName: 'birthDate',
+      testFunc: (res: any) => {
+        expect(res).to.have.status(200);
+        expect(res.body.response.aggregations.length).to.eql(res.body.response.cardinality.birthDate);
+      }
+    },
   ];
 
 
