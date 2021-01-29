@@ -374,10 +374,10 @@ export class IndexController extends Controller {
           cardinality
         }
       }
-      response.write(JSON.stringify(composedResult).slice(0,-2) + ",\"aggregations\":")
+      response.write(JSON.stringify(composedResult).slice(0,-2) + ",\"aggregations\":[")
       if (buckets.length > 0) {
         const firstItem = buckets.splice(0,1)
-        response.write("[" + JSON.stringify(firstItem[0]))
+        response.write(JSON.stringify(firstItem[0]))
         buckets.forEach((bucketItem: any) => response.write("," + JSON.stringify(bucketItem)))
       }
       while (result.data.aggregations.myBuckets && result.data.aggregations.myBuckets.buckets.length > 0 ) {
