@@ -249,7 +249,14 @@ describe('server.ts - Express application', () => {
       expect(res).to.have.status(200);
       parseString(res.text, { headers: true, delimiter: ','})
         .on('data', (row: any) => {
-          expect(row).to.include.all.keys('nom', 'prénoms', 'sexe', 'date_naissance');
+          expect(row).to.include.all.keys(
+            'nom', 'prénoms', 'sexe', 'date_naissance', 'commune_naissance',
+            'code_INSEE_naissance', 'département_naissance', 'pays_naissance',
+            'pays_ISO_naissance', 'latitude_naissance', 'longitude_naissance',
+            'id_certificat', 'age_décès', 'date_décès', 'commune_décès',
+            'code_INSEE_décès', 'département_décès', 'pays_décès',
+            'pays_ISO_décès', 'latitude_décès', 'longitude_décès', 'source_INSEE'
+          );
           expect(row.date_naissance).to.match(/\d{2}\/\d{2}\/\d{4}/);
         })
         .on('end', (rowCount: number) => {
