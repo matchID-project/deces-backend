@@ -115,6 +115,10 @@ describe('server.ts - Express application', () => {
     {params: { deathDate: '2020', sort: '[{\"sex\":\"asc\"}]' }, testFunc: (res: any) => {
       expect(res.body.response.persons.map((x: Person) => x.sex)).to.not.include('M');
     }},
+    {params: { deathDate: '2020', sort: '[{\"firstName\":\"asc\"}]' }, testFunc: (res: any) => {
+      const firstNames = res.body.response.persons.map((person: Person) => person.name.first)
+      expect(firstNames).to.have.ordered.members(firstNames.sort());
+    }},
     {params: { firstName: 'Inconnu' }, testFunc: (res: any) => {
       expect(res.body.response.persons).to.have.lengthOf(0);
     }}
