@@ -9,7 +9,9 @@ import {
     sexValidationMask,
     sortValidationMask,
     aggsValidationMask,
-    aggsTransformMask
+    aggsTransformMask,
+    fuzzyValidation,
+    fuzzyTransform
 } from './masks';
 
 import {
@@ -21,12 +23,12 @@ import {
     matchQuery
 } from './queries'
 
-export const fullTextWithQuery = (value: string, fuzzy: string|boolean) => value && {
+export const fullTextWithQuery = (value: string) => value && {
     value,
     field: "fullText"
 };
 
-export const nameWithQuery = (value: Name, fuzzy: string|boolean) => value && (value.first || value.last) && {
+export const nameWithQuery = (value: Name, fuzzy: boolean) => value && (value.first || value.last) && {
     value,
     field: {
         first: {
@@ -37,10 +39,10 @@ export const nameWithQuery = (value: Name, fuzzy: string|boolean) => value && (v
         legal: "NOM"
     },
     query: nameQuery,
-    fuzzy: (fuzzy && fuzzy === 'false') ? false : "auto"
+    fuzzy: fuzzy ? "auto" : false
 };
 
-export const sexWithQuery = (value: string, fuzzy: string|boolean) => value && {
+export const sexWithQuery = (value: string) => value && {
     value,
     field: "SEXE",
     query: matchQuery,
@@ -51,64 +53,64 @@ export const sexWithQuery = (value: string, fuzzy: string|boolean) => value && {
     }
 };
 
-export const birthDateWithQuery = (value: string|number, fuzzy: string|boolean) => value && {
+export const birthDateWithQuery = (value: string|number, fuzzy: boolean) => value && {
     value,
     field: "DATE_NAISSANCE",
     query: dateRangeStringQuery,
-    fuzzy: (fuzzy && fuzzy === 'false') ? false : "auto",
+    fuzzy: fuzzy ? "auto" : false,
     mask: {
         validation: dateRangeValidationMask,
         transform: dateRangeTransformMask
     }
 };
 
-export const birthCityWithQuery = (value: string, fuzzy: string|boolean) => value && {
+export const birthCityWithQuery = (value: string, fuzzy: boolean) => value && {
     value,
     field: "COMMUNE_NAISSANCE",
     query: fuzzyShouldTermQuery,
-    fuzzy: (fuzzy && fuzzy === 'false') ? false : "auto"
+    fuzzy: fuzzy ? "auto" : false
 };
 
-export const birthLocationCodeWithQuery = (value: string, fuzzy: string|boolean) => value && {
+export const birthLocationCodeWithQuery = (value: string) => value && {
     value,
     field: "CODE_INSEE_NAISSANCE_HISTORIQUE",
     query: matchQuery,
     fuzzy: false
 };
 
-export const birthDepartmentWithQuery = (value: string|number, fuzzy: string|boolean) => value && {
+export const birthDepartmentWithQuery = (value: string|number) => value && {
     value,
     field: "DEPARTEMENT_NAISSANCE",
     query: matchQuery,
     fuzzy: false
 };
 
-export const birthCountryWithQuery = (value: string, fuzzy: string|boolean) => value && {
+export const birthCountryWithQuery = (value: string, fuzzy: boolean) => value && {
     value,
     field: "PAYS_NAISSANCE",
     query: fuzzyShouldTermQuery,
-    fuzzy: (fuzzy && fuzzy === 'false') ? false : "auto"
+    fuzzy: fuzzy ? "auto" : false
 };
 
-export const birthGeoPointWithQuery = (value: GeoPoint, fuzzy: string|boolean) => value && {
+export const birthGeoPointWithQuery = (value: GeoPoint) => value && {
     value,
     field: "GEOPOINT_NAISSANCE",
     query: geoPointQuery,
     fuzzy: false
 };
 
-export const deathDateWithQuery = (value: string|number, fuzzy: string|boolean) => value && {
+export const deathDateWithQuery = (value: string|number, fuzzy: boolean) => value && {
     value,
     field: "DATE_DECES",
     query: dateRangeStringQuery,
-    fuzzy: (fuzzy && fuzzy === 'false') ? false : "auto",
+    fuzzy: fuzzy ? "auto" : false,
     mask: {
         validation: dateRangeValidationMask,
         transform: dateRangeTransformMask
     }
 };
 
-export const deathAgeWithQuery = (value: string|number, fuzzy: string|boolean) => value && {
+export const deathAgeWithQuery = (value: string|number) => value && {
     value,
     field: "AGE_DECES",
     query: ageRangeStringQuery,
@@ -119,35 +121,35 @@ export const deathAgeWithQuery = (value: string|number, fuzzy: string|boolean) =
     }
   }
 
-export const deathCityWithQuery = (value: string, fuzzy: string|boolean) => value && {
+export const deathCityWithQuery = (value: string, fuzzy: boolean) => value && {
     value,
     field: "COMMUNE_DECES",
     query: fuzzyShouldTermQuery,
-    fuzzy: (fuzzy && fuzzy === 'false') ? false : "auto"
+    fuzzy: fuzzy ? "auto" : false
 };
 
-export const deathLocationCodeWithQuery = (value: string, fuzzy: string|boolean) => value && {
+export const deathLocationCodeWithQuery = (value: string) => value && {
     value,
     field: "CODE_INSEE_DECES_HISTORIQUE",
     query: matchQuery,
     fuzzy: false
 };
 
-export const deathDepartmentWithQuery = (value: string|number, fuzzy: string|boolean) => value && {
+export const deathDepartmentWithQuery = (value: string|number) => value && {
     value,
     field: "DEPARTEMENT_DECES",
     query: matchQuery,
     fuzzy: false
 };
 
-export const deathCountryWithQuery = (value: string, fuzzy: string|boolean) => value && {
+export const deathCountryWithQuery = (value: string, fuzzy: boolean) => value && {
     value,
     field: "PAYS_DECES",
     query: fuzzyShouldTermQuery,
-    fuzzy: (fuzzy && fuzzy === 'false') ? false : "auto"
+    fuzzy: fuzzy ? "auto" : false
 };
 
-export const deathGeoPointWithQuery = (value: GeoPoint, fuzzy: string|boolean) => value && {
+export const deathGeoPointWithQuery = (value: GeoPoint) => value && {
     value,
     field: "GEOPOINT_DECES",
     query: geoPointQuery,
@@ -166,5 +168,13 @@ export const aggsWithQuery = (value: string|string[]) => value && {
     mask: {
       validation: aggsValidationMask,
       transform: aggsTransformMask
+    }
+};
+
+export const fuzzyWithQuery = (value: string|boolean) => value !== undefined && {
+    value,
+    mask: {
+      validation: fuzzyValidation,
+      transform: fuzzyTransform
     }
 };

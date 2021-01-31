@@ -20,7 +20,7 @@ export interface NameFields {
 };
 
 export interface RequestField {
-    value: string|string[]|Name|number|GeoPoint|Sort[];
+    value: boolean|string|string[]|Name|number|GeoPoint|Sort[];
     field?: string|string[]|NameFields;
     query?: any;
     fuzzy?: string|boolean;

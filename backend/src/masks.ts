@@ -124,3 +124,29 @@ export const aggsValidationMask = (aggs: string|string[]): boolean => {
 export const aggsTransformMask = (aggs: string|string[]): string[] => {
   return (typeof(aggs) === 'string') ? JSON.parse(aggs) : aggs
 }
+
+export const fuzzyValidation = (fuzzy: string|boolean): boolean => {
+  if (typeof(fuzzy) === 'string') {
+    try {
+      if (fuzzy === 'true' || fuzzy === 'false') {
+        return true;
+      } else {
+        return false;
+      }
+    } catch (e) {
+      return false;
+    }
+  } else if (typeof(fuzzy) === 'boolean') {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+export const fuzzyTransform = (fuzzy: string|boolean): boolean => {
+  return typeof(fuzzy) === 'string'
+    ? fuzzy === 'true'
+      ? true :
+        false
+    : fuzzy
+}
