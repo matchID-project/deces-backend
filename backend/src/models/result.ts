@@ -9,10 +9,12 @@ interface RequestType {
   lastName?: string;
   birthDate?: string;
   birthCity?: string;
+  birthLocationCode?: string;
   birthDepartment?: string;
   birthCountry?: string;
   deathDate?: string;
   deathCity?: string;
+  deathLocationCode?: string;
   deathDepartment?: string;
   deathCountry?: string;
   size?: number;
@@ -47,6 +49,15 @@ interface ResType {
  persons: Person[];
 }
 
+interface ResTypeAgg {
+ total: number;
+ /**
+  * délai du traitement
+  */
+ delay: number;
+ aggregations: any;
+}
+
 /**
  * This is a description of a model
  * @tsoaModel
@@ -73,7 +84,7 @@ interface ResType {
  *          "date":"19691111",
  *          "location":{
  *            "city":"Clermont-Ferrand",
- *            "cityCode":"63113",
+ *            "code":"63113",
  *            "departmentCode":"63",
  *            "country":"France",
  *            "countryCode":"FRA",
@@ -87,7 +98,7 @@ interface ResType {
  *          "age": 50,
  *          "location":{
  *            "city":"Clermont-Ferrand",
- *            "cityCode":"63113",
+ *            "code":"63113",
  *            "departmentCode":"63",
  *            "country":"France",
  *            "countryCode":"FRA",
@@ -105,6 +116,25 @@ export interface Result {
   response?: ResType;
 }
 
+/**
+ * This is a description of a model
+ * @tsoaModel
+ * @example
+ * {
+ *   "request": {
+ *    "q": "Georges Pompidou"
+ *   },
+ *   "response": {
+ *    "bucket": "bucket"
+ *   }
+ * }
+ */
+export interface ResultAgg {
+  msg?: string|string[];
+  request?: RequestType;
+  response?: ResTypeAgg;
+}
+
 export interface ResultRawES {
   '_scroll_id'?: string;
   took: number;
@@ -114,6 +144,11 @@ export interface ResultRawES {
     }
     'max_score': number;
     hits:  ResultRawHit[]
+  };
+  aggregations?: {
+    doc_count_error_upper_bound: number;
+    sum_other_doc_count: number;
+    buckets: any[];
   }
 }
 
@@ -130,6 +165,7 @@ export interface ResultRawHit {
     DATE_NAISSANCE: string;
     COMMUNE_NAISSANCE: string;
     CODE_INSEE_NAISSANCE: string;
+    CODE_INSEE_NAISSANCE_HISTORIQUE: string|string[];
     DEPARTEMENT_NAISSANCE: string;
     PAYS_NAISSANCE: string;
     PAYS_NAISSANCE_CODEISO3: string;
@@ -140,6 +176,7 @@ export interface ResultRawHit {
     AGE_DECES: number;
     COMMUNE_DECES: string;
     CODE_INSEE_DECES: string;
+    CODE_INSEE_DECES_HISTORIQUE: string|string[];
     DEPARTEMENT_DECES: string;
     PAYS_DECES: string;
     PAYS_DECES_CODEISO3: string;
@@ -217,7 +254,8 @@ export const buildResultSingle = (item: ResultRawHit): Person => {
       date: item._source.DATE_NAISSANCE,
       location: {
         city: item._source.COMMUNE_NAISSANCE,
-        cityCode: item._source.CODE_INSEE_NAISSANCE,
+        code: item._source.CODE_INSEE_NAISSANCE,
+        codeHistory: item._source.CODE_INSEE_NAISSANCE_HISTORIQUE,
         departmentCode: item._source.DEPARTEMENT_NAISSANCE,
         country: item._source.PAYS_NAISSANCE,
         countryCode: item._source.PAYS_NAISSANCE_CODEISO3,
@@ -231,7 +269,8 @@ export const buildResultSingle = (item: ResultRawHit): Person => {
       age: item._source.AGE_DECES,
       location: {
         city: item._source.COMMUNE_DECES, // str|str[]
-        cityCode: item._source.CODE_INSEE_DECES,
+        code: item._source.CODE_INSEE_DECES,
+        codeHistory: item._source.CODE_INSEE_DECES_HISTORIQUE,
         departmentCode: item._source.DEPARTEMENT_DECES,
         country: item._source.PAYS_DECES,
         countryCode: item._source.PAYS_DECES_CODEISO3,

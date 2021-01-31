@@ -52,8 +52,8 @@ const log = (json:any) => {
   }));
 }
 
-const validFields: string[] = ['q', 'firstName', 'lastName', 'legalName', 'sex', 'birthDate', 'birthCity', 'birthDepartment', 'birthCountry',
-'birthGeoPoint', 'deathDate', 'deathCity', 'deathDepartment', 'deathCountry', 'deathGeoPoint', 'deathAge', 'lastSeenAliveDate',
+const validFields: string[] = ['q', 'firstName', 'lastName', 'legalName', 'sex', 'birthDate', 'birthCity', 'birthLocationCode', 'birthDepartment', 'birthCountry',
+'birthGeoPoint', 'deathDate', 'deathCity', 'deathLocationCode', 'deathDepartment', 'deathCountry', 'deathGeoPoint', 'deathAge', 'lastSeenAliveDate',
 'size', 'fuzzy', 'block'];
 
 const jsonFields: string[] = ['birthGeoPoint','deathGeoPoint','block'];
@@ -533,7 +533,7 @@ router.post('/csv', multerSingle, async (req: any, res: express.Response) => {
  *              schema:
  *                type: string
  *                description: CSV results
- *                example: Prenom,Nom,Date,score,source,id,name,firstName,lastName,sex,birthDate,birthCity,cityCode,departmentCode,country,countryCode,latitude,longitude,deathDate,certificateId,age,deathCity,cityCode,departmentCode,country,countryCode,latitude,longitude \r\n "DENISE","GERMAN","03/02/1952","142.26564","s3://fichier-des-personnes-decedees/deaths","83ad9a6737289a3abd6f35e3a16996c8a3b21fd2","Denise Josephine","German","F","19520203","Septfontaines","25541","25","France","FRA","46.9739924","6.1738194","19760729","1782","24","Septfontaines","25541","25","France","FRA","46.9739924","6.1738194"\r\n "JEAN PIERRE YANNICK","GOUETI","15/01/1953" \r\n "JOSE","PONSARD","30/12/1952","163.79218","s3://fichier-des-personnes-decedees/deaths","99f809265af83e7ea0d98adff4dace0f5c763d0b","Jose","Ponsard","M","19521230","Saulx","70478","70","France","FRA","47.6962074","6.2758008","20050615","7761","52","Saulx","70478","70","France","FRA","47.6962074","6.2758008" \r\n
+ *                example: Prenom,Nom,Date,score,source,id,name,firstName,lastName,sex,birthDate,birthCity,birthLocationCode,departmentCode,country,countryCode,latitude,longitude,deathDate,certificateId,age,deathCity,deathLocationCode,departmentCode,country,countryCode,latitude,longitude \r\n "DENISE","GERMAN","03/02/1952","142.26564","s3://fichier-des-personnes-decedees/deaths","83ad9a6737289a3abd6f35e3a16996c8a3b21fd2","Denise Josephine","German","F","19520203","Septfontaines","25541","25","France","FRA","46.9739924","6.1738194","19760729","1782","24","Septfontaines","25541","25","France","FRA","46.9739924","6.1738194"\r\n "JEAN PIERRE YANNICK","GOUETI","15/01/1953" \r\n "JOSE","PONSARD","30/12/1952","163.79218","s3://fichier-des-personnes-decedees/deaths","99f809265af83e7ea0d98adff4dace0f5c763d0b","Jose","Ponsard","M","19521230","Saulx","70478","70","France","FRA","47.6962074","6.2758008","20050615","7761","52","Saulx","70478","70","France","FRA","47.6962074","6.2758008" \r\n
  *
  * /search/json/:jobId:
  *    get:
@@ -792,7 +792,7 @@ export const resultsHeader = [
   {label: 'sex', labelFr: 'sexe', id: 'sex'},
   {label: 'birth.date', labelFr: 'date_naissance', id: 'birthDate'},
   {label: 'birth.location.city', labelFr: 'commune_naissance', id: 'birthCity'},
-  {label: 'birth.location.cityCode', labelFr: 'code_INSEE_naissance'},
+  {label: 'birth.location.code', labelFr: 'code_INSEE_naissance', id: 'birthLocationCode'},
   {label: 'birth.location.departmentCode', labelFr: 'département_naissance', id: 'birthDepartment'},
   {label: 'birth.location.country', labelFr: 'pays_naissance', id: 'birthCountry'},
   {label: 'birth.location.countryCode', labelFr: 'pays_ISO_naissance'},
@@ -802,7 +802,7 @@ export const resultsHeader = [
   {label: 'death.age', id: 'deathAge', labelFr: 'age_décès'},
   {label: 'death.date', id: 'deathDate', labelFr: 'date_décès'},
   {label: 'death.location.city', id: 'deathCity', labelFr: 'commune_décès'},
-  {label: 'death.location.cityCode', labelFr: 'code_INSEE_décès'},
+  {label: 'death.location.code', id: 'deathLocationCode', labelFr: 'code_INSEE_décès',},
   {label: 'death.location.departmentCode', id: 'deathDepartment', labelFr: 'département_décès'},
   {label: 'death.location.country', labelFr: 'pays_décès', id: 'deathCountry'},
   {label: 'death.location.countryCode', labelFr: 'pays_ISO_décès'},

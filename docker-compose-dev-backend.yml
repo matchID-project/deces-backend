@@ -4,39 +4,6 @@ services:
   backend:
     image: ${DOCKER_USERNAME}/deces-backend-${EXEC_ENV}:${APP_VERSION}
     container_name: deces-backend-${EXEC_ENV}
-    build:
-      context: ${BACKEND}
-      target: ${EXEC_ENV}
-      dockerfile: Dockerfile
-      args:
-        http_proxy: ${http_proxy}
-        https_proxy: ${https_proxy}
-        no_proxy: ${no_proxy}
-        npm_registry: ${NPM_REGISTRY}
-        MIRROR_DEBIAN: ${MIRROR_DEBIAN}
-        app_path: /${APP}
-        app_ver: ${APP_VERSION}
-        port: ${BACKEND_PORT}
-        NPM_FIX: ${NPM_FIX}
-        NPM_LATEST: ${NPM_LATEST}
-        NPM_VERBOSE: ${NPM_VERBOSE}
-    environment:
-      - NODE_ENV=${EXEC_ENV}
-      - BACKEND_PORT=${BACKEND_PORT}
-      - APP=${APP}
-      - APP_VERSION=${APP_VERSION}
-      - BACKEND_PROXY_PATH=${BACKEND_PROXY_PATH}
-      - BACKEND_JOB_CONCURRENCY=${BACKEND_JOB_CONCURRENCY}
-      - BACKEND_CHUNK_CONCURRENCY=${BACKEND_CHUNK_CONCURRENCY}
-      - BACKEND_LOG_LEVEL=${BACKEND_LOG_LEVEL}
-      - API_URL=${API_URL}
-      - API_SSL=${API_SSL}
-      - API_EMAIL=${API_EMAIL}
-      - DATAGOUV_CATALOG_URL=${DATAGOUV_CATALOG_URL}
-      - DATAGOUV_RESOURCES_URL=${DATAGOUV_RESOURCES_URL}
-      - DATAGOUV_PROXY_PATH=${DATAGOUV_PROXY_PATH}
-      - ES_URL=${ES_HOST}:${ES_PORT}
-      - ES_INDEX=${ES_INDEX}
     volumes:
       - ${BACKEND}/src:/${APP}/src/
       - ${BACKEND}/dist:/${APP}/dist/
@@ -44,16 +11,3 @@ services:
       - /${APP}/node_modules
     ports:
       - ${PORT}:8080
-    restart: always
-    depends_on:
-      - "redis"
-  redis:
-    image: redis:alpine
-    container_name: ${APP}-redis
-    volumes:
-      - ${REDIS_DATA}:/data
-
-networks:
-  default:
-    external:
-      name: ${DC_NETWORK}

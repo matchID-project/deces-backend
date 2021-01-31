@@ -3,10 +3,13 @@ import morgan from 'morgan';
 import bodyParser from 'body-parser';
 import { RegisterRoutes } from './routes/routes';
 import loggerStream from './logger';
-import { router as bulk } from './controllers/bulk';
+// import { router as bulk } from './controllers/bulk';
 import { router as documentation } from './controllers/documentation';
 // Manually telling tsoa which controllers to use in the app entry file, route generation faster
-import "./controllers/index.controller";
+import "./controllers/search.controller";
+import "./controllers/bulk.controller";
+import "./controllers/aggregation.controller";
+import "./controllers/status.controller";
 
 export const app = express();
 
@@ -54,5 +57,5 @@ app.use((req, res, next) => {
 app.use(bodyParser.urlencoded({ extended: false }));
 RegisterRoutes(app);
 
-app.use(`${process.env.BACKEND_PROXY_PATH}/search`, bulk);
+// app.use(`${process.env.BACKEND_PROXY_PATH}/search`, bulk);
 app.use(`${process.env.BACKEND_PROXY_PATH}/docs`, documentation);

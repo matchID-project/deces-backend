@@ -33,7 +33,7 @@ const swaggerDefinitionTemplate: any = {
 
 const options = {
   swaggerDefinition: {...swaggerDefinitionTemplate},
-  apis: ["**/bulk.{ts,js}"]
+  apis: ["**/*.controller.{ts,js}"]
 }
 options.swaggerDefinition.openapi = '3.0.0'
 const specs: any = swaggerJsdoc(options);

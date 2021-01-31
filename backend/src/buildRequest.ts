@@ -352,13 +352,15 @@ const referenceSort: any = {
   firstName: "PRENOM.raw",
   lastName: "NOM.raw",
   sex: "SEXE",
-  birthDate: "DATE_NAISSANCE.raw",
+  birthDate: "DATE_NAISSANCE_NORM",
   birthCity: "COMMUNE_NAISSANCE.raw",
+  birthLocationCode: "CODE_INSEE_NAISSANCE",
   birthDepartment: "DEPARTEMENT_NAISSANCE",
   birthCountry: "PAYS_NAISSANCE.raw",
-  deathDate: "DATE_DECES.raw",
+  deathDate: "DATE_DECES_NORM",
   deathAge: "AGE_DECES",
   deathCity: "COMMUNE_DECES.raw",
+  deathLocationCode: "CODE_INSEE_DECES",
   deathDepartment: "DEPARTEMENT_DECES",
   deathCountry: "PAYS_DECES.raw"
 }
@@ -376,9 +378,69 @@ export const buildSort = (inputs?: any) => {
   }).filter((x:any) => x.order).map((x: any) => { return { [x.field]: x.order } })
 }
 
+const buildAggregation = (requestInput: RequestInput): any => {
+  const aggregationRequest: any = {}
+  if (JSON.stringify(requestInput.aggs) === JSON.stringify(['birthDate'])) {
+    aggregationRequest.birthDate = {
+      'date_histogram': {
+        field: referenceSort.birthDate,
+        'calendar_interval': 'month',
+        format: 'yyyyMMdd'
+      }
+    }
+  } else if (JSON.stringify(requestInput.aggs) === JSON.stringify(['deathDate'])) {
+    aggregationRequest.deathDate = {
+      'date_histogram': {
+        field: referenceSort.deathDate,
+        'calendar_interval': 'month',
+        format: 'yyyyMMdd'
+      }
+    }
+  } else {
+    const aggregationArray = requestInput.aggs.map((agg: string) => {
+      const aggregation: any = {}
+      if (["birthDate", "deathDate"].includes(agg)) {
+        aggregation[agg] = {
+          'date_histogram': {
+            field: referenceSort[agg],
+            'calendar_interval': 'month',
+            format: 'yyyyMMdd'
+          }
+        }
+      } else {
+        aggregation[agg] = {
+          terms: {
+            field: referenceSort[agg]
+          }
+        }
+      }
+      return aggregation
+    })
+    aggregationRequest.myBuckets = {
+      composite: {
+        size: 10,
+        sources: aggregationArray
+      }
+    }
+    if (requestInput.afterKey !== undefined) {
+      aggregationRequest.myBuckets.composite.after = requestInput.afterKey
+    } else {
+      requestInput.aggs.map((agg: string) => {
+        aggregationRequest[`${agg}_count`] = {
+          cardinality: {
+            field: referenceSort[agg]
+          }
+        }
+      })
+    }
+  }
+  return aggregationRequest
+}
+
 export const buildRequest = (requestInput: RequestInput): BodyResponse|ScrolledResponse => {
   const sort = buildSort(requestInput.sort.value);
   const match = buildMatch(requestInput);
+  const aggregations = buildAggregation(requestInput);
   // const filter = buildRequestFilter(myFilters); // TODO
   const size = requestInput.size;
   const from = buildFrom(requestInput.page, size);
@@ -406,10 +468,10 @@ export const buildRequest = (requestInput: RequestInput): BodyResponse|ScrolledR
       // },
       // https://www.elastic.co/guide/en/elasticsearch/reference/7.x/search-request-source-filtering.html#search-request-source-filtering
       _source: [
-        "CODE_INSEE_DECES","CODE_INSEE_NAISSANCE",
+        "CODE_INSEE_DECES","CODE_INSEE_DECES_HISTORIQUE","CODE_INSEE_NAISSANCE","CODE_INSEE_NAISSANCE_HISTORIQUE",
         "COMMUNE_DECES","COMMUNE_NAISSANCE",
-        "DATE_DECES","DATE_NAISSANCE","AGE_DECES",
-        "DEPARTEMENT_DECES","DEPARTEMENT_NAISSANCE",
+        "DATE_DECES", "DATE_DECES_NORM","DATE_NAISSANCE", "DATE_DECES_NORM",
+        "AGE_DECES", "DEPARTEMENT_DECES","DEPARTEMENT_NAISSANCE",
         "NOM","PRENOM","PRENOMS",
         "NUM_DECES",
         "PAYS_DECES","PAYS_DECES_CODEISO3",
@@ -417,12 +479,7 @@ export const buildRequest = (requestInput: RequestInput): BodyResponse|ScrolledR
         "GEOPOINT_NAISSANCE","GEOPOINT_DECES",
         "SEXE","UID",
         "SOURCE", "SOURCE_LINE"],
-      // aggs: {
-      //   COMMUNE_NAISSANCE: { terms: { field: "COMMUNE_NAISSANCE.keyword", size: 30 } },
-      //   PAYS_NAISSANCE: {
-      //     terms: { field: "PAYS_NAISSANCE.keyword" }
-      //   }
-      // },
+      aggs: aggregations,
 
       // Dynamic values based on current Search UI state
       // --------------------------
@@ -437,6 +494,9 @@ export const buildRequest = (requestInput: RequestInput): BodyResponse|ScrolledR
       size,
       from
     };
+    if (requestInput.aggs.length === 0) {
+       delete body.aggs
+    }
   }
 
   return body;

@@ -1,4 +1,4 @@
-import { processChunk } from './bulk';
+import { processChunk } from '../processStream';
 import { expect } from 'chai';
 import 'mocha';
 
