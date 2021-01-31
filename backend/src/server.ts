@@ -70,10 +70,14 @@ app.use((req, res, next) => {
 
 app.use(bodyParser.urlencoded({ extended: false }));
 RegisterRoutes(app);
-app.use((_req, res: ExResponse) => {
-  res.status(404).send({
-    message: "Route not found",
-  });
+app.use((_req, res: ExResponse, next: NextFunction) => {
+  if (_req.path.includes(`${process.env.BACKEND_PROXY_PATH}/docs`)) {
+    next();
+  } else {
+    res.status(404).send({
+      message: "Route not found",
+    });
+  }
 });
 app.use((
   err: unknown,
