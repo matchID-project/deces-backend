@@ -56,7 +56,7 @@ const addRawBody = (req: any, res: any, buf: any, encoding: any) => {
     req.rawBody = buf.toString();
 }
 
-app.use((req, res, next) => {
+app.use((req: ExRequest, res: ExResponse, next: NextFunction) => {
     bodyParser.json({
         verify: addRawBody,
     })(req, res, (err) => {
@@ -96,7 +96,7 @@ app.use((
       details: err?.fields,
     });
   }
-  if (err instanceof Error) {
+  if (err instanceof Error && res.statusCode !== 200) {
     log({
       error: "Internal Server Error"
     });
