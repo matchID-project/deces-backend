@@ -70,6 +70,11 @@ app.use((req, res, next) => {
 
 app.use(bodyParser.urlencoded({ extended: false }));
 RegisterRoutes(app);
+app.use((_req, res: ExResponse) => {
+  res.status(404).send({
+    message: "Route not found",
+  });
+});
 app.use((
   err: unknown,
   req: ExRequest,
