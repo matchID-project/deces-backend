@@ -116,6 +116,7 @@ export class AggregationController extends Controller {
 
   private async streamAggs(response: any, requestInput: any, accept: string) {
     let requestBuild = buildRequest(requestInput);
+    const transformedAggs = requestInput.aggs.mask.transform(requestInput.aggs.value)
     let result = await runRequest(requestBuild, null);
 
     let afterKey
@@ -124,13 +125,13 @@ export class AggregationController extends Controller {
     let { took: delay } = result.data
     if (result.data.aggregations.myBuckets) {
       afterKey = result.data.aggregations.myBuckets.after_key
-      requestInput.aggs.forEach((agg: string) => {
+      transformedAggs.forEach((agg: string) => {
         cardinality[agg] = result.data.aggregations[`${agg}_count`].value
         response.setHeader(`total-results-${agg}`, result.data.aggregations[`${agg}_count`].value);
       });
       buckets = result.data.aggregations.myBuckets.buckets
     } else {
-      requestInput.aggs.forEach((agg: string) => {
+      transformedAggs.forEach((agg: string) => {
         cardinality[agg] = result.data.aggregations[agg].buckets.length
         response.setHeader(`total-results-${agg}`, result.data.aggregations[agg].buckets.length);
         buckets = result.data.aggregations[agg].buckets

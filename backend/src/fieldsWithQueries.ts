@@ -7,7 +7,9 @@ import {
     ageRangeValidationMask,
     sexTransformMask,
     sexValidationMask,
-    sortValidationMask
+    sortValidationMask,
+    aggsValidationMask,
+    aggsTransformMask
 } from './masks';
 
 import {
@@ -156,5 +158,13 @@ export const sortWithQuery = (value: string|Sort[]) => value && {
     value,
     mask: {
         validation: sortValidationMask
+    }
+};
+
+export const aggsWithQuery = (value: string|string[]) => value && {
+    value,
+    mask: {
+      validation: aggsValidationMask,
+      transform: aggsTransformMask
     }
 };
