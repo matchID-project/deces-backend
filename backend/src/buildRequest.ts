@@ -1,8 +1,9 @@
+import { Sort } from './models/entities';
 import { RequestInput } from './models/requestInput';
 import { BodyResponse, ScrolledResponse } from './models/body';
 import { buildRequestFilter } from "./buildRequestFilter";
 import { fuzzyTermQuery, matchQuery, dateRangeStringQuery } from './queries';
-import { isDateRange, isDateLimit } from './masks';
+import { isDateRange, isDateLimit, sortTransformationMask } from './masks';
 
 const buildMatch = (requestInput: RequestInput) => {
   if (requestInput.block) {
@@ -365,22 +366,16 @@ const referenceSort: any = {
   deathCountry: "PAYS_DECES.raw"
 }
 
-export const buildSort = (inputs?: any) => {
-  let parsedInput
-  if (typeof(inputs) === 'string') {
-    parsedInput = JSON.parse(inputs)
-  } else {
-    parsedInput = Object.values(inputs);
-  }
-  return parsedInput.map((item: any) => {
+export const buildSort = (inputs?: any): Sort[] => {
+  return sortTransformationMask(inputs).map((item: any) => {
     const _myvar = Object.keys(item)[0]
     return {field: referenceSort[_myvar], order: Object.values(item)[0]}
   }).filter((x:any) => x.order).map((x: any) => { return { [x.field]: x.order } })
 }
 
-const buildAggregation = (requestInput: RequestInput): any => {
+const buildAggregation = (aggs: string[], afterKey: number): any => {
   const aggregationRequest: any = {}
-  if (JSON.stringify(requestInput.aggs) === JSON.stringify(['birthDate'])) {
+  if (JSON.stringify(aggs) === JSON.stringify(['birthDate'])) {
     aggregationRequest.birthDate = {
       'date_histogram': {
         field: referenceSort.birthDate,
@@ -388,7 +383,7 @@ const buildAggregation = (requestInput: RequestInput): any => {
         format: 'yyyyMMdd'
       }
     }
-  } else if (JSON.stringify(requestInput.aggs) === JSON.stringify(['deathDate'])) {
+  } else if (JSON.stringify(aggs) === JSON.stringify(['deathDate'])) {
     aggregationRequest.deathDate = {
       'date_histogram': {
         field: referenceSort.deathDate,
@@ -397,7 +392,7 @@ const buildAggregation = (requestInput: RequestInput): any => {
       }
     }
   } else {
-    const aggregationArray = requestInput.aggs.map((agg: string) => {
+    const aggregationArray = aggs.map((agg: string) => {
       const aggregation: any = {}
       if (["birthDate", "deathDate"].includes(agg)) {
         aggregation[agg] = {
@@ -422,10 +417,10 @@ const buildAggregation = (requestInput: RequestInput): any => {
         sources: aggregationArray
       }
     }
-    if (requestInput.afterKey !== undefined) {
-      aggregationRequest.myBuckets.composite.after = requestInput.afterKey
+    if (afterKey !== undefined) {
+      aggregationRequest.myBuckets.composite.after = afterKey
     } else {
-      requestInput.aggs.map((agg: string) => {
+      aggs.map((agg: string) => {
         aggregationRequest[`${agg}_count`] = {
           cardinality: {
             field: referenceSort[agg]
@@ -440,7 +435,8 @@ const buildAggregation = (requestInput: RequestInput): any => {
 export const buildRequest = (requestInput: RequestInput): BodyResponse|ScrolledResponse => {
   const sort = buildSort(requestInput.sort.value);
   const match = buildMatch(requestInput);
-  const aggregations = buildAggregation(requestInput);
+  const transformedAggs = (requestInput.aggs && requestInput.aggs.value) ? requestInput.aggs.mask.transform(requestInput.aggs.value) : []
+  const aggregations = buildAggregation(transformedAggs, requestInput.afterKey);
   // const filter = buildRequestFilter(myFilters); // TODO
   const size = requestInput.size;
   const from = buildFrom(requestInput.page, size);
@@ -494,7 +490,7 @@ export const buildRequest = (requestInput: RequestInput): BodyResponse|ScrolledR
       size,
       from
     };
-    if (requestInput.aggs.length === 0) {
+    if (transformedAggs.length === 0) {
        delete body.aggs
     }
   }

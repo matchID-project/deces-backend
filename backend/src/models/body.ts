@@ -1,9 +1,11 @@
+import { Sort } from './entities';
+
 export interface BodyResponse {
   min_score: number;
   _source: string[];
   aggs?: any;
   track_total_hits: boolean;
-  sort: string
+  sort: Sort[];
   query: {
     bool: any;
     // {
