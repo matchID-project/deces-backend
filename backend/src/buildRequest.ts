@@ -2,7 +2,7 @@ import { Sort } from './models/entities';
 import { RequestInput } from './models/requestInput';
 import { BodyResponse, ScrolledResponse } from './models/body';
 import { buildRequestFilter } from "./buildRequestFilter";
-import { fuzzyTermQuery, matchQuery, dateRangeStringQuery } from './queries';
+import { fuzzyTermQuery, matchQuery } from './queries';
 import { isDateRange, isDateLimit, sortTransformationMask } from './masks';
 
 const buildMatch = (requestInput: RequestInput) => {
