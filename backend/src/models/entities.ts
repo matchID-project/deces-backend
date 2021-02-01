@@ -30,10 +30,22 @@ export interface RequestField {
     };
   };
 
+/**
+ * Coordonnés GPS
+ */
 export interface GeoPoint {
-    latitude: number;
-    longitude: number;
-    distance: string;
+  /**
+   * Latitude de la coordonnée GPS
+   */
+  latitude: number;
+  /**
+   * Latitude de la coordonnée GPS
+   */
+  longitude: number;
+  /**
+   * Rayon de distance du point GPS
+   */
+  distance: string;
 };
 
 export interface Location {
