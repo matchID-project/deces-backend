@@ -384,7 +384,7 @@ const buildAggregation = (aggs: string[], aggsSize: number, afterKey: number): a
       }
     }
   } else if ((aggs.length === 1) && [
-    "firstName", "lastName",
+    "firstName", "lastName", "sex", "deathAge",
     "birthLocationCode", "birthDepartment", "birthCity", "birthCountry",
     "deathLocationCode", "deathDepartment", "deathCity", "deathCountry"].includes(aggs[0])) {
       aggregationRequest[aggs[0]] = {
