@@ -392,11 +392,7 @@ const buildAggregation = (aggs: string[], aggsSize: number, afterKey: number): a
           field: referenceSort[aggs[0]],
         }
       }
-      if (!["birthDepartment","birthCountry","deathDepartment","deathCountry","deathAge"].includes(aggs[0])) {
-        aggregationRequest[aggs[0]].terms.size = aggsSize
-      } else {
-        aggregationRequest[aggs[0]].terms.size = 500
-      }
+      aggregationRequest[aggs[0]].terms.size = aggsSize;
   } else {
     const aggregationArray = aggs.map((agg: string) => {
       const aggregation: any = {}
