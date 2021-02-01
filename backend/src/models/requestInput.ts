@@ -147,9 +147,13 @@ export interface RequestBody {
   */
  headerLang?: string;
  /**
-  * Aggregation parameter
+  * Champs à aggréger
   */
  aggs?: string[];
+  /**
+  * Nombre de clé max d'aggrégation
+  */
+ aggsSize?: number;
 };
 
 
@@ -181,6 +185,7 @@ interface RequestInputParams {
   fuzzy?: string|boolean;
   sort?: string|Sort[];
   aggs?: string|string[];
+  aggsSize?: number;
   block?: Block;
   dateFormat?: any;
 }
@@ -214,6 +219,7 @@ export class RequestInput {
   fuzzy?: RequestField;
   afterKey?: number;
   aggs?: RequestField;
+  aggsSize?: number;
   sort?: RequestField;
   block?: Block;
   dateFormat?: string;
@@ -224,8 +230,9 @@ export class RequestInput {
     this.page = params.page ? params.page : 1;
     this.scroll = params.scroll ? params.scroll : '';
     this.scrollId = params.scrollId ? params.scrollId : '';
-    this.sort = params.sort ? sortWithQuery(params.sort) : {value: [{score: 'desc'}]}
-    this.aggs = aggsWithQuery(params.aggs)
+    this.sort = params.sort ? sortWithQuery(params.sort) : {value: [{score: 'desc'}]};
+    this.aggs = aggsWithQuery(params.aggs);
+    this.aggsSize = params.aggsSize !== undefined ? params.aggsSize : 15;
     this.block = params.block;
     this.id = params.id;
     this.dateFormat = params.dateFormat;
