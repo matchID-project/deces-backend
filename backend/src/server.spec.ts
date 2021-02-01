@@ -625,7 +625,7 @@ describe('server.ts - Express application', () => {
           if (test.rowName) {
             expect(res.body.response.aggregations.map((bucket: any) => bucket.key_as_string)).to.match(/\d{8}/);
           } else {
-            expect(res.body.response.aggregations.map((bucket: any) => bucket.key[test.fieldName])).to.include(test.expected);
+            expect(res.body.response.aggregations.map((bucket: any) => bucket.key)).to.include(test.expected);
           }
         }
       });
@@ -647,7 +647,7 @@ describe('server.ts - Express application', () => {
           if (test.rowName) {
             expect(res.body.response.aggregations.map((bucket: any) => bucket.key_as_string)).to.match(/\d{8}/);
           } else {
-            expect(res.body.response.aggregations.map((bucket: any) => bucket.key[test.fieldName])).to.include(test.expected);
+            expect(res.body.response.aggregations.map((bucket: any) => bucket.key)).to.include(test.expected);
           }
         }
       });
