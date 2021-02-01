@@ -34,6 +34,7 @@ export class AggregationController extends Controller {
    * @param deathAge Age du décès
    * @param fuzzy Recherche floue ou exacte
    * @param aggs Colonnes à utiliser pour l'aggregation
+   * @param aggsSize Nombre de valeurs max pour les champs keyword comportant de nombreuses valeur (*City, *Name)
    */
   @Tags('Aggregations')
   @Get('/agg')
@@ -55,6 +56,7 @@ export class AggregationController extends Controller {
     @Query() deathAge?: StrAndNumber,
     @Query() fuzzy?: 'true'|'false',
     @Query() aggs?: string,
+    @Query() aggsSize?: number,
     @Header('Accept') accept?: string
   ): Promise<ResultAgg> {
     if (q || firstName || lastName || legalName || sex || birthDate || birthCity || birthDepartment || birthCountry || deathDate || deathCity || deathDepartment || deathCountry || deathAge) {
@@ -62,7 +64,7 @@ export class AggregationController extends Controller {
         this.setStatus(400);
         return  { msg: "error - missing aggs parameter" };
       }
-      const requestInput = new RequestInput({q, firstName, lastName, legalName, sex, birthDate, birthCity, birthDepartment, birthCountry, deathDate, deathCity, deathDepartment, deathCountry, deathAge, fuzzy, size: 0, aggs});
+      const requestInput = new RequestInput({q, firstName, lastName, legalName, sex, birthDate, birthCity, birthDepartment, birthCountry, deathDate, deathCity, deathDepartment, deathCountry, deathAge, fuzzy, size: 0, aggs, aggsSize});
       if (requestInput.errors.length) {
         this.setStatus(400);
         return  { msg: requestInput.errors };

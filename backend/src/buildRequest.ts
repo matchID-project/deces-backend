@@ -373,24 +373,30 @@ export const buildSort = (inputs?: any): Sort[] => {
   }).filter((x:any) => x.order).map((x: any) => { return { [x.field]: x.order } })
 }
 
-const buildAggregation = (aggs: string[], afterKey: number): any => {
-  const aggregationRequest: any = {}
-  if (JSON.stringify(aggs) === JSON.stringify(['birthDate'])) {
-    aggregationRequest.birthDate = {
+const buildAggregation = (aggs: string[], aggsSize: number, afterKey: number): any => {
+  const aggregationRequest: any = {};
+  if ((aggs.length === 1) && ["birthDate", "deathDate"].includes(aggs[0])) {
+    aggregationRequest[aggs[0]] = {
       'date_histogram': {
-        field: referenceSort.birthDate,
+        field: referenceSort[aggs[0]],
         'calendar_interval': 'month',
         format: 'yyyyMMdd'
       }
     }
-  } else if (JSON.stringify(aggs) === JSON.stringify(['deathDate'])) {
-    aggregationRequest.deathDate = {
-      'date_histogram': {
-        field: referenceSort.deathDate,
-        'calendar_interval': 'month',
-        format: 'yyyyMMdd'
+  } else if ((aggs.length === 1) && [
+    "firstName", "lastName",
+    "birthLocationCode", "birthDepartment", "birthCity", "birthCountry",
+    "deathLocationCode", "deathDepartment", "deathCity", "deathCountry"].includes(aggs[0])) {
+      aggregationRequest[aggs[0]] = {
+        'terms': {
+          field: referenceSort[aggs[0]],
+        }
       }
-    }
+      if (!["birthDepartment","birthCountry","deathDepartment","deathCountry"].includes(aggs[0])) {
+        aggregationRequest[aggs[0]].terms.size = aggsSize
+      } else {
+        aggregationRequest[aggs[0]].terms.size = 500
+      }
   } else {
     const aggregationArray = aggs.map((agg: string) => {
       const aggregation: any = {}
@@ -413,7 +419,7 @@ const buildAggregation = (aggs: string[], afterKey: number): any => {
     })
     aggregationRequest.myBuckets = {
       composite: {
-        size: 10,
+        size: 1000,
         sources: aggregationArray
       }
     }
@@ -425,7 +431,7 @@ const buildAggregation = (aggs: string[], afterKey: number): any => {
           cardinality: {
             field: referenceSort[agg]
           }
-        }
+        };
       })
     }
   }
@@ -436,7 +442,7 @@ export const buildRequest = (requestInput: RequestInput): BodyResponse|ScrolledR
   const sort = buildSort(requestInput.sort.value);
   const match = buildMatch(requestInput);
   const transformedAggs = (requestInput.aggs && requestInput.aggs.value) ? requestInput.aggs.mask.transform(requestInput.aggs.value) : []
-  const aggregations = buildAggregation(transformedAggs, requestInput.afterKey);
+  const aggregations = buildAggregation(transformedAggs, requestInput.aggsSize, requestInput.afterKey);
   // const filter = buildRequestFilter(myFilters); // TODO
   const size = requestInput.size;
   const from = buildFrom(requestInput.page, size);
