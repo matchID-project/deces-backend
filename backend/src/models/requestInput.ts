@@ -226,7 +226,7 @@ export class RequestInput {
     this.scrollId = params.scrollId ? params.scrollId : '';
     this.sort = params.sort ? sortWithQuery(params.sort) : {value: [{score: 'desc'}]};
     this.aggs = aggsWithQuery(params.aggs);
-    this.aggsSize = params.aggsSize !== undefined ? params.aggsSize : 15;
+    this.aggsSize = params.aggsSize !== undefined ? params.aggsSize : 250;
     this.block = params.block;
     this.id = params.id;
     this.dateFormat = params.dateFormat;
