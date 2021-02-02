@@ -1,4 +1,9 @@
-import express from 'express';
+import express, {
+  Response as ExResponse,
+  Request as ExRequest,
+  NextFunction,
+} from "express";
+import { ValidateError } from 'tsoa';
 import morgan from 'morgan';
 import bodyParser from 'body-parser';
 import { RegisterRoutes } from './routes/routes';
@@ -10,6 +15,15 @@ import "./controllers/search.controller";
 import "./controllers/bulk.controller";
 import "./controllers/aggregation.controller";
 import "./controllers/status.controller";
+
+const log = (json:any) => {
+  loggerStream.write(JSON.stringify({
+    "backend": {
+      "server-date": new Date(Date.now()).toISOString(),
+      ...json
+    }
+  }));
+}
 
 export const app = express();
 
@@ -42,7 +56,7 @@ const addRawBody = (req: any, res: any, buf: any, encoding: any) => {
     req.rawBody = buf.toString();
 }
 
-app.use((req, res, next) => {
+app.use((req: ExRequest, res: ExResponse, next: NextFunction) => {
     bodyParser.json({
         verify: addRawBody,
     })(req, res, (err) => {
@@ -56,6 +70,42 @@ app.use((req, res, next) => {
 
 app.use(bodyParser.urlencoded({ extended: false }));
 RegisterRoutes(app);
+app.use((_req, res: ExResponse, next: NextFunction) => {
+  if (_req.path.includes(`${process.env.BACKEND_PROXY_PATH}/docs`)) {
+    next();
+  } else {
+    res.status(404).send({
+      message: "Route not found",
+    });
+  }
+});
+app.use((
+  err: unknown,
+  req: ExRequest,
+  res: ExResponse,
+  next: NextFunction
+): ExResponse | void => {
+  if (err instanceof ValidateError) {
+    log({
+        error: "Validation Failed",
+        path: req.path,
+        details: err?.fields,
+    });
+    return res.status(422).json({
+      message: "Validation Failed",
+      details: err?.fields,
+    });
+  }
+  if (err instanceof Error && res.statusCode !== 200) {
+    log({
+      error: "Internal Server Error"
+    });
+    return res.status(500).json({
+      message: "Internal Server Error",
+    });
+  }
+  next();
+});
 
 // app.use(`${process.env.BACKEND_PROXY_PATH}/search`, bulk);
 app.use(`${process.env.BACKEND_PROXY_PATH}/docs`, documentation);

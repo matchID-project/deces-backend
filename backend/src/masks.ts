@@ -72,19 +72,81 @@ export const sexTransformMask = (sex: string) => {
     return sex.replace(/^(H).*$/,'M').replace(/^(F|M).*$/,'$1');
 }
 
-export const sortValidationMask = (sort: string|Sort[]) => {
+export const sortValidationMask = (sort: string|Sort[]): boolean => {
   if (typeof(sort) === 'string') {
     try {
-      JSON.parse(sort)
-      return true;
+      if (Object.values(JSON.parse(sort)).length > 0) {
+        return true;
+      } else {
+        return false;
+      }
     } catch (e) {
       return false;
     }
   } else {
     try {
       if (Object.values(sort).length > 0) return true;
+      return false;
     } catch (e) {
       return false;
     }
   }
+}
+
+export const sortTransformationMask = (sort: string|Sort[]): Sort[] => {
+  return (typeof(sort) === 'string') ? Object.values(JSON.parse(sort)) : Object.values(sort)
+}
+
+export const aggsValidationMask = (aggs: string|string[]): boolean => {
+  if (typeof(aggs) === 'string') {
+    try {
+      if (Array.isArray(JSON.parse(aggs)) && JSON.parse(aggs).length > 0) {
+        return true;
+      } else {
+        return false;
+      }
+    } catch (e) {
+      return false;
+    }
+  } else {
+    try {
+      if (Array.isArray(aggs) && aggs.length > 0 ) {
+        return true;
+      } else {
+        return false
+      }
+    } catch (e) {
+      return false;
+    }
+  }
+}
+
+export const aggsTransformMask = (aggs: string|string[]): string[] => {
+  return (typeof(aggs) === 'string') ? JSON.parse(aggs) : aggs
+}
+
+export const fuzzyValidation = (fuzzy: string|boolean): boolean => {
+  if (typeof(fuzzy) === 'string') {
+    try {
+      if (fuzzy === 'true' || fuzzy === 'false') {
+        return true;
+      } else {
+        return false;
+      }
+    } catch (e) {
+      return false;
+    }
+  } else if (typeof(fuzzy) === 'boolean') {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+export const fuzzyTransform = (fuzzy: string|boolean): boolean => {
+  return typeof(fuzzy) === 'string'
+    ? fuzzy === 'true'
+      ? true :
+        false
+    : fuzzy
 }
