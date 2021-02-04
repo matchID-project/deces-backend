@@ -169,7 +169,7 @@ else
     echo -e "\e[31mdeathGeoPoint: KO!\e[0m"
     exit 1
 fi
-if curl -s -X POST -H "Content-Type: application/json" -d '{"deathDate":"2020","birthDate": "23/01/1930"}' http://localhost:${BACKEND_PORT}/deces/api/v1/search | grep -q '20200128'; then
+if curl -s -X POST -H "Content-Type: application/json" -d '{"deathDate":"2020","birthDate": "23/01/1928"}' http://localhost:${BACKEND_PORT}/deces/api/v1/search | grep -q '20200128'; then
     echo "birthDate: OK"
 else
     echo -e "\e[31mbirthDate: KO!\e[0m"
