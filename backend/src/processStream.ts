@@ -142,8 +142,9 @@ export const processCsv =  async (job: Queue.Job<any>, jobFile: any): Promise<an
       ignoreEmpty: true,
       encoding: job.data.encoding,
       escape: job.data.escape,
-      quote: job.data.quote
-    }
+      quote: job.data.quote,
+      skipLines: job.data.skipLines
+    };
     const writeStream: any = fs.createWriteStream(`${jobId}.out.enc`);
     const gzipStream =  createGzip();
     const encryptStream = crypto.createCipheriv('aes-256-cbc', pbkdf2(job.data.randomKey), encryptioniv);
