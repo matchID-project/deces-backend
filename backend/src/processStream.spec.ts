@@ -2,7 +2,7 @@ import { processChunk } from './processStream';
 import { expect } from 'chai';
 import 'mocha';
 
-describe('bulk.ts - Process chunk', () => {
+describe('processStream.ts - Process chunk', () => {
   it('Precise request should return only one result', async () => {
     const result = await processChunk(
       [{firstName: 'jean', lastName: 'pierre', birthDate: '04/08/1933'}, {firstName: 'georges', lastName: 'michel', birthDate: '12/03/1939'}],
