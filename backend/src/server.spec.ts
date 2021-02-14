@@ -557,6 +557,36 @@ describe('server.ts - Express application', () => {
       expect(source2.length).to.above(0); // there is 1 "exact" match 'georges', 'michel', '12/03/1903', 'M'
     }).timeout(5000);
 
+    it('bulk skip lines', async () => {
+      let res;
+      const skipLines = 3
+      const inputArray = [
+        ['Dirty Line 1'],
+        ['Dirty Line 2'],
+        ['Dirty Line 3'],
+        ['Prenom', 'Nom', 'Date', 'Sexe'],
+        ['jean', 'pierre', '04/08/1908', 'M'],
+        ['georges', 'michel', '12/03/1903', 'M']
+      ]
+      const buf = await writeToBuffer(inputArray)
+      res = await chai.request(app)
+        .post(apiPath('search/csv'))
+        .field('sep', ',')
+        .field('firstName', 'Prenom')
+        .field('lastName', 'Nom')
+        .field('skipLines', skipLines)
+        .attach('csv', buf, 'file.csv')
+      const { body : { id: jobId } }: { body: { id: string} } = res
+      res = await chai.request(app)
+        .get(apiPath(`search/json/${jobId}`))
+      while (res.body.status === 'created' || res.body.status === 'waiting' || res.body.status === 'active') {
+        res = await chai.request(app)
+          .get(apiPath(`search/json/${jobId}`))
+      }
+      expect(res).to.have.status(200);
+      expect(res.body).to.have.lengthOf(inputArray.length - skipLines);
+    }).timeout(5000);
+
   })
 
   const harryRequest = (fieldName: string) => {
