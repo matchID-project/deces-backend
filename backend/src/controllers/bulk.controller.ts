@@ -34,10 +34,6 @@ export class BulkController extends Controller {
    *            schema:
    *              type: object
    *              properties:
-   *                sep:
-   *                  type: string
-   *                  description: Caractère séparateur
-   *                  example: ","
    *                firstName:
    *                  type: string
    *                  description: Colonne du prénom
@@ -102,6 +98,16 @@ export class BulkController extends Controller {
    *                  type: number
    *                  description: Maximum number of matchs candidates to return per identity
    *                  example: 1
+   *                sep:
+   *                  type: string
+   *                  description: Caractère séparateur
+   *                  example: ","
+   *                encoding:
+   *                  type: string
+   *                  description: Codage des caractères
+   *                skipLines:
+   *                  type: number
+   *                  description: Nombre de lignes à sauter
    *                fileName:
    *                  type: string
    *                  description: Fichier CSV contenant le noms des identités à comparer
@@ -136,6 +142,7 @@ export class BulkController extends Controller {
       options.encoding = options.encoding || 'utf8';
       options.escape = options.escape || '"';
       options.quote = options.quote === "null" ? null : (options.quote || '"');
+      options.skipLines = options.skipLines || 0;
       options.randomKey = randomKey;
       options.totalRows = 0;
       options.inputHeaders = [];
