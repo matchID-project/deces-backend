@@ -59,25 +59,20 @@ export class AggregationController extends Controller {
     @Query() aggsSize?: number,
     @Header('Accept') accept?: string
   ): Promise<ResultAgg> {
-    if (q || firstName || lastName || legalName || sex || birthDate || birthCity || birthDepartment || birthCountry || deathDate || deathCity || deathDepartment || deathCountry || deathAge) {
-      if (aggs === undefined) {
-        this.setStatus(400);
-        return  { msg: "error - missing aggs parameter" };
-      }
-      const requestInput = new RequestInput({q, firstName, lastName, legalName, sex, birthDate, birthCity, birthDepartment, birthCountry, deathDate, deathCity, deathDepartment, deathCountry, deathAge, fuzzy, size: 0, aggs, aggsSize});
-      if (requestInput.errors.length) {
-        this.setStatus(400);
-        return  { msg: requestInput.errors };
-      }
-      if ((firstName || lastName || legalName || sex || birthDate || birthCity || birthDepartment || birthCountry || deathDate || deathCity || deathDepartment || deathCountry || deathAge) && q) {
-        this.setStatus(400);
-        return  { msg: "error - simple and complex request at the same time" };
-      }
-      await this.streamAggs((request).res, requestInput, accept)
-    } else {
+    if (aggs === undefined) {
       this.setStatus(400);
-      return  { msg: "error - empty request" };
+      return  { msg: "error - missing aggs parameter" };
     }
+    const requestInput = new RequestInput({q, firstName, lastName, legalName, sex, birthDate, birthCity, birthDepartment, birthCountry, deathDate, deathCity, deathDepartment, deathCountry, deathAge, fuzzy, size: 0, aggs, aggsSize});
+    if (requestInput.errors.length) {
+      this.setStatus(400);
+      return  { msg: requestInput.errors };
+    }
+    if ((firstName || lastName || legalName || sex || birthDate || birthCity || birthDepartment || birthCountry || deathDate || deathCity || deathDepartment || deathCountry || deathAge) && q) {
+      this.setStatus(400);
+      return  { msg: "error - simple and complex request at the same time" };
+    }
+    await this.streamAggs((request).res, requestInput, accept)
   }
 
   /**
@@ -88,32 +83,27 @@ export class AggregationController extends Controller {
   @Tags('Aggregations')
   @Post('/agg')
   public async aggregationPost(@Body() requestBody: RequestBody, @Request() request: express.Request, @Header('Accept') accept?: string): Promise<ResultAgg> {
-    if (Object.keys(requestBody).length > 0) {
-      const validFields = ['q', 'firstName', 'lastName', 'legalName', 'sex', 'birthDate', 'birthCity', 'birthDepartment', 'birthCountry', 'deathDate', 'deathCity', 'deathDepartment', 'deathCountry', 'deathAge', 'fuzzy', 'aggs', 'aggsSize']
-      const notValidFields = Object.keys(requestBody).filter((item: string) => !validFields.includes(item))
-      if (notValidFields.length > 0) {
-        this.setStatus(400);
-        return  { msg: "error - unknown field" };
-      }
-      if (requestBody.aggs === undefined) {
-        this.setStatus(400);
-        return  { msg: "error - missing aggs parameter" };
-      }
-      if ((requestBody.firstName || requestBody.lastName || requestBody.legalName || requestBody.birthDate || requestBody.birthCity || requestBody.birthDepartment || requestBody.birthCountry || requestBody.birthGeoPoint || requestBody.deathDate || requestBody.deathCity || requestBody.deathDepartment || requestBody.deathCountry || requestBody.deathAge || requestBody.deathGeoPoint ) && requestBody.q) {
-        this.setStatus(400);
-        return  { msg: "error - simple and complex request at the same time" };
-      }
-      requestBody.size = 0
-      const requestInput = new RequestInput(requestBody);
-      if (requestInput.errors.length) {
-        this.setStatus(400);
-        return  { msg: requestInput.errors };
-      }
-      await this.streamAggs((request).res, requestInput, accept)
-    } else {
+    const validFields = ['q', 'firstName', 'lastName', 'legalName', 'sex', 'birthDate', 'birthCity', 'birthDepartment', 'birthCountry', 'deathDate', 'deathCity', 'deathDepartment', 'deathCountry', 'deathAge', 'fuzzy', 'aggs', 'aggsSize']
+    const notValidFields = Object.keys(requestBody).filter((item: string) => !validFields.includes(item))
+    if (notValidFields.length > 0) {
       this.setStatus(400);
-      return  { msg: "error - empty request" };
+      return  { msg: "error - unknown field" };
     }
+    if (requestBody.aggs === undefined) {
+      this.setStatus(400);
+      return  { msg: "error - missing aggs parameter" };
+    }
+    if ((requestBody.firstName || requestBody.lastName || requestBody.legalName || requestBody.birthDate || requestBody.birthCity || requestBody.birthDepartment || requestBody.birthCountry || requestBody.birthGeoPoint || requestBody.deathDate || requestBody.deathCity || requestBody.deathDepartment || requestBody.deathCountry || requestBody.deathAge || requestBody.deathGeoPoint ) && requestBody.q) {
+      this.setStatus(400);
+      return  { msg: "error - simple and complex request at the same time" };
+    }
+    requestBody.size = 0
+    const requestInput = new RequestInput(requestBody);
+    if (requestInput.errors.length) {
+      this.setStatus(400);
+      return  { msg: requestInput.errors };
+    }
+    await this.streamAggs((request).res, requestInput, accept)
   }
 
   private async streamAggs(response: any, requestInput: any, accept: string) {
