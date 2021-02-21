@@ -22,7 +22,7 @@ describe('search.controller.ts - GET request', () => {
 
   it('Query by lastSeenAliveDate', async () => {
     const result = await controller.search(null, 'jean', null, null, null, null, null, null, null, null, null, null, null, null, null, null, '20/01/2020')
-    expect(result.response.persons.every(x => parseInt(x.death.date, 10) > 20200120)).to.equal(true);
+    expect(result.response.persons.every(x => parseInt(x.death.date, 10) >= 20200120)).to.equal(true);
     expect(result.response.persons.length).to.greaterThan(0);
   });
 
@@ -50,7 +50,7 @@ describe('search.controller.ts - POST request', () => {
   it('Query by lastSeenAliveDate', async () => {
     const result = await controller.searchpost({firstName: 'jean', lastSeenAliveDate: '20/01/2020'}, {} as express.Request)
     expect(result.response.persons.length).to.greaterThan(0);
-    expect(result.response.persons.every(x => parseInt(x.death.date, 10) > 20200120)).to.equal(true);
+    expect(result.response.persons.every(x => parseInt(x.death.date, 10) >= 20200120)).to.equal(true);
   });
 
   it('Query by GeoPoint', async () => {
