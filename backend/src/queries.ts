@@ -157,7 +157,7 @@ export const dateRangeStringQuery = (field: string, value: string|string[], fuzz
         return {
             range: {
                 [field]: {
-                    lt: max
+                    lte: max
                 }
             }
         };
@@ -166,7 +166,7 @@ export const dateRangeStringQuery = (field: string, value: string|string[], fuzz
         return {
             range: {
                 [field]: {
-                    gt: min
+                    gte: min
                 }
             }
         };
