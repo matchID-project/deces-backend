@@ -231,7 +231,21 @@ export class RequestInput {
     this.block = params.block;
     this.id = params.id;
     this.dateFormat = params.dateFormat;
-    const birthDateTransformed = params.birthDate && params.dateFormat ? moment(params.birthDate.toString(), params.dateFormat).format("DD/MM/YYYY"): params.birthDate;
+    let birthDateTransformed;
+    if (params.birthDate) {
+      if (!params.dateFormat) {
+        birthDateTransformed = params.birthDate.toString();
+      } else {
+        const dr = isDateRange(params.birthDate.toString());
+        if (!dr) {
+          const dl = isDateLimit(params.birthDate.toString());
+          birthDateTransformed = dl ? `${dl[1]}${moment(dl[2], params.dateFormat).format("DD/MM/YYYY")}`
+            : moment(params.birthDate.toString(), params.dateFormat).format("DD/MM/YYYY");
+        } else {
+          birthDateTransformed = `${moment(dr[1], params.dateFormat).format("DD/MM/YYYY")}-${moment(dr[2], params.dateFormat).format("DD/MM/YYYY")}`;
+        }
+      }
+    }
     let deathDateTransformed
     if (params.lastSeenAliveDate) {
       deathDateTransformed = params.dateFormat ? `>${moment(params.lastSeenAliveDate.toString(), params.dateFormat).format("DD/MM/YYYY")}` : `>${params.lastSeenAliveDate}`;
