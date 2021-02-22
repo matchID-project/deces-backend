@@ -632,7 +632,11 @@ const scoreLocation = (locA: Location, locB: Location): any => {
         }
         if (normalize(locA.departmentCode as string|string[]) && locB.departmentCode) {
             if (BisFrench) {
-                const sDep = scoreDepCode(locA.departmentCode, locB.departmentCode, score.city && (score.city >= perfectScoreThreshold));
+                const sDep = scoreDepCode(locA.departmentCode, locB.departmentCode,
+                    (score.city && (score.city >= perfectScoreThreshold))
+                    ||
+                    (score.code && (score.code >= perfectScoreThreshold))
+                    );
                 if (sDep) {
                     score.department = sDep;
                 } else {

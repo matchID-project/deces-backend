@@ -4,8 +4,8 @@ import forge from 'node-forge';
 import { Controller, Hidden, Get, Post, Delete, Route, Query, Tags, Request, Path } from 'tsoa';
 import { csvHandle, returnBulkResults, deleteThreadJob } from '../processStream';
 
-const validFields: string[] = ['q', 'firstName', 'lastName', 'legalName', 'sex', 'birthDate', 'birthCity', 'birthDepartment', 'birthCountry',
-'birthGeoPoint', 'deathDate', 'deathCity', 'deathDepartment', 'deathCountry', 'deathGeoPoint', 'deathAge', 'lastSeenAliveDate',
+const validFields: string[] = ['q', 'firstName', 'lastName', 'legalName', 'sex', 'birthDate', 'birthCity', 'birthLocationCode','birthDepartment', 'birthCountry',
+'birthGeoPoint', 'deathDate', 'deathCity', 'deathLocationCode', 'deathDepartment', 'deathCountry', 'deathGeoPoint', 'deathAge', 'lastSeenAliveDate',
 'size', 'fuzzy', 'block'];
 
 
