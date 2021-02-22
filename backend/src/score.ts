@@ -4,7 +4,7 @@ import { distance } from 'fastest-levenshtein';
 import damlev from 'damlev';
 import fuzz from 'fuzzball';
 import moment from 'moment';
-import { dateTransformMask, isDateRange } from './masks';
+import { dateTransformMask, isDateRange, isDateLimit } from './masks';
 import soundex from '@thejellyfish/soundex-fr';
 
 const perfectScoreThreshold = 0.75;
@@ -177,6 +177,8 @@ export const scoreResults = (request: RequestBody, results: Person[], params: Sc
     const requestMeaningArgsNumber = ((request.fullText || request.lastName || request.firstName || request.lastName) ? 1 : 0)
         + (request.birthDate ? 1 : 0)
         + ((request.birthCity || request.birthLocationCode || request.birthCountry || request.birthDepartment || request.birthGeoPoint) ? 1 : 0)
+        + (request.deathDate ? 1 : 0)
+        + ((request.deathCity || request.deathLocationCode || request.deathCountry || request.deathDepartment || request.deathGeoPoint) ? 1 : 0)
     const resultsWithScores: any = results
             .filter((result:any) => result.score > 0)
             .map((result:any) => {
@@ -241,20 +243,22 @@ export const scoreResults = (request: RequestBody, results: Person[], params: Sc
 
 export class ScoreResult {
   score: number;
-  date?: number
+  birthDate?: number
+  deathDate?: number
   name?: number;
   sex?: number;
-  location?: number;
+  birthLocation?: number;
+  deathLocation?: number;
 
   constructor(request: RequestBody, result: Person, params: ScoreParams = {}) {
     const pruneScore = params.pruneScore !== undefined ? params.pruneScore : defaultPruneScore
     if (request.birthDate) {
-      this.date = scoreDate(request.birthDate, result.birth.date, params.dateFormat,
+      this.birthDate = scoreDate(request.birthDate, result.birth.date, params.dateFormat,
         result.birth && result.birth.location && result.birth.location.countryCode && (result.birth.location.countryCode !== 'FRA')
         );
     }
     if (request.firstName || request.lastName) {
-      if ((pruneScore < scoreReduce(this, true)) || !this.date) {
+      if ((pruneScore < scoreReduce(this, true)) || !this.birthDate) {
         if (result.sex && result.sex === 'F') {
             if (request.legalName) {
                 this.name = scoreName({first: request.firstName, last: [request.lastName, request.legalName]}, result.name, 'F');
@@ -277,18 +281,41 @@ export class ScoreResult {
     } else if (request.firstName && firstNameSexMismatch(request.firstName, result.name.first as string)) {
         this.sex = firstNameSexPenalty;
     }
-    // location
+    // birthLocation
     if (pruneScore < scoreReduce(this, true)) {
-    this.location = scoreLocation({
-        city: request.birthCity,
-        code: request.birthLocationCode,
-        departmentCode: request.birthDepartment,
-        country: request.birthCountry,
-        latitude: request.latitude,
-        longitude: request.longitude
-    }, result.birth.location);
+        this.birthLocation = scoreLocation({
+            city: request.birthCity,
+            code: request.birthLocationCode,
+            departmentCode: request.birthDepartment,
+            country: request.birthCountry,
+            latitude: request.birthLatitude,
+            longitude: request.birthLongitude
+        }, result.birth.location);
     } else {
-    this.score = 0
+        this.score = 0
+    }
+    if (request.deathDate || request.lastSeenAliveDate) {
+        if (pruneScore < scoreReduce(this, true)) {
+            this.deathDate = scoreDate(request.deathDate || `>${request.lastSeenAliveDate}`, result.death.date, params.dateFormat,
+                result.death && result.death.location && result.death.location.countryCode && (result.death.location.countryCode !== 'FRA')
+            );
+        } else {
+            this.score = 0
+        }
+    }
+    if ((request.deathCity || request.deathLocationCode || request.deathCountry || request.deathDepartment || request.deathGeoPoint)) {
+        if (pruneScore < scoreReduce(this, true)) {
+            this.deathLocation = scoreLocation({
+                city: request.deathLocation,
+                code: request.deathLocationCode,
+                departmentCode: request.deathDepartment,
+                country: request.deathCountry,
+                latitude: request.deathLatitude,
+                longitude: request.deathLongitude
+            }, result.death.location);
+        } else {
+            this.score = 0
+        }
     }
     if (!this.score) {
       this.score = scoreReduce(this, true)
