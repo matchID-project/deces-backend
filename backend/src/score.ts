@@ -173,12 +173,10 @@ export const scoreResults = (request: RequestBody, results: Person[], params: Sc
     let perfectNameScore = false;
     let bestScoreNumber = 0;
     let filteredResultsNumber = 0;
-    // following count of meaning arguments (sex not taken as such) used to reduce penalty of blind scoring penalties
+    // following count of meaning arguments (sex and deaths fields not taken as such) used to reduce penalty of blind scoring penalties
     const requestMeaningArgsNumber = ((request.fullText || request.lastName || request.firstName || request.lastName) ? 1 : 0)
         + (request.birthDate ? 1 : 0)
         + ((request.birthCity || request.birthLocationCode || request.birthCountry || request.birthDepartment || request.birthGeoPoint) ? 1 : 0)
-        + (request.deathDate ? 1 : 0)
-        + ((request.deathCity || request.deathLocationCode || request.deathCountry || request.deathDepartment || request.deathGeoPoint) ? 1 : 0)
     const resultsWithScores: any = results
             .filter((result:any) => result.score > 0)
             .map((result:any) => {
