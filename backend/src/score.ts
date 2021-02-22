@@ -701,18 +701,27 @@ const scoreDateRaw = (dateRangeA: any, dateStringB: string, foreignDate: boolean
                     : (/(^0000|0000$)/.test(dateStringB) ? uncertainDateScore : minDateScore);
             }
         } else {
+            const dateRangeATransformed = dateTransformMask(dateRangeA);
             if (dateStringB.startsWith("0000")) {
-                return round(uncertainDateScore * levRatio(dateTransformMask(dateRangeA).substring(4,8),dateStringB.substring(4,8), damlev));
+                return round(uncertainDateScore * levRatio(dateRangeATransformed.substring(4,8),dateStringB.substring(4,8), damlev));
             }
             if (dateStringB.endsWith("0000")) {
-                return round(uncertainDateScore * levRatio(dateTransformMask(dateRangeA).substring(0,4),dateStringB.substring(0,4), damlev));
+                return round(uncertainDateScore * levRatio(dateRangeATransformed.substring(0,4),dateStringB.substring(0,4), damlev));
             }
-            if (foreignDate && dateStringB.endsWith("0101") && (dateStringB.substring(0,4) < "1990")
-                && dateTransformMask(dateRangeA).endsWith("0101")) {
+            if (
+                (dateStringB.endsWith("0000"))
+                ||
+                (foreignDate && (dateStringB.substring(0,4) < "1990") &&
+                    (dateStringB.endsWith("0101") || dateRangeATransformed.endsWith("0101")))
+             ) {
                 // old foreign birth date place to 1st of january are often uncertain dates, leading to lot of confusion
-                return round(uncertainDateScore * levRatio(dateTransformMask(dateRangeA).substring(0,4),dateStringB.substring(0,4), damlev));
+                return round(uncertainDateScore * levRatio(dateRangeATransformed.substring(0,4),dateStringB.substring(0,4), damlev));
             }
-            return levRatio(dateTransformMask(dateRangeA), dateStringB, damlev);
+            return Math.max(
+                levRatio(dateRangeATransformed, dateStringB, damlev),
+                round((uncertainDateScore ** 2) * levRatio(dateRangeATransformed.substring(0,6), dateStringB.substring(0,6), damlev)),
+                round((uncertainDateScore ** 3) * levRatio(dateRangeATransformed.substring(0,4), dateStringB.substring(0,4), damlev))
+            );
         }
     } else {
         return blindDateScore;
