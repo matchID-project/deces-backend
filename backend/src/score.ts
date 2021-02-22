@@ -420,8 +420,7 @@ const scoreName = (nameA: Name, nameB: Name, sex: string): any => {
     // give a chance to particle names
     const lastStopA = filterStopNames(lastA);
     const lastStopB = filterStopNames(lastB);
-
-    if ((lastA !== lastStopA) && (lastB !== lastStopB)) {
+    if ((lastA !== lastStopA) || (lastB !== lastStopB)) {
         let particleScore = stopNamePenalty * (round(scoreFirst * (scoreToken(lastStopA, lastStopB as string) ** thisLastNamePenalty)));
         if (particleScore < blindNameScore) {
             firstFirstA = firstFirstA || (Array.isArray(firstA) ? firstA[0] : firstA);
