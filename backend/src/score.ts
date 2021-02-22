@@ -343,7 +343,8 @@ export const stopNames = [
     [/(^|\s)(baron|marquis|duc|vicomte|prince|chevalier)\s+/,'$1'],
     [/(^|\s)(ait|ben|du|de|l|d|dos|del|le|el)\s+/, '$1'],
     [/\s+(du|de la|des|de|le|aux|de los|del|l|d)\s+/,' '],
-    [/(^|\s)st\s+/, '$1saint ']
+    [/(^|\s)st\s+/, '$1saint '],
+    [/\s+dit\s+.*$/, '']
 ];
 
 const filterStopNames = (name: string|string[]): string|string[] => {
