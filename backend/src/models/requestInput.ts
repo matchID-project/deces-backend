@@ -1,4 +1,5 @@
 import moment from 'moment'
+import { isDateRange, isDateLimit } from '../masks';
 import {
   fullTextWithQuery,
   nameWithQuery,
@@ -234,10 +235,20 @@ export class RequestInput {
     let deathDateTransformed
     if (params.lastSeenAliveDate) {
       deathDateTransformed = params.dateFormat ? `>${moment(params.lastSeenAliveDate.toString(), params.dateFormat).format("DD/MM/YYYY")}` : `>${params.lastSeenAliveDate}`;
-    } else {
-      deathDateTransformed = params.deathDate && params.dateFormat ? moment(params.deathDate.toString(), params.dateFormat).format("DD/MM/YYYY") : params.deathDate;
+    } else if (params.deathDate) {
+      if (!params.dateFormat) {
+        deathDateTransformed = params.deathDate.toString();
+      } else {
+        const dr = isDateRange(params.deathDate.toString());
+        if (!dr) {
+          const dl = isDateLimit(params.deathDate.toString());
+          deathDateTransformed = dl ? `${dl[1]}${moment(dl[2], params.dateFormat).format("DD/MM/YYYY")}`
+            : moment(params.deathDate.toString(), params.dateFormat).format("DD/MM/YYYY");
+        } else {
+          deathDateTransformed = `${moment(dr[1], params.dateFormat).format("DD/MM/YYYY")}-${moment(dr[2], params.dateFormat).format("DD/MM/YYYY")}`;
+        }
+      }
     }
-
     this.fuzzy = fuzzyWithQuery(params.fuzzy)
     const transformedFuzzy = this.fuzzy ? this.fuzzy.mask.transform(this.fuzzy.value) : true;
     this.fullText = fullTextWithQuery(params.q);
