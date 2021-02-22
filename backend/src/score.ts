@@ -566,8 +566,17 @@ const scoreDepCode = (depCodeA: number|string|string[]|RequestField, depCodeB: n
     if (normDepCodeA === normDepCodeB) {
         return 1;
     } else {
-        if (sameCity && (['75','78'].includes(normDepCodeB as string)) && (['78','91','92','93','94','95'].includes(normDepCodeA as string))) {
-            return 1;
+        if ((['78','91','92','93','94','95'].indexOf(normDepCodeB as string)>=0) && (['78','91','92','93','94','95'].indexOf(normDepCodeA as string)>=0)) {
+            if (sameCity === true) {
+                return 1;
+            } else {
+                if (sameCity === undefined) {
+                    // no city
+                    return round((3+minDepScore)/4);
+                } else {
+                    return minDepScore;
+                }
+            }
         } else {
             if (normDepCodeA === '97') {
                 return round((3+minDepScore)/4);
@@ -623,7 +632,7 @@ const scoreLocation = (locA: Location, locB: Location): any => {
         }
         if (normalize(locA.departmentCode as string|string[]) && locB.departmentCode) {
             if (BisFrench) {
-                const sDep = scoreDepCode(locA.departmentCode, locB.departmentCode, (score.city >= perfectScoreThreshold));
+                const sDep = scoreDepCode(locA.departmentCode, locB.departmentCode, score.city && (score.city >= perfectScoreThreshold));
                 if (sDep) {
                     score.department = sDep;
                 } else {
