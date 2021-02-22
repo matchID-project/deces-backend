@@ -47,7 +47,7 @@ describe('score.ts - Score function', () => {
         }
       }
     });
-    expect(score).to.contain.all.keys(['score', 'date', 'name'])
+    expect(score).to.contain.all.keys(['score', 'birthDate', 'birthLocation', 'name'])
     expect(score.score).to.equal(0.73);
   });
 
