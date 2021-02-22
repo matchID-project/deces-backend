@@ -36,12 +36,16 @@ export const dateRangeValidationMask = (dateRangeString: string) => {
     }
 }
 
+const dateRangeRegexp = /^(\d{4}|\d{4}.?\d{2}.?\d{2}|\d{2}.?\d{2}.?\d{4})\-(\d{4}|\d{4}.?\d{2}.?\d{2}|\d{2}.?\d{2}.?\d{4})$/;
+
 export const isDateRange = (dateRangeString: string) => {
-    return (/^[0-9\/]+\-[0-9\/]+$/.test(dateRangeString))
+    return (dateRangeRegexp.exec(dateRangeString));
 }
 
+const dateLimitRegexp = /^([\<\>])(\d{4}|\d{4}.?\d{2}.?\d{2}|\d{2}.?\d{2}.?\d{4})$/;
+
 export const isDateLimit = (dateRangeString: string) => {
-    return (/(\<[0-9\/]+|\>[0-9\/]+)/.test(dateRangeString))
+    return (dateLimitRegexp.exec(dateRangeString));
 }
 
 export const dateTransformMask = (dateString: string|number): string => {
