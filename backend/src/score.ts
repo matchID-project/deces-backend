@@ -667,10 +667,18 @@ const scoreLocation = (locA: Location, locB: Location): any => {
 }
 
 const scoreDate = (dateRangeA: any, dateStringB: string, dateFormat: string, foreignDate: boolean): number => {
-  if (dateFormat) {
-    dateRangeA = moment(dateRangeA.toString(), dateFormat).format("YYYYMMDD");
-  }
-  return 0.01 * Math.round((scoreDateRaw(dateRangeA, dateStringB, foreignDate) ** datePenalty) * 100);
+    let dateRangeATransformed = dateRangeA;
+    if (dateFormat) {
+        const dr = isDateRange(dateRangeA);
+        if (!dr) {
+          const dl = isDateLimit(dateRangeA);
+          dateRangeATransformed = dl ? `${dl[1]}${moment(dl[2], dateFormat).format("YYYYMMDD")}`
+            : moment(dateRangeA, dateFormat).format("YYYYMMDD");
+        } else {
+            dateRangeATransformed = `${moment(dr[1], dateFormat).format("YYYYMMDD")}-${moment(dr[2], dateFormat).format("YYYYMMDD")}`;
+        }
+    }
+    return 0.01 * Math.round((scoreDateRaw(dateRangeATransformed, dateStringB, foreignDate) ** datePenalty) * 100);
 }
 
 const scoreDateRaw = (dateRangeA: any, dateStringB: string, foreignDate: boolean): number => {
@@ -681,14 +689,19 @@ const scoreDateRaw = (dateRangeA: any, dateStringB: string, foreignDate: boolean
         if (/^\s*$/.test(dateRangeA)) {
             return blindDateScore;
         }
-        if (isDateRange(dateRangeA)) {
-            const dateArrayA = dateRangeA.split(/-/);
-            if (dateArrayA[0] === dateArrayA[1]) {
-                return scoreDateRaw(dateArrayA[0], dateStringB, foreignDate);
+        const dr = isDateRange(dateRangeA) || isDateLimit(dateRangeA);
+        if (dr) {
+            if (['>','<'].indexOf(dr[1])>=0) {
+                return ((dr[1] === '>') ? (dr[2] <= dateStringB) : (dr[2] >= dateStringB)) ? uncertainDateScore : minDateScore;
+            } else {
+                const dateArrayA = [dr[1],dr[2]];
+                if (dateArrayA[0] === dateArrayA[1]) {
+                    return scoreDateRaw(dateArrayA[0], dateStringB, foreignDate);
+                }
+                return ((dateArrayA[0] <= dateStringB) && (dateArrayA[2] >= dateStringB))
+                    ? uncertainDateScore
+                    : (/(^0000|0000$)/.test(dateStringB) ? uncertainDateScore : minDateScore);
             }
-            return ((dateArrayA[0] <= dateStringB) && (dateArrayA[2] >= dateStringB))
-                ? uncertainDateScore
-                : (/(^0000|0000$)/.test(dateStringB) ? uncertainDateScore : minDateScore);
         } else {
             if (dateStringB.startsWith("0000")) {
                 return round(uncertainDateScore * levRatio(dateTransformMask(dateRangeA).substring(4,8),dateStringB.substring(4,8), damlev));
