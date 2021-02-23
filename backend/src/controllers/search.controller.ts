@@ -38,6 +38,7 @@ export class SearchController extends Controller {
    * @param deathCountry Pays du lieu de décès
    * @param deathAge Age du décès
    * @param lastSeenAliveDate Dernière fois que la personne était vue en vie
+   * @param source Nom du fichier INSEE source
    * @param scroll Le temps durant lequel le contexte de la requête doit être garde
    * @param scrollId Identifiant technique du contexte
    * @param size Nombre d\'identités retourne par page
@@ -67,6 +68,7 @@ export class SearchController extends Controller {
     @Query() deathCountry?: string,
     @Query() deathAge?: StrAndNumber,
     @Query() lastSeenAliveDate?: string,
+    @Query() source?: string,
     @Query() scroll?: string,
     @Query() scrollId?: string,
     @Query() size?: number,
@@ -74,8 +76,8 @@ export class SearchController extends Controller {
     @Query() fuzzy?: 'true'|'false',
     @Query() sort?: string
   ): Promise<Result> {
-    if (q || firstName || lastName || legalName || sex || birthDate || birthCity || birthLocationCode || birthDepartment || birthCountry || deathDate || deathCity || deathLocationCode || deathDepartment || deathCountry || deathAge || lastSeenAliveDate || scroll) {
-      const requestInput = new RequestInput({q, firstName, lastName, legalName, sex, birthDate, birthCity, birthLocationCode, birthDepartment, birthCountry, deathDate, deathCity, deathLocationCode, deathDepartment, deathCountry, deathAge, lastSeenAliveDate, scroll, scrollId, size, page, fuzzy, sort});
+    if (q || firstName || lastName || legalName || sex || birthDate || birthCity || birthLocationCode || birthDepartment || birthCountry || deathDate || deathCity || deathLocationCode || deathDepartment || deathCountry || deathAge || lastSeenAliveDate || source || scroll) {
+      const requestInput = new RequestInput({q, firstName, lastName, legalName, sex, birthDate, birthCity, birthLocationCode, birthDepartment, birthCountry, deathDate, deathCity, deathLocationCode, deathDepartment, deathCountry, deathAge, lastSeenAliveDate, source, scroll, scrollId, size, page, fuzzy, sort});
       if (requestInput.errors.length) {
         this.setStatus(400);
         return  { msg: requestInput.errors };
@@ -107,13 +109,13 @@ export class SearchController extends Controller {
   public async searchpost(@Body() requestBody: RequestBody, @Request() request: express.Request, @Header('Accept') accept?: string): Promise<Result> {
     const response = (request).res;
     if (Object.keys(requestBody).length > 0) {
-      const validFields = ['q', 'firstName', 'lastName', 'legalName', 'sex', 'birthDate', 'birthCity', 'birthLocationCode', 'birthDepartment', 'birthCountry', 'birthGeoPoint', 'deathDate', 'deathCity', 'deathLocationCode', 'deathDepartment', 'deathCountry', 'deathGeoPoint', 'deathAge', 'scroll', 'scrollId', 'size', 'page', 'fuzzy', 'sort', 'lastSeenAliveDate', 'headerLang']
+      const validFields = ['q', 'firstName', 'lastName', 'legalName', 'sex', 'birthDate', 'birthCity', 'birthLocationCode', 'birthDepartment', 'birthCountry', 'birthGeoPoint', 'deathDate', 'deathCity', 'deathLocationCode', 'deathDepartment', 'deathCountry', 'deathGeoPoint', 'deathAge', 'scroll', 'scrollId', 'size', 'page', 'fuzzy', 'sort', 'lastSeenAliveDate', 'source', 'headerLang']
       const notValidFields = Object.keys(requestBody).filter((item: string) => !validFields.includes(item))
       if (notValidFields.length > 0) {
         this.setStatus(400);
         return  { msg: "error - unknown field" };
       }
-      if ((requestBody.firstName || requestBody.lastName || requestBody.legalName || requestBody.birthDate || requestBody.birthCity || requestBody.birthLocationCode || requestBody.birthDepartment || requestBody.birthCountry || requestBody.birthGeoPoint || requestBody.deathDate || requestBody.deathCity || requestBody.deathLocationCode || requestBody.deathDepartment || requestBody.deathCountry || requestBody.deathAge || requestBody.deathGeoPoint || requestBody.lastSeenAliveDate ) && requestBody.q) {
+      if ((requestBody.firstName || requestBody.lastName || requestBody.legalName || requestBody.birthDate || requestBody.birthCity || requestBody.birthLocationCode || requestBody.birthDepartment || requestBody.birthCountry || requestBody.birthGeoPoint || requestBody.deathDate || requestBody.deathCity || requestBody.deathLocationCode || requestBody.deathDepartment || requestBody.deathCountry || requestBody.deathAge || requestBody.deathGeoPoint || requestBody.lastSeenAliveDate || requestBody.source ) && requestBody.q) {
         this.setStatus(400);
         return  { msg: "error - simple and complex request at the same time" };
       }

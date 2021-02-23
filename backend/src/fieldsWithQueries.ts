@@ -11,7 +11,8 @@ import {
     aggsValidationMask,
     aggsTransformMask,
     fuzzyValidation,
-    fuzzyTransform
+    fuzzyTransform,
+    sourceValidationMask
 } from './masks';
 
 import {
@@ -176,5 +177,14 @@ export const fuzzyWithQuery = (value: string|boolean) => value !== undefined && 
     mask: {
       validation: fuzzyValidation,
       transform: fuzzyTransform
+    }
+};
+
+export const sourceWithQuery = (value: string) => value && {
+    value,
+    query: matchQuery,
+    field: "SOURCE",
+    mask: {
+      validation: sourceValidationMask
     }
 };
