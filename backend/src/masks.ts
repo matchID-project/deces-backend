@@ -109,6 +109,14 @@ export const sortTransformationMask = (sort: string|Sort[]): Sort[] => {
   return (typeof(sort) === 'string') ? Object.values(JSON.parse(sort)) : Object.values(sort)
 }
 
+export const sourceValidationMask = (source: string): boolean => {
+  if (/([0-9]{4}|2021-m[0-9]{2})/.test(source)) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
 export const aggsValidationMask = (aggs: string|string[]): boolean => {
   if (typeof(aggs) === 'string') {
     try {

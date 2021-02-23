@@ -18,7 +18,8 @@ import {
   deathDepartmentWithQuery,
   deathCountryWithQuery,
   deathGeoPointWithQuery,
-  fuzzyWithQuery
+  fuzzyWithQuery,
+  sourceWithQuery
 } from '../fieldsWithQueries';
 
 import { GeoPoint, RequestField, Sort } from './entities';
@@ -137,6 +138,10 @@ export interface RequestBody {
   */
  lastSeenAliveDate?: string;
  /**
+  * Nom du fichier INSEE source
+  */
+ source?: string;
+ /**
   * Langage entête
   */
  headerLang?: string;
@@ -171,6 +176,7 @@ interface RequestInputParams {
   deathGeoPoint?: GeoPoint;
   deathAge?: string|number;
   lastSeenAliveDate?: string;
+  source?: string;
   id?: string;
   scroll?: string;
   scrollId?: string;
@@ -205,6 +211,7 @@ export class RequestInput {
   deathGeoPoint?: RequestField;
   deathAge?: RequestField;
   lastSeenAliveDate?: RequestField;
+  source?: RequestField;
   id?: string;
   size?: number;
   scroll?: string;
@@ -262,6 +269,8 @@ export class RequestInput {
         }
       }
     }
+    this.source = sourceWithQuery(params.source);
+
     this.fuzzy = fuzzyWithQuery(params.fuzzy)
     const transformedFuzzy = this.fuzzy ? this.fuzzy.mask.transform(this.fuzzy.value) : true;
     this.fullText = fullTextWithQuery(params.q);
