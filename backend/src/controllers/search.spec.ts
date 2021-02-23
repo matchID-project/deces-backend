@@ -26,6 +26,11 @@ describe('search.controller.ts - GET request', () => {
     expect(result.response.persons.length).to.greaterThan(0);
   });
 
+  it('Query by source', async () => {
+    const result = await controller.search(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, '2020-m01')
+    expect(result.response.persons.length).to.greaterThan(0);
+  });
+
 });
 
 describe('search.controller.ts - POST request', () => {
@@ -51,6 +56,11 @@ describe('search.controller.ts - POST request', () => {
     const result = await controller.searchpost({firstName: 'jean', lastSeenAliveDate: '20/01/2020'}, {} as express.Request)
     expect(result.response.persons.length).to.greaterThan(0);
     expect(result.response.persons.every(x => parseInt(x.death.date, 10) >= 20200120)).to.equal(true);
+  });
+
+  it('Query by source', async () => {
+    const result = await controller.searchpost({source: '2020-m01'}, {} as express.Request)
+    expect(result.response.persons.length).to.greaterThan(0);
   });
 
   it('Query by GeoPoint', async () => {
