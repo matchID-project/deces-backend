@@ -291,6 +291,24 @@ backend-dev-test:
 
 dev: network backend-dev-stop backend-dev
 
+# download wikidata test data
+wikidata-download:
+	@echo "downloading wikidata set of died french people...";\
+	(curl -s -f -G 'https://query.wikidata.org/sparql'      --header "Accept: text/csv"       --data-urlencode query="\
+		select ?person  ?personLabel ?firstnameLabel  ?lastnameLabel ?birthdateLabel ?birthplaceLabel ?citizenshipLabel ?diedLabel where {\
+		?person wdt:P27 wd:Q142.\
+		?person wdt:P734 ?lastname.\
+		?person wdt:P735 ?firstname.\
+		?person wdt:P569 ?birthdate.\
+		?person wdt:P27 ?citizenship.\
+		?person wdt:P19 ?birthplace.\
+		?person wdt:P570 ?died;\
+		FILTER((?died >= '1970-01-01T00:00:00Z'^^xsd:dateTime)  )\
+		service wikibase:label { bd:serviceParam wikibase:language '[AUTO_LANGUAGE],en'. }\
+		}\
+		" | sed 's/T00:00:00Z//g;s|http://www.wikidata.org/entity/||;' > ${BACKEND}/tests/wikidata_dead_french.csv)\
+		&& echo "done!"
+
 ###########
 #  Start  #
 ###########
