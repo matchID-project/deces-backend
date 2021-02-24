@@ -4,7 +4,7 @@ import { distance } from 'fastest-levenshtein';
 import damlev from 'damlev';
 import fuzz from 'fuzzball';
 import moment from 'moment';
-import { dateTransformMask, isDateRange } from './masks';
+import { dateTransformMask, isDateRange, isDateLimit, dateTransform } from './masks';
 import soundex from '@thejellyfish/soundex-fr';
 
 const perfectScoreThreshold = 0.75;
@@ -173,7 +173,7 @@ export const scoreResults = (request: RequestBody, results: Person[], params: Sc
     let perfectNameScore = false;
     let bestScoreNumber = 0;
     let filteredResultsNumber = 0;
-    // following count of meaning arguments (sex not taken as such) used to reduce penalty of blind scoring penalties
+    // following count of meaning arguments (sex and deaths fields not taken as such) used to reduce penalty of blind scoring penalties
     const requestMeaningArgsNumber = ((request.fullText || request.lastName || request.firstName || request.lastName) ? 1 : 0)
         + (request.birthDate ? 1 : 0)
         + ((request.birthCity || request.birthLocationCode || request.birthCountry || request.birthDepartment || request.birthGeoPoint) ? 1 : 0)
@@ -241,20 +241,22 @@ export const scoreResults = (request: RequestBody, results: Person[], params: Sc
 
 export class ScoreResult {
   score: number;
-  date?: number
+  birthDate?: number
+  deathDate?: number
   name?: number;
   sex?: number;
-  location?: number;
+  birthLocation?: number;
+  deathLocation?: number;
 
   constructor(request: RequestBody, result: Person, params: ScoreParams = {}) {
     const pruneScore = params.pruneScore !== undefined ? params.pruneScore : defaultPruneScore
     if (request.birthDate) {
-      this.date = scoreDate(request.birthDate, result.birth.date, params.dateFormat,
+      this.birthDate = scoreDate(request.birthDate, result.birth.date, params.dateFormat,
         result.birth && result.birth.location && result.birth.location.countryCode && (result.birth.location.countryCode !== 'FRA')
         );
     }
     if (request.firstName || request.lastName) {
-      if ((pruneScore < scoreReduce(this, true)) || !this.date) {
+      if ((pruneScore < scoreReduce(this, true)) || !this.birthDate) {
         if (result.sex && result.sex === 'F') {
             if (request.legalName) {
                 this.name = scoreName({first: request.firstName, last: [request.lastName, request.legalName]}, result.name, 'F');
@@ -277,18 +279,41 @@ export class ScoreResult {
     } else if (request.firstName && firstNameSexMismatch(request.firstName, result.name.first as string)) {
         this.sex = firstNameSexPenalty;
     }
-    // location
+    // birthLocation
     if (pruneScore < scoreReduce(this, true)) {
-    this.location = scoreLocation({
-        city: request.birthCity,
-        code: request.birthLocationCode,
-        departmentCode: request.birthDepartment,
-        country: request.birthCountry,
-        latitude: request.latitude,
-        longitude: request.longitude
-    }, result.birth.location);
+        this.birthLocation = scoreLocation({
+            city: request.birthCity,
+            code: request.birthLocationCode,
+            departmentCode: request.birthDepartment,
+            country: request.birthCountry,
+            latitude: request.birthLatitude,
+            longitude: request.birthLongitude
+        }, result.birth.location);
     } else {
-    this.score = 0
+        this.score = 0
+    }
+    if (request.deathDate || request.lastSeenAliveDate) {
+        if (pruneScore < scoreReduce(this, true)) {
+            this.deathDate = scoreDate(request.deathDate || `>${request.lastSeenAliveDate}`, result.death.date, params.dateFormat,
+                result.death && result.death.location && result.death.location.countryCode && (result.death.location.countryCode !== 'FRA')
+            );
+        } else {
+            this.score = 0
+        }
+    }
+    if ((request.deathCity || request.deathLocationCode || request.deathCountry || request.deathDepartment || request.deathGeoPoint)) {
+        if (pruneScore < scoreReduce(this, true)) {
+            this.deathLocation = scoreLocation({
+                city: request.deathLocation,
+                code: request.deathLocationCode,
+                departmentCode: request.deathDepartment,
+                country: request.deathCountry,
+                latitude: request.deathLatitude,
+                longitude: request.deathLongitude
+            }, result.death.location);
+        } else {
+            this.score = 0
+        }
     }
     if (!this.score) {
       this.score = scoreReduce(this, true)
@@ -316,7 +341,8 @@ export const stopNames = [
     [/(^|\s)(baron|marquis|duc|vicomte|prince|chevalier)\s+/,'$1'],
     [/(^|\s)(ait|ben|du|de|l|d|dos|del|le|el)\s+/, '$1'],
     [/\s+(du|de la|des|de|le|aux|de los|del|l|d)\s+/,' '],
-    [/(^|\s)st\s+/, '$1saint ']
+    [/(^|\s)st\s+/, '$1saint '],
+    [/\s+dit\s+.*$/, '']
 ];
 
 const filterStopNames = (name: string|string[]): string|string[] => {
@@ -392,8 +418,7 @@ const scoreName = (nameA: Name, nameB: Name, sex: string): any => {
     // give a chance to particle names
     const lastStopA = filterStopNames(lastA);
     const lastStopB = filterStopNames(lastB);
-
-    if ((lastA !== lastStopA) && (lastB !== lastStopB)) {
+    if ((lastA !== lastStopA) || (lastB !== lastStopB)) {
         let particleScore = stopNamePenalty * (round(scoreFirst * (scoreToken(lastStopA, lastStopB as string) ** thisLastNamePenalty)));
         if (particleScore < blindNameScore) {
             firstFirstA = firstFirstA || (Array.isArray(firstA) ? firstA[0] : firstA);
@@ -541,8 +566,17 @@ const scoreDepCode = (depCodeA: number|string|string[]|RequestField, depCodeB: n
     if (normDepCodeA === normDepCodeB) {
         return 1;
     } else {
-        if (sameCity && (['75','78'].includes(normDepCodeB as string)) && (['78','91','92','93','94','95'].includes(normDepCodeA as string))) {
-            return 1;
+        if ((['78','91','92','93','94','95'].indexOf(normDepCodeB as string)>=0) && (['78','91','92','93','94','95'].indexOf(normDepCodeA as string)>=0)) {
+            if (sameCity === true) {
+                return 1;
+            } else {
+                if (sameCity === undefined) {
+                    // no city
+                    return round((3+minDepScore)/4);
+                } else {
+                    return minDepScore;
+                }
+            }
         } else {
             if (normDepCodeA === '97') {
                 return round((3+minDepScore)/4);
@@ -598,7 +632,11 @@ const scoreLocation = (locA: Location, locB: Location): any => {
         }
         if (normalize(locA.departmentCode as string|string[]) && locB.departmentCode) {
             if (BisFrench) {
-                const sDep = scoreDepCode(locA.departmentCode, locB.departmentCode, (score.city >= perfectScoreThreshold));
+                const sDep = scoreDepCode(locA.departmentCode, locB.departmentCode,
+                    (score.city && (score.city >= perfectScoreThreshold))
+                    ||
+                    (score.code && (score.code >= perfectScoreThreshold))
+                    );
                 if (sDep) {
                     score.department = sDep;
                 } else {
@@ -640,10 +678,18 @@ const scoreLocation = (locA: Location, locB: Location): any => {
 }
 
 const scoreDate = (dateRangeA: any, dateStringB: string, dateFormat: string, foreignDate: boolean): number => {
-  if (dateFormat) {
-    dateRangeA = moment(dateRangeA.toString(), dateFormat).format("YYYYMMDD");
-  }
-  return 0.01 * Math.round((scoreDateRaw(dateRangeA, dateStringB, foreignDate) ** datePenalty) * 100);
+    let dateRangeATransformed = dateRangeA;
+    if (dateFormat) {
+        const dr = isDateRange(dateRangeA);
+        if (!dr) {
+          const dl = isDateLimit(dateRangeA);
+          dateRangeATransformed = dl ? `${dl[1]}${dateTransform(dl[2], dateFormat, "YYYYMMDD")}`
+            : dateTransform(dateRangeA, dateFormat, "YYYYMMDD");
+        } else {
+            dateRangeATransformed = `${dateTransform(dr[1], dateFormat, "YYYYMMDD")}-${dateTransform(dr[2], dateFormat, "YYYYMMDD")}`;
+        }
+    }
+    return 0.01 * Math.round((scoreDateRaw(dateRangeATransformed, dateStringB, foreignDate) ** datePenalty) * 100);
 }
 
 const scoreDateRaw = (dateRangeA: any, dateStringB: string, foreignDate: boolean): number => {
@@ -654,27 +700,43 @@ const scoreDateRaw = (dateRangeA: any, dateStringB: string, foreignDate: boolean
         if (/^\s*$/.test(dateRangeA)) {
             return blindDateScore;
         }
-        if (isDateRange(dateRangeA)) {
-            const dateArrayA = dateRangeA.split(/-/);
-            if (dateArrayA[0] === dateArrayA[1]) {
-                return scoreDateRaw(dateArrayA[0], dateStringB, foreignDate);
+        const dr = isDateRange(dateRangeA) || isDateLimit(dateRangeA);
+        if (dr) {
+            if (['>','<'].indexOf(dr[1])>=0) {
+                return ((dr[1] === '>') ? (dr[2] <= dateStringB) : (dr[2] >= dateStringB)) ? uncertainDateScore : minDateScore;
+            } else {
+                const dateArrayA = [dr[1],dr[2]];
+                if (dateArrayA[0] === dateArrayA[1]) {
+                    return scoreDateRaw(dateArrayA[0], dateStringB, foreignDate);
+                }
+                return ((dateArrayA[0] <= dateStringB) && (dateArrayA[1] >= dateStringB))
+                    ? uncertainDateScore
+                    : (/(^0000|0000$)/.test(dateStringB) ? uncertainDateScore : minDateScore);
             }
-            return ((dateArrayA[0] <= dateStringB) && (dateArrayA[2] >= dateStringB))
-                ? uncertainDateScore
-                : (/(^0000|0000$)/.test(dateStringB) ? uncertainDateScore : minDateScore);
         } else {
+            const dateRangeATransformed = dateTransformMask(dateRangeA);
+            if (dateRangeATransformed === dateStringB) {
+                return 1;
+            }
             if (dateStringB.startsWith("0000")) {
-                return round(uncertainDateScore * levRatio(dateTransformMask(dateRangeA).substring(4,8),dateStringB.substring(4,8), damlev));
+                return round(uncertainDateScore * levRatio(dateRangeATransformed.substring(4,8),dateStringB.substring(4,8), damlev) ** 2);
             }
             if (dateStringB.endsWith("0000")) {
-                return round(uncertainDateScore * levRatio(dateTransformMask(dateRangeA).substring(0,4),dateStringB.substring(0,4), damlev));
+                return round(uncertainDateScore * levRatio(dateRangeATransformed.substring(0,4),dateStringB.substring(0,4), damlev) ** 2);
             }
-            if (foreignDate && dateStringB.endsWith("0101") && (dateStringB.substring(0,4) < "1990")
-                && dateTransformMask(dateRangeA).endsWith("0101")) {
+            if (
+                dateStringB.endsWith("0101") || dateRangeATransformed.endsWith("0101")
+             ) {
                 // old foreign birth date place to 1st of january are often uncertain dates, leading to lot of confusion
-                return round(uncertainDateScore * levRatio(dateTransformMask(dateRangeA).substring(0,4),dateStringB.substring(0,4), damlev));
+                return round((foreignDate && (dateStringB.substring(0,4) < "1990") ? uncertainDateScore : uncertainDateScore ** 2) *
+                    levRatio(dateRangeATransformed.substring(0,4),dateStringB.substring(0,4), damlev) ** 2);
             }
-            return levRatio(dateTransformMask(dateRangeA), dateStringB, damlev);
+            return Math.max(
+                levRatio(dateRangeATransformed, dateStringB, damlev),
+                round((uncertainDateScore ** 2) * (dateRangeATransformed.substring(0,6) === dateStringB.substring(0,6) ? 1: 0)),
+                round((uncertainDateScore ** 3) * (dateRangeATransformed.substring(0,4) === dateStringB.substring(0,4) ? 1 : 0)),
+                round((1-((moment.duration(moment(dateRangeATransformed, "YYYYMMDD").diff(moment(dateStringB, "YYYYMMDD"))).asDays() / 365) ** 2) ** 0.2))||0
+            );
         }
     } else {
         return blindDateScore;

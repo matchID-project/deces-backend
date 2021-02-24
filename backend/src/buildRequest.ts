@@ -2,7 +2,7 @@ import { Sort } from './models/entities';
 import { RequestInput } from './models/requestInput';
 import { BodyResponse, ScrolledResponse } from './models/body';
 import { buildRequestFilter } from "./buildRequestFilter";
-import { fuzzyTermQuery, matchQuery } from './queries';
+import { fuzzyTermQuery, matchQuery, prefixQuery } from './queries';
 import { isDateRange, isDateLimit, sortTransformationMask } from './masks';
 
 const buildMatch = (requestInput: RequestInput) => {
@@ -24,8 +24,8 @@ const buildAdaptativeBlockMatch = (searchInput: RequestInput) => {
     apply the costless blocking strategy :
   */
   if (searchInput.name && searchInput.name.value && searchInput.name.value.last && searchInput.name.value.first) {
-    let queryMust = [fuzzyTermQuery('PRENOMS_NOM', [searchInput.name.value.last, searchInput.name.value.first].filter(x => x).join(" "), "auto", false)]
-    let queryShould = [matchQuery('NOM', searchInput.name.value.last as string, false, false)]
+    let queryMust:any = [fuzzyTermQuery('PRENOMS_NOM', [searchInput.name.value.last, searchInput.name.value.first].filter(x => x).join(" "), "auto", false)]
+    let queryShould: any = [matchQuery('NOM', searchInput.name.value.last as string, false, false)]
     if (searchInput.name.value.legal) {
       queryShould = [...queryShould, matchQuery('NOM', searchInput.name.value.legal as string, false, false)]
     }
@@ -36,8 +36,21 @@ const buildAdaptativeBlockMatch = (searchInput: RequestInput) => {
           searchInput.birthDate.query(searchInput.birthDate.field, searchInput.birthDate.mask.transform(searchInput.birthDate.value, searchInput.dateFormat) as string, false, true)
         ];
       } else {
-        queryMust = [...queryMust, fuzzyTermQuery(searchInput.birthDate.field as string, searchInput.birthDate.mask.transform(searchInput.birthDate.value, searchInput.dateFormat) as string, "auto", false)]
-        queryShould = [...queryShould, matchQuery(searchInput.birthDate.field as string, searchInput.birthDate.mask.transform(searchInput.birthDate.value, searchInput.dateFormat) as string, false, false)]
+        queryMust = [
+          ...queryMust,
+          {
+            bool: {
+              should: [
+                fuzzyTermQuery(searchInput.birthDate.field as string, searchInput.birthDate.mask.transform(searchInput.birthDate.value, searchInput.dateFormat) as string, "auto", false),
+                prefixQuery(searchInput.birthDate.field as string, (searchInput.birthDate.mask.transform(searchInput.birthDate.value, searchInput.dateFormat) as string).substring(0,4), false, false)
+              ],
+              minimum_should_match: 1
+            }
+          }
+        ];
+        queryShould = [...queryShould,
+          matchQuery(searchInput.birthDate.field as string, searchInput.birthDate.mask.transform(searchInput.birthDate.value, searchInput.dateFormat) as string, false, false),
+        ];
       }
     }
     if (searchInput.deathDate && searchInput.deathDate.value) {

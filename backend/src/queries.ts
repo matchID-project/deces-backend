@@ -1,6 +1,6 @@
 import { GeoPoint, NameFields, Name } from './models/entities';
 
-export const prefixQuery = (field: string, value: string, fuzzy: boolean, must: boolean) => {
+export const prefixQuery = (field: string, value: string|number, fuzzy: boolean, must: boolean) => {
     return {
         prefix: {
             [field]: value
