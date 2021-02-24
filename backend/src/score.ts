@@ -760,7 +760,6 @@ const scoreDateRaw = (dateRangeA: any, dateStringB: string, foreignDate: boolean
             return Math.max(
                 levRatio(dateRangeATransformed, dateStringB, damlev),
                 round((uncertainDateScore ** 2) * (dateRangeATransformed.substring(0,6) === dateStringB.substring(0,6) ? 1: 0)),
-                round((uncertainDateScore ** 3) * (dateRangeATransformed.substring(0,4) === dateStringB.substring(0,4) ? 1 : 0)),
                 round((1-((moment.duration(moment(dateRangeATransformed, "YYYYMMDD").diff(moment(dateStringB, "YYYYMMDD"))).asDays() / 365) ** 2) ** 0.2))||0
             );
         }
