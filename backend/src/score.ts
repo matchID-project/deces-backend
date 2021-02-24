@@ -709,7 +709,7 @@ const scoreDateRaw = (dateRangeA: any, dateStringB: string, foreignDate: boolean
                 if (dateArrayA[0] === dateArrayA[1]) {
                     return scoreDateRaw(dateArrayA[0], dateStringB, foreignDate);
                 }
-                return ((dateArrayA[0] <= dateStringB) && (dateArrayA[2] >= dateStringB))
+                return ((dateArrayA[0] <= dateStringB) && (dateArrayA[1] >= dateStringB))
                     ? uncertainDateScore
                     : (/(^0000|0000$)/.test(dateStringB) ? uncertainDateScore : minDateScore);
             }
