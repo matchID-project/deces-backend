@@ -4,7 +4,7 @@ import { distance } from 'fastest-levenshtein';
 import damlev from 'damlev';
 import fuzz from 'fuzzball';
 import moment from 'moment';
-import { dateTransformMask, isDateRange, isDateLimit } from './masks';
+import { dateTransformMask, isDateRange, isDateLimit, dateTransform } from './masks';
 import soundex from '@thejellyfish/soundex-fr';
 
 const perfectScoreThreshold = 0.75;
@@ -683,10 +683,10 @@ const scoreDate = (dateRangeA: any, dateStringB: string, dateFormat: string, for
         const dr = isDateRange(dateRangeA);
         if (!dr) {
           const dl = isDateLimit(dateRangeA);
-          dateRangeATransformed = dl ? `${dl[1]}${moment(dl[2], dateFormat).format("YYYYMMDD")}`
-            : moment(dateRangeA, dateFormat).format("YYYYMMDD");
+          dateRangeATransformed = dl ? `${dl[1]}${dateTransform(dl[2], dateFormat, "YYYYMMDD")}`
+            : dateTransform(dateRangeA, dateFormat, "YYYYMMDD");
         } else {
-            dateRangeATransformed = `${moment(dr[1], dateFormat).format("YYYYMMDD")}-${moment(dr[2], dateFormat).format("YYYYMMDD")}`;
+            dateRangeATransformed = `${dateTransform(dr[1], dateFormat, "YYYYMMDD")}-${dateTransform(dr[2], dateFormat, "YYYYMMDD")}`;
         }
     }
     return 0.01 * Math.round((scoreDateRaw(dateRangeATransformed, dateStringB, foreignDate) ** datePenalty) * 100);
