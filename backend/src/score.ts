@@ -534,9 +534,22 @@ const scoreCity = (cityA: string|string[]|RequestField, cityB: string|string[]):
 const scoreLocationCode = (codeA: string|string[]|RequestField, codeB: string|string[]): number => {
     if (typeof(codeA) === 'string') {
         if (typeof(codeB) === 'string') {
-            return (codeA === codeB) ? 1 : minCodeScore;
+            if (codeA.length === 4) { codeA = `0${codeA}` }
+            if (codeA === codeB) { return 1 }
+            else {
+                const depA = codeA.substring(0,2);
+                const depB = codeA.substring(0,2);
+                if ((["91","92","93","94","99"].indexOf(depB) >= 0) && (codeB.substring(2,5) === "352")) {
+                    return (["91","92","93","94"].indexOf(depA) >= 0 || (codeA.substring(2,5) === "352")) ? round(blindLocationScore ** 0.5) : minCodeScore;
+                }
+                if (((depA === "98") && (depB === "99")) || ((depA === "99") && (depB === "98"))) { return blindLocationScore; }
+                if (depA === depB) {
+                    return depA === "99" ? blindLocationScore : round(blindLocationScore ** 0.5);
+                }
+                return minCodeScore;
+            }
         } else {
-            return codeB.includes(codeA) ? 1 : minCodeScore;
+            return Math.max(...((codeB ).map((code) => scoreLocationCode(codeA, code))));
         }
     } else {
         return Math.max(...((codeA as string[]).map((code) => scoreLocationCode(code, codeB))));
@@ -620,15 +633,23 @@ const scoreCountry = (countryA: string|string[]|RequestField, countryB: string|s
 const scoreLocation = (locA: Location, locB: Location): any => {
     const score: any = {};
     const BisFrench = locB.countryCode && (locB.countryCode === 'FRA');
-    if (locA.code) {
+    if (locA.code && locB.code) {
         score.code = scoreLocationCode(locA.code, locB.codeHistory as string|string[]);
     }
     if (BisFrench) {
         if (normalize(locA.country as string|string[])) {
             score.country = scoreCountry(locA.country, tokenize(locB.country as string));
+            if ((score.code >= round(blindLocationScore ** 0.5)) && (score.country < perfectScoreThreshold)) {
+                // insee code has) priority over label
+                score.country = round(blindLocationScore ** 0.5);
+            }
         }
         if (normalize(locA.city as string|string[]) && locB.city) {
             score.city = scoreCity(locA.city, locB.city as string|string[]);
+            if ((score.code === 1) && (score.city < perfectScoreThreshold)) {
+                // insee code has priority over label
+                score.city = round(blindLocationScore ** 0.5);
+            }
         }
         if (normalize(locA.departmentCode as string|string[]) && locB.departmentCode) {
             if (BisFrench) {
@@ -638,7 +659,12 @@ const scoreLocation = (locA: Location, locB: Location): any => {
                     (score.code && (score.code >= perfectScoreThreshold))
                     );
                 if (sDep) {
+                    // good insee code has priority over wrong dep
                     score.department = sDep;
+                    if ((score.code >= perfectScoreThreshold) && (score.department < perfectScoreThreshold)) {
+                        // insee code has priority over label
+                        score.department = blindLocationScore ** 0.5;
+                    }
                 } else {
                     if (locA.departmentCode === '99') {
                         if (score.country < perfectScoreThreshold) {
