@@ -1,4 +1,5 @@
-import { Sort } from './models/entities'
+import { Sort } from './models/entities';
+import moment from 'moment';
 
 export const ageValidationMask = (ageString: string) => {
     return /^(|[0-9]|[1-9]([0-9]|[0-3][0-9]))$/.test(ageString);
@@ -39,13 +40,20 @@ export const dateRangeValidationMask = (dateRangeString: string) => {
 const dateRangeRegexp = /^(\d{4}|\d{4}.?\d{2}.?\d{2}|\d{2}.?\d{2}.?\d{4})\-(\d{4}|\d{4}.?\d{2}.?\d{2}|\d{2}.?\d{2}.?\d{4})$/;
 
 export const isDateRange = (dateRangeString: string) => {
-    return (dateRangeRegexp.exec(dateRangeString));
+  const l = dateRangeString.length;
+  return (((l === 9) || (l > 10)) && dateRangeString.indexOf('-'))  ? (dateRangeRegexp.exec(dateRangeString)) : false;
 }
 
 const dateLimitRegexp = /^([\<\>])(\d{4}|\d{4}.?\d{2}.?\d{2}|\d{2}.?\d{2}.?\d{4})$/;
 
 export const isDateLimit = (dateRangeString: string) => {
-    return (dateLimitRegexp.exec(dateRangeString));
+  return ['<','>'].indexOf(dateRangeString[0]) >= 0 ? [null,dateRangeString[0],dateRangeString.substring(1)] : false;
+}
+
+export const dateTransform = (dateString: string|number, dateFormatInput: string, dateFormatOutput?: string): string => {
+  if (!dateString) { return '' }
+  if (dateFormatInput === dateFormatOutput) { return dateString.toString() }
+  return moment(dateString.toString(), dateFormatInput).format(dateFormatOutput);
 }
 
 export const dateTransformMask = (dateString: string|number): string => {
