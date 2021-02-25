@@ -6,6 +6,8 @@ import fuzz from 'fuzzball';
 import moment from 'moment';
 import { dateTransformMask, isDateRange, isDateLimit, dateTransform } from './masks';
 import soundex from '@thejellyfish/soundex-fr';
+import loggerStream from './logger';
+import timer from './timer';
 
 const perfectScoreThreshold = 0.75;
 const multipleMatchPenaltyMax = 0.5;
@@ -357,7 +359,7 @@ const firstNameSexMismatch = (firstNameA: string, firstNameB: string): boolean =
     return /^.?(e|a)$/.test(firstA.replace(firstB, '')) || /^.?(e|a)$/.test(firstB.replace(firstA, ''));
 }
 
-const scoreName = (nameA: Name, nameB: Name, sex: string): any => {
+let scoreName = (nameA: Name, nameB: Name, sex: string): any => {
     if ((!nameA.first && !nameA.last) || (!nameB.first && !nameB.last)) { return blindNameScore }
     let score:any;
     const firstA = firstNameNorm(nameA.first as string|string[]);
@@ -630,7 +632,7 @@ const scoreCountry = (countryA: string|string[]|RequestField, countryB: string|s
 }
 
 
-const scoreLocation = (locA: Location, locB: Location): any => {
+let scoreLocation = (locA: Location, locB: Location): any => {
     const score: any = {};
     const BisFrench = locB.countryCode && (locB.countryCode === 'FRA');
     if (locA.code && locB.code) {
@@ -769,7 +771,7 @@ const scoreDateRaw = (dateRangeA: any, dateStringB: string, foreignDate: boolean
 };
 
 
-const scoreSex = (sexA: any, sexB: string): number => {
+let scoreSex = (sexA: any, sexB: string): number => {
     return (sexA && sexB)
             ? ((sexA.replace(/^(H).*$/,'M') === sexB) ? 1 : minSexScore)
             : blindSexScore;
