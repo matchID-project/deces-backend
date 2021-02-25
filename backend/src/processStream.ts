@@ -15,6 +15,10 @@ import { promisify } from 'util';
 import { parse } from '@fast-csv/parse';
 import { format } from '@fast-csv/format';
 
+import timer from './timer';
+
+const timerRunBulkRequest = timer(runBulkRequest, 'runBulkRequest', 1);
+
 export const validFields: string[] = ['q', 'firstName', 'lastName', 'legalName', 'sex', 'birthDate', 'birthCity', 'birthLocationCode', 'birthDepartment', 'birthCountry',
 'birthGeoPoint', 'deathDate', 'deathCity', 'deathLocationCode', 'deathDepartment', 'deathCountry', 'deathGeoPoint', 'deathAge', 'lastSeenAliveDate',
 'size', 'fuzzy', 'block'];
@@ -196,7 +200,7 @@ export const processChunk = async (chunk: any, candidateNumber: number, params: 
     return [JSON.stringify({index: "deces"}), JSON.stringify(buildRequest(requestInput))];
   })
   const msearchRequest = bulkRequest.map((x: any) => x.join('\n\r')).join('\n\r') + '\n';
-  const result =  await runBulkRequest(msearchRequest);
+  const result =  await timerRunBulkRequest(msearchRequest);
   if (result.data.responses.length > 0) {
     return result.data.responses.map((item: ResultRawES, idx: number) => {
       if (item.hits.hits.length > 0) {
