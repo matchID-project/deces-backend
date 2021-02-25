@@ -553,27 +553,20 @@ let scoreLocation = (locA: Location, locB: Location): any => {
     return score;
 }
 
-const scoreDate = (dateRangeA: any, dateStringB: string, dateFormat: string, foreignDate: boolean): number => {
-    let dateRangeATransformed = dateRangeA;
-    if (dateFormat) {
-        const dr = isDateRange(dateRangeA);
-        if (!dr) {
-          const dl = isDateLimit(dateRangeA);
-          dateRangeATransformed = dl ? `${dl[1]}${dateTransform(dl[2], dateFormat, "YYYYMMDD")}`
-            : dateTransform(dateRangeA, dateFormat, "YYYYMMDD");
-        } else {
-            dateRangeATransformed = `${dateTransform(dr[1], dateFormat, "YYYYMMDD")}-${dateTransform(dr[2], dateFormat, "YYYYMMDD")}`;
-        }
-    }
-    return 0.01 * Math.round((scoreDateRaw(dateRangeATransformed, dateStringB, foreignDate) ** datePenalty) * 100);
+const emptyDate = /^\s*$/;
+
+const parseYMD = (dateString: string): Date => {
+    return new Date(+dateString.substr(0,4),+dateString.substr(4,2) - 1,+dateString.substr(6,2));
 }
 
 const scoreDateRaw = (dateRangeA: any, dateStringB: string, foreignDate: boolean): number => {
+    // if (dateStringB === "00000000" || !dateStringB || !dateRangeA) {
     if (/^00000000$/.test(dateStringB) || !dateStringB || !dateRangeA) {
         return blindDateScore;
     }
     if (typeof(dateRangeA) === 'string') {
-        if (/^\s*$/.test(dateRangeA)) {
+        // if (emptyDate.test(dateRangeA)) {
+            if (/^\s*$/.test(dateRangeA)) {
             return blindDateScore;
         }
         const dr = isDateRange(dateRangeA) || isDateLimit(dateRangeA);
@@ -610,7 +603,7 @@ const scoreDateRaw = (dateRangeA: any, dateStringB: string, foreignDate: boolean
             return Math.max(
                 levRatio(dateRangeATransformed, dateStringB, damlev),
                 round((uncertainDateScore ** 2) * (dateRangeATransformed.substring(0,6) === dateStringB.substring(0,6) ? 1: 0)),
-                round((1-((moment.duration(moment(dateRangeATransformed, "YYYYMMDD").diff(moment(dateStringB, "YYYYMMDD"))).asDays() / 365) ** 2) ** 0.2))||0
+                round((1-(((parseYMD(dateRangeATransformed).getTime()-parseYMD(dateStringB).getTime()) /  31536000000) ** 2) ** 0.2))||0
             );
         }
     } else {
