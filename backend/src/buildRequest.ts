@@ -41,7 +41,7 @@ const buildAdaptativeBlockMatch = (searchInput: RequestInput) => {
           {
             bool: {
               should: [
-                fuzzyTermQuery(searchInput.birthDate.field as string, searchInput.birthDate.mask.transform(searchInput.birthDate.value, searchInput.dateFormat) as string, "auto", false),
+                fuzzyTermQuery(searchInput.birthDate.field as string, searchInput.birthDate.mask.transform(searchInput.birthDate.value, searchInput.dateFormat) as string, 1, false),
                 prefixQuery(searchInput.birthDate.field as string, (searchInput.birthDate.mask.transform(searchInput.birthDate.value, searchInput.dateFormat) as string).substring(0,4), false, false)
               ],
               minimum_should_match: 1
