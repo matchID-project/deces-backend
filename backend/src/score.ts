@@ -766,6 +766,17 @@ export const scoreResults = (request: RequestBody, results: Person[], params: Sc
                     result.scores = new ScoreResult(request, result, params);
                     result.scores.score =  round(scoreReduce(result.scores, true) ** (requestMeaningArgsNumber/(Object.keys(result.scores).length || 1)));
                 } catch(err) {
+                    loggerStream.write(JSON.stringify({
+                        backend: {
+                            "server-date": new Date(Date.now()).toISOString(),
+                            error: {
+                                name: err.name,
+                                message: err.message,
+                                stack: err.stack,
+                                request
+                            }
+                        }
+                    }));
                     result.scores = {};
                 }
                 result.scores.es = round(0.005 * Math.min(200, result.score));
