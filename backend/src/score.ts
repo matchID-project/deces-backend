@@ -380,7 +380,10 @@ const scoreCity = (cityA: string|string[]|RequestField, cityB: string|string[]):
 const scoreLocationCode = (codeA: string|string[]|RequestField, codeB: string|string[]): number => {
     if (typeof(codeA) === 'string') {
         if (typeof(codeB) === 'string') {
-            if (codeA.length === 4) { codeA = `0${codeA}` }
+            if (codeA.length === 4) {
+                // pads codeA with 0 if input is badly encoded as integer
+                codeA = `0${codeA}`
+            }
             if (codeA === codeB) { return 1 }
             else {
                 const depA = codeA.substring(0,2);
@@ -390,6 +393,7 @@ const scoreLocationCode = (codeA: string|string[]|RequestField, codeB: string|st
                 }
                 if (((depA === "98") && (depB === "99")) || ((depA === "99") && (depB === "98"))) { return blindLocationScore; }
                 if (depA === depB) {
+                    // if 99, it's a foreign counrty so 99 isn't a good proof enough
                     return depA === "99" ? blindLocationScore : round(blindLocationScore ** 0.5);
                 }
                 return minCodeScore;
