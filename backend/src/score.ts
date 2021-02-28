@@ -6,6 +6,8 @@ import fuzz from 'fuzzball';
 import moment from 'moment';
 import { dateTransformMask, isDateRange, isDateLimit, dateTransform } from './masks';
 import soundex from '@thejellyfish/soundex-fr';
+import loggerStream from './logger';
+import timer from './timer';
 
 const perfectScoreThreshold = 0.75;
 const multipleMatchPenaltyMax = 0.5;
@@ -165,162 +167,6 @@ const scoreReduce = (score:any, multiplePenalty?: boolean ):number => {
     }
 }
 
-export const scoreResults = (request: RequestBody, results: Person[], params: ScoreParams): Person[] => {
-    const pruneScore = params.pruneScore !== undefined ? params.pruneScore : defaultPruneScore
-    const candidateNumber = params.candidateNumber || 1;
-    let maxScore = 0;
-    let perfectScoreNumber = 0;
-    let perfectNameScore = false;
-    let bestScoreNumber = 0;
-    let filteredResultsNumber = 0;
-    // following count of meaning arguments (sex and deaths fields not taken as such) used to reduce penalty of blind scoring penalties
-    const requestMeaningArgsNumber = ((request.fullText || request.lastName || request.firstName || request.lastName) ? 1 : 0)
-        + (request.birthDate ? 1 : 0)
-        + ((request.birthCity || request.birthLocationCode || request.birthCountry || request.birthDepartment || request.birthGeoPoint) ? 1 : 0)
-    const resultsWithScores: any = results
-            .filter((result:any) => result.score > 0)
-            .map((result:any) => {
-                try {
-                    result.scores = new ScoreResult(request, result, params);
-                    result.scores.score =  round(scoreReduce(result.scores, true) ** (requestMeaningArgsNumber/(Object.keys(result.scores).length || 1)));
-                } catch(err) {
-                    result.scores = {};
-                }
-                result.scores.es = round(0.005 * Math.min(200, result.score));
-                result.score = (result.scores.score !== undefined) ?  round(result.scores.score) : result.scores.es;
-                if (result.score > maxScore) { maxScore = result.score }
-                if (result.score >= perfectScoreThreshold) { perfectScoreNumber++ }
-                if ((result.sex && (result.sex === 'F')) && (result.scores && result.scores.name && (result.scores.name.score > wrongLastNamePenalty.F))) { perfectNameScore = true; }
-                return result;
-            })
-            .filter((result: any) => result.score >= pruneScore)
-            .map((result: any) => {
-                if (result.score === maxScore) { bestScoreNumber++; }
-                if (result.sex && (result.sex === 'M') || !perfectNameScore || (result.scores && result.scores.name && result.scores.name.score > wrongLastNamePenalty.F)) {
-                    filteredResultsNumber++;
-                }
-                return result;
-            })
-            .sort((a: any, b: any) => (a.score < b.score) ? 1 : ( (a.score > b.score) ? -1 : 0 ))
-            .map((result: any) => {
-                if (perfectNameScore && filteredResultsNumber &&
-                    result.scores && result.scores.name && (result.scores.name.score <= wrongLastNamePenalty.F)) {
-                    // filter alteratives with wrong last name if a good one is present in results list
-                        result.score = 0;
-                }
-                if (result.score > 0) {
-                    if (filteredResultsNumber > 1) {
-                        const myMultipleMatchPenalty = Math.max(multipleMatchPenaltyMax,
-                            perfectScoreNumber ? (1 - multiplePerfectScorePenalty * (perfectScoreNumber - 1 + (filteredResultsNumber - perfectScoreNumber)/candidateNumber))
-                                :                 (1 - multipleBestScorePenalty * (bestScoreNumber - 1 + (filteredResultsNumber - bestScoreNumber)/candidateNumber))
-                            );
-                        const myMultipleMatchPenaltyPow = (result.score === maxScore) ?
-                            1 : (
-                            secondaryCandidatePenaltyPow + (
-                                (result.score >= perfectScoreThreshold) ?
-                                    1 :
-                                    filteredResultsNumber - (perfectScoreNumber || bestScoreNumber)
-                                )
-                            );
-                        result.score = round(myMultipleMatchPenalty * result.score ** myMultipleMatchPenaltyPow);
-                        if (result.score !== result.scores.score) {
-                            result.scores.multiMatchPenalty = round(result.score / (result.scores.score || 1));
-                            result.scores.multiMatch = filteredResultsNumber;
-                            result.scores.score = result.score;
-                        }
-                    }
-                    if ((result.score < maxScore) && (result.score < secondaryCandidateThreshold)) {
-                        result.score = 0;
-                    }
-                }
-                return result;
-            })
-            .filter((result: any) => result.score >= pruneScore);
-    return resultsWithScores;
-}
-
-export class ScoreResult {
-  score: number;
-  birthDate?: number
-  deathDate?: number
-  name?: number;
-  sex?: number;
-  birthLocation?: number;
-  deathLocation?: number;
-
-  constructor(request: RequestBody, result: Person, params: ScoreParams = {}) {
-    const pruneScore = params.pruneScore !== undefined ? params.pruneScore : defaultPruneScore
-    if (request.birthDate) {
-      this.birthDate = scoreDate(request.birthDate, result.birth.date, params.dateFormat,
-        result.birth && result.birth.location && result.birth.location.countryCode && (result.birth.location.countryCode !== 'FRA')
-        );
-    }
-    if (request.firstName || request.lastName) {
-      if ((pruneScore < scoreReduce(this, true)) || !this.birthDate) {
-        if (result.sex && result.sex === 'F') {
-            if (request.legalName) {
-                this.name = scoreName({first: request.firstName, last: [request.lastName, request.legalName]}, result.name, 'F');
-            } else {
-                this.name = scoreName({first: request.firstName, last: request.lastName}, result.name, 'F');
-            }
-        } else {
-          this.name = scoreName({first: request.firstName, last: request.lastName}, result.name, 'M');
-        }
-      } else {
-        this.score = 0
-      }
-    }
-    if (request.sex) {
-      if (pruneScore < scoreReduce(this, true)) {
-        this.sex = scoreSex(request.sex, result.sex);
-      } else {
-        this.score = 0
-      }
-    } else if (request.firstName && firstNameSexMismatch(request.firstName, result.name.first as string)) {
-        this.sex = firstNameSexPenalty;
-    }
-    // birthLocation
-    if (pruneScore < scoreReduce(this, true)) {
-        this.birthLocation = scoreLocation({
-            city: request.birthCity,
-            code: request.birthLocationCode,
-            departmentCode: request.birthDepartment,
-            country: request.birthCountry,
-            latitude: request.birthLatitude,
-            longitude: request.birthLongitude
-        }, result.birth.location);
-    } else {
-        this.score = 0
-    }
-    if (request.deathDate || request.lastSeenAliveDate) {
-        if (pruneScore < scoreReduce(this, true)) {
-            this.deathDate = scoreDate(request.deathDate || `>${request.lastSeenAliveDate}`, result.death.date, params.dateFormat,
-                result.death && result.death.location && result.death.location.countryCode && (result.death.location.countryCode !== 'FRA')
-            );
-        } else {
-            this.score = 0
-        }
-    }
-    if ((request.deathCity || request.deathLocationCode || request.deathCountry || request.deathDepartment || request.deathGeoPoint)) {
-        if (pruneScore < scoreReduce(this, true)) {
-            this.deathLocation = scoreLocation({
-                city: request.deathLocation,
-                code: request.deathLocationCode,
-                departmentCode: request.deathDepartment,
-                country: request.deathCountry,
-                latitude: request.deathLatitude,
-                longitude: request.deathLongitude
-            }, result.death.location);
-        } else {
-            this.score = 0
-        }
-    }
-    if (!this.score) {
-      this.score = scoreReduce(this, true)
-    }
-  }
-}
-
 const firstNameRegExp = [[/^(inconnu|spc?|sans prenom( connu)?|X+)$/,'']]
 
 const firstNameNorm = (name: string|string[]): string|string[] => {
@@ -357,7 +203,7 @@ const firstNameSexMismatch = (firstNameA: string, firstNameB: string): boolean =
     return /^.?(e|a)$/.test(firstA.replace(firstB, '')) || /^.?(e|a)$/.test(firstB.replace(firstA, ''));
 }
 
-const scoreName = (nameA: Name, nameB: Name, sex: string): any => {
+let scoreName = (nameA: Name, nameB: Name, sex: string): any => {
     if ((!nameA.first && !nameA.last) || (!nameB.first && !nameB.last)) { return blindNameScore }
     let score:any;
     const firstA = firstNameNorm(nameA.first as string|string[]);
@@ -534,9 +380,26 @@ const scoreCity = (cityA: string|string[]|RequestField, cityB: string|string[]):
 const scoreLocationCode = (codeA: string|string[]|RequestField, codeB: string|string[]): number => {
     if (typeof(codeA) === 'string') {
         if (typeof(codeB) === 'string') {
-            return (codeA === codeB) ? 1 : minCodeScore;
+            if (codeA.length === 4) {
+                // pads codeA with 0 if input is badly encoded as integer
+                codeA = `0${codeA}`
+            }
+            if (codeA === codeB) { return 1 }
+            else {
+                const depA = codeA.substring(0,2);
+                const depB = codeA.substring(0,2);
+                if ((["91","92","93","94","99"].indexOf(depB) >= 0) && (codeB.substring(2,5) === "352")) {
+                    return (["91","92","93","94"].indexOf(depA) >= 0 || (codeA.substring(2,5) === "352")) ? round(blindLocationScore ** 0.5) : minCodeScore;
+                }
+                if (((depA === "98") && (depB === "99")) || ((depA === "99") && (depB === "98"))) { return blindLocationScore; }
+                if (depA === depB) {
+                    // if 99, it's a foreign counrty so 99 isn't a good proof enough
+                    return depA === "99" ? blindLocationScore : round(blindLocationScore ** 0.5);
+                }
+                return minCodeScore;
+            }
         } else {
-            return codeB.includes(codeA) ? 1 : minCodeScore;
+            return Math.max(...((codeB ).map((code) => scoreLocationCode(codeA, code))));
         }
     } else {
         return Math.max(...((codeA as string[]).map((code) => scoreLocationCode(code, codeB))));
@@ -617,18 +480,26 @@ const scoreCountry = (countryA: string|string[]|RequestField, countryB: string|s
 }
 
 
-const scoreLocation = (locA: Location, locB: Location): any => {
+let scoreLocation = (locA: Location, locB: Location): any => {
     const score: any = {};
     const BisFrench = locB.countryCode && (locB.countryCode === 'FRA');
-    if (locA.code) {
+    if (locA.code && locB.code) {
         score.code = scoreLocationCode(locA.code, locB.codeHistory as string|string[]);
     }
     if (BisFrench) {
         if (normalize(locA.country as string|string[])) {
             score.country = scoreCountry(locA.country, tokenize(locB.country as string));
+            if ((score.code >= round(blindLocationScore ** 0.5)) && (score.country < perfectScoreThreshold)) {
+                // insee code has) priority over label
+                score.country = round(blindLocationScore ** 0.5);
+            }
         }
         if (normalize(locA.city as string|string[]) && locB.city) {
             score.city = scoreCity(locA.city, locB.city as string|string[]);
+            if ((score.code === 1) && (score.city < perfectScoreThreshold)) {
+                // insee code has priority over label
+                score.city = round(blindLocationScore ** 0.5);
+            }
         }
         if (normalize(locA.departmentCode as string|string[]) && locB.departmentCode) {
             if (BisFrench) {
@@ -638,7 +509,12 @@ const scoreLocation = (locA: Location, locB: Location): any => {
                     (score.code && (score.code >= perfectScoreThreshold))
                     );
                 if (sDep) {
+                    // good insee code has priority over wrong dep
                     score.department = sDep;
+                    if ((score.code >= perfectScoreThreshold) && (score.department < perfectScoreThreshold)) {
+                        // insee code has priority over label
+                        score.department = blindLocationScore ** 0.5;
+                    }
                 } else {
                     if (locA.departmentCode === '99') {
                         if (score.country < perfectScoreThreshold) {
@@ -677,27 +553,20 @@ const scoreLocation = (locA: Location, locB: Location): any => {
     return score;
 }
 
-const scoreDate = (dateRangeA: any, dateStringB: string, dateFormat: string, foreignDate: boolean): number => {
-    let dateRangeATransformed = dateRangeA;
-    if (dateFormat) {
-        const dr = isDateRange(dateRangeA);
-        if (!dr) {
-          const dl = isDateLimit(dateRangeA);
-          dateRangeATransformed = dl ? `${dl[1]}${dateTransform(dl[2], dateFormat, "YYYYMMDD")}`
-            : dateTransform(dateRangeA, dateFormat, "YYYYMMDD");
-        } else {
-            dateRangeATransformed = `${dateTransform(dr[1], dateFormat, "YYYYMMDD")}-${dateTransform(dr[2], dateFormat, "YYYYMMDD")}`;
-        }
-    }
-    return 0.01 * Math.round((scoreDateRaw(dateRangeATransformed, dateStringB, foreignDate) ** datePenalty) * 100);
+const emptyDate = /^\s*$/;
+
+const parseYMD = (dateString: string): Date => {
+    return new Date(+dateString.substr(0,4),+dateString.substr(4,2) - 1,+dateString.substr(6,2));
 }
 
 const scoreDateRaw = (dateRangeA: any, dateStringB: string, foreignDate: boolean): number => {
+    // if (dateStringB === "00000000" || !dateStringB || !dateRangeA) {
     if (/^00000000$/.test(dateStringB) || !dateStringB || !dateRangeA) {
         return blindDateScore;
     }
     if (typeof(dateRangeA) === 'string') {
-        if (/^\s*$/.test(dateRangeA)) {
+        // if (emptyDate.test(dateRangeA)) {
+            if (/^\s*$/.test(dateRangeA)) {
             return blindDateScore;
         }
         const dr = isDateRange(dateRangeA) || isDateLimit(dateRangeA);
@@ -734,8 +603,7 @@ const scoreDateRaw = (dateRangeA: any, dateStringB: string, foreignDate: boolean
             return Math.max(
                 levRatio(dateRangeATransformed, dateStringB, damlev),
                 round((uncertainDateScore ** 2) * (dateRangeATransformed.substring(0,6) === dateStringB.substring(0,6) ? 1: 0)),
-                round((uncertainDateScore ** 3) * (dateRangeATransformed.substring(0,4) === dateStringB.substring(0,4) ? 1 : 0)),
-                round((1-((moment.duration(moment(dateRangeATransformed, "YYYYMMDD").diff(moment(dateStringB, "YYYYMMDD"))).asDays() / 365) ** 2) ** 0.2))||0
+                round((1-(((parseYMD(dateRangeATransformed).getTime()-parseYMD(dateStringB).getTime()) /  31536000000) ** 2) ** 0.2))||0
             );
         }
     } else {
@@ -743,8 +611,25 @@ const scoreDateRaw = (dateRangeA: any, dateStringB: string, foreignDate: boolean
     }
 };
 
+let scoreDate = (dateRangeA: any, dateStringB: string, dateFormat: string, foreignDate: boolean): number => {
+    if (dateStringB === "00000000" || !dateStringB || !dateRangeA) {
+        return blindDateScore;
+    }
+    let dateRangeATransformed = dateRangeA;
+    if (dateFormat) {
+        const dr = isDateRange(dateRangeA);
+        if (!dr) {
+          const dl = isDateLimit(dateRangeA);
+          dateRangeATransformed = dl ? `${dl[1]}${dateTransform(dl[2], dateFormat, "YYYYMMDD")}`
+            : dateTransform(dateRangeA, dateFormat, "YYYYMMDD");
+        } else {
+            dateRangeATransformed = `${dateTransform(dr[1], dateFormat, "YYYYMMDD")}-${dateTransform(dr[2], dateFormat, "YYYYMMDD")}`;
+        }
+    }
+    return 0.01 * Math.round((scoreDateRaw(dateRangeATransformed, dateStringB, foreignDate) ** datePenalty) * 100);
+}
 
-const scoreSex = (sexA: any, sexB: string): number => {
+let scoreSex = (sexA: any, sexB: string): number => {
     return (sexA && sexB)
             ? ((sexA.replace(/^(H).*$/,'M') === sexB) ? 1 : minSexScore)
             : blindSexScore;
@@ -772,4 +657,177 @@ const geoDistance = (lat1: number, lon1: number, lat2: number, lon2: number): nu
 		dist = Math.acos(dist) * 6370.693486;
 		return dist;
 	}
+}
+
+// perf monitoring (not active in prod mode)
+scoreLocation = timer(scoreLocation, 'scoreLocation',100);
+scoreName = timer(scoreName, 'scoreName',500);
+scoreSex = timer(scoreSex, 'scoreSex',100);
+scoreDate = timer(scoreDate, 'scoreDate',1000);
+
+export class ScoreResult {
+    score: number;
+    birthDate?: number
+    deathDate?: number
+    name?: number;
+    sex?: number;
+    birthLocation?: number;
+    deathLocation?: number;
+
+    constructor(request: RequestBody, result: Person, params: ScoreParams = {}) {
+      const pruneScore = params.pruneScore !== undefined ? params.pruneScore : defaultPruneScore
+      if (request.birthDate) {
+        this.birthDate = scoreDate(request.birthDate, result.birth.date, params.dateFormat,
+          result.birth && result.birth.location && result.birth.location.countryCode && (result.birth.location.countryCode !== 'FRA')
+          );
+      }
+      if (request.firstName || request.lastName) {
+        if ((pruneScore < scoreReduce(this, true)) || !this.birthDate) {
+          if (result.sex && result.sex === 'F') {
+              if (request.legalName) {
+                  this.name = scoreName({first: request.firstName, last: [request.lastName, request.legalName]}, result.name, 'F');
+              } else {
+                  this.name = scoreName({first: request.firstName, last: request.lastName}, result.name, 'F');
+              }
+          } else {
+            this.name = scoreName({first: request.firstName, last: request.lastName}, result.name, 'M');
+          }
+        } else {
+          this.score = 0
+        }
+      }
+      if (request.sex) {
+        if (pruneScore < scoreReduce(this, true)) {
+          this.sex = scoreSex(request.sex, result.sex);
+        } else {
+          this.score = 0
+        }
+      } else if (request.firstName && firstNameSexMismatch(request.firstName, result.name.first as string)) {
+          this.sex = firstNameSexPenalty;
+      }
+      // birthLocation
+      if (pruneScore < scoreReduce(this, true)) {
+          this.birthLocation = scoreLocation({
+              city: request.birthCity,
+              code: request.birthLocationCode,
+              departmentCode: request.birthDepartment,
+              country: request.birthCountry,
+              latitude: request.birthLatitude,
+              longitude: request.birthLongitude
+          }, result.birth.location);
+      } else {
+          this.score = 0
+      }
+      if (request.deathDate || request.lastSeenAliveDate) {
+          if (pruneScore < scoreReduce(this, true)) {
+              this.deathDate = scoreDate(request.deathDate || `>${request.lastSeenAliveDate}`, result.death.date, params.dateFormat,
+                  result.death && result.death.location && result.death.location.countryCode && (result.death.location.countryCode !== 'FRA')
+              );
+          } else {
+              this.score = 0
+          }
+      }
+      if ((request.deathCity || request.deathLocationCode || request.deathCountry || request.deathDepartment || request.deathGeoPoint)) {
+          if (pruneScore < scoreReduce(this, true)) {
+              this.deathLocation = scoreLocation({
+                  city: request.deathLocation,
+                  code: request.deathLocationCode,
+                  departmentCode: request.deathDepartment,
+                  country: request.deathCountry,
+                  latitude: request.deathLatitude,
+                  longitude: request.deathLongitude
+              }, result.death.location);
+          } else {
+              this.score = 0
+          }
+      }
+      if (!this.score) {
+        this.score = scoreReduce(this, true)
+      }
+    }
+  }
+
+export const scoreResults = (request: RequestBody, results: Person[], params: ScoreParams): Person[] => {
+    const pruneScore = params.pruneScore !== undefined ? params.pruneScore : defaultPruneScore
+    const candidateNumber = params.candidateNumber || 1;
+    let maxScore = 0;
+    let perfectScoreNumber = 0;
+    let perfectNameScore = false;
+    let bestScoreNumber = 0;
+    let filteredResultsNumber = 0;
+    // following count of meaning arguments (sex and deaths fields not taken as such) used to reduce penalty of blind scoring penalties
+    const requestMeaningArgsNumber = ((request.fullText || request.lastName || request.firstName || request.lastName) ? 1 : 0)
+        + (request.birthDate ? 1 : 0)
+        + ((request.birthCity || request.birthLocationCode || request.birthCountry || request.birthDepartment || request.birthGeoPoint) ? 1 : 0)
+    const resultsWithScores: any = results
+            .filter((result:any) => result.score > 0)
+            .map((result:any) => {
+                try {
+                    result.scores = new ScoreResult(request, result, params);
+                    result.scores.score =  round(scoreReduce(result.scores, true) ** (requestMeaningArgsNumber/(Object.keys(result.scores).length || 1)));
+                } catch(err) {
+                    loggerStream.write(JSON.stringify({
+                        backend: {
+                            "server-date": new Date(Date.now()).toISOString(),
+                            error: {
+                                name: err.name,
+                                message: err.message,
+                                stack: err.stack,
+                                request
+                            }
+                        }
+                    }));
+                    result.scores = {};
+                }
+                result.scores.es = round(0.005 * Math.min(200, result.score));
+                result.score = (result.scores.score !== undefined) ?  round(result.scores.score) : result.scores.es;
+                if (result.score > maxScore) { maxScore = result.score }
+                if (result.score >= perfectScoreThreshold) { perfectScoreNumber++ }
+                if ((result.sex && (result.sex === 'F')) && (result.scores && result.scores.name && (result.scores.name.score > wrongLastNamePenalty.F))) { perfectNameScore = true; }
+                return result;
+            })
+            .filter((result: any) => result.score >= pruneScore)
+            .map((result: any) => {
+                if (result.score === maxScore) { bestScoreNumber++; }
+                if (result.sex && (result.sex === 'M') || !perfectNameScore || (result.scores && result.scores.name && result.scores.name.score > wrongLastNamePenalty.F)) {
+                    filteredResultsNumber++;
+                }
+                return result;
+            })
+            .sort((a: any, b: any) => (a.score < b.score) ? 1 : ( (a.score > b.score) ? -1 : 0 ))
+            .map((result: any) => {
+                if (perfectNameScore && filteredResultsNumber &&
+                    result.scores && result.scores.name && (result.scores.name.score <= wrongLastNamePenalty.F)) {
+                    // filter alteratives with wrong last name if a good one is present in results list
+                        result.score = 0;
+                }
+                if (result.score > 0) {
+                    if (filteredResultsNumber > 1) {
+                        const myMultipleMatchPenalty = Math.max(multipleMatchPenaltyMax,
+                            perfectScoreNumber ? (1 - multiplePerfectScorePenalty * (perfectScoreNumber - 1 + (filteredResultsNumber - perfectScoreNumber)/candidateNumber))
+                                :                 (1 - multipleBestScorePenalty * (bestScoreNumber - 1 + (filteredResultsNumber - bestScoreNumber)/candidateNumber))
+                            );
+                        const myMultipleMatchPenaltyPow = (result.score === maxScore) ?
+                            1 : (
+                            secondaryCandidatePenaltyPow + (
+                                (result.score >= perfectScoreThreshold) ?
+                                    1 :
+                                    filteredResultsNumber - (perfectScoreNumber || bestScoreNumber)
+                                )
+                            );
+                        result.score = round(myMultipleMatchPenalty * result.score ** myMultipleMatchPenaltyPow);
+                        if (result.score !== result.scores.score) {
+                            result.scores.multiMatchPenalty = round(result.score / (result.scores.score || 1));
+                            result.scores.multiMatch = filteredResultsNumber;
+                            result.scores.score = result.score;
+                        }
+                    }
+                    if ((result.score < maxScore) && (result.score < secondaryCandidateThreshold)) {
+                        result.score = 0;
+                    }
+                }
+                return result;
+            })
+            .filter((result: any) => result.score >= pruneScore);
+    return resultsWithScores;
 }
