@@ -5,7 +5,7 @@ import damlev from 'damlev';
 import fuzz from 'fuzzball';
 import moment from 'moment';
 import { dateTransformMask, isDateRange, isDateLimit, dateTransform } from './masks';
-import soundex from '@thejellyfish/soundex-fr';
+import soundex from '@jollie/soundex-fr';
 import loggerStream from './logger';
 import timer from './timer';
 

@@ -17,7 +17,7 @@
   "author": "Cristian Brokate",
   "license": "ISC",
   "dependencies": {
-    "@thejellyfish/soundex-fr": "^1.0.4",
+    "@jollie/soundex-fr": "^1.0.8",
     "JSONStream": "^1.3.5",
     "axios": "^0.21.1",
     "bee-queue": "^1.3.1",
