@@ -68,6 +68,7 @@ export DATASET=fichier-des-personnes-decedees
 export STORAGE_BUCKET=${DATASET}
 export AWS=${APP_PATH}/aws
 
+export COMUNNES_JSON=${BACKEND}/comunnes.json
 
 export DATAGOUV_CATALOG_URL = https://www.data.gouv.fr/api/1/datasets/${DATASET}/
 export DATAGOUV_RESOURCES_URL = https://static.data.gouv.fr/resources/${DATASET}
@@ -359,6 +360,12 @@ ${WIKIDATA_LINKS}:
 wikidata-src: ${WIKIDATA_SRC}
 
 wikidata-links: ${WIKIDATA_LINKS}
+
+${COMUNNES_JSON}:
+	@echo "downloading communes geo data";\
+	curl -s -l 'http://etalab-datasets.geo.data.gouv.fr/contours-administratifs/2019/geojson/communes-50m.geojson.gz' -O
+	gzip -d communes-50m.geojson.gz
+	mv communes-50m.geojson backend/src/communes.json
 
 ###########
 #  Start  #
