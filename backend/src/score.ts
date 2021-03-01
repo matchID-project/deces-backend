@@ -8,6 +8,11 @@ import { dateTransformMask, isDateRange, isDateLimit, dateTransform } from './ma
 import soundex from '@jollie/soundex-fr';
 import loggerStream from './logger';
 import timer from './timer';
+import * as communes from './communes.json';
+
+const communesDict = communes as {
+    [key: string]: number[];
+};
 
 const perfectScoreThreshold = 0.75;
 const multipleMatchPenaltyMax = 0.5;
@@ -495,6 +500,11 @@ let scoreLocation = (locA: Location, locB: Location): any => {
             }
         }
         if (normalize(locA.city as string|string[]) && locB.city) {
+            if (Object.keys(communesDict).includes(normalize(locA.city as string) as string)) {
+              // score geo
+              const [latA, lonA] = communesDict[normalize(locA.city as string) as string]
+              score.geo = scoreGeo(latA, lonA, locB.latitude, locB.longitude)
+            }
             score.city = scoreCity(locA.city, locB.city as string|string[]);
             if ((score.code === 1) && (score.city < perfectScoreThreshold)) {
                 // insee code has priority over label
@@ -636,7 +646,7 @@ let scoreSex = (sexA: any, sexB: string): number => {
 }
 
 const scoreGeo = (latA: number, lonA: number, latB: number, lonB: number): number => {
-    return 0.01*Math.round(
+    return round(
         Math.max(0, 100/(100 + geoDistance(latA, lonA, latB, lonB)))
     )
 };
