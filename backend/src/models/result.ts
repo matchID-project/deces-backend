@@ -1,6 +1,7 @@
 import { Person } from './entities';
 import { RequestInput } from './requestInput';
 import { scoreResults } from '../score';
+import { wikidata } from '../wikidata';
 
 interface RequestType {
   [key: string]: any; // Index signature
@@ -238,7 +239,7 @@ export const buildResult = (result: ResultRawES, requestInput: RequestInput): Re
 }
 
 export const buildResultSingle = (item: ResultRawHit): Person => {
-  return {
+  const result: Person = {
     score: item._score,
     // source: dataCatalog[item._source.SOURCE],
     source: item._source.SOURCE,
@@ -279,6 +280,13 @@ export const buildResultSingle = (item: ResultRawHit): Person => {
       }
     }
   }
+  const wd = wikidata[result.id];
+  if (wd) {
+    result.links = {wikidata: wd.wikidata}
+    if (wd.wikimedia) { result.links.wikimedia = wd.wikimedia }
+    if (wd.wikipedia) { result.links.wikipedia = wd.wikipedia }
+  }
+  return result;
 }
 
 /**

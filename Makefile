@@ -318,12 +318,12 @@ ${WIKIDATA_LINKS}:
 	curl -s -f -G 'https://query.wikidata.org/sparql' --header "Accept: application/json" --data-urlencode query="\
 		select ?sitelink ?person ?img ?id where {\
 			?person wdt:P9058 ?id.\
-                        ?person wdt:P18 ?img.\
-			?sitelink schema:isPartOf <https://fr.wikipedia.org/>;\
-				schema:about ?person;\
-				service wikibase:label { bd:serviceParam wikibase:language '[AUTO_LANGUAGE],en'. }\
+			OPTIONAL { ?person wdt:P18 ?img. }\
+			OPTIONAL { ?sitelink schema:isPartOf <https://fr.wikipedia.org/>;\
+			  schema:about ?person;}\
+			service wikibase:label { bd:serviceParam wikibase:language '[AUTO_LANGUAGE],en'. }\
 		}" |\
-		jq -c '[ .results.bindings[] | {wikidata: .person.value, wikimedia: .img.value, wikipedia: .sitelink.value, id: .id.value} ]' \
+		jq -c '[ .results.bindings[] | {wikidata: .person.value, wikimedia: .img.value, wikipedia: .sitelink.value, id: .id.value} | with_entries( select( .value != null )) ]' \
 		> ${WIKIDATA_LINKS}
 
 wikidata-src: ${WIKIDATA_SRC}

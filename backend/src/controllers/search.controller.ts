@@ -7,7 +7,6 @@ import { RequestInput, RequestBody } from '../models/requestInput';
 import { StrAndNumber } from '../models/entities';
 import { buildResult, Result, ErrorResponse } from '../models/result';
 import { format } from '@fast-csv/format';
-import { wikidata } from '../wikidata';
 // import getDataGouvCatalog from '../getDataGouvCatalog';
 
 /**
@@ -132,17 +131,6 @@ export class SearchController extends Controller {
       const requestBuild = buildRequest(requestInput);
       const result = await runRequest(requestBuild, requestInput.scroll);
       const builtResult = buildResult(result.data, requestInput)
-
-      if (builtResult.response && builtResult.response.persons && builtResult.response.persons.length && wikidata && Object.keys(wikidata).length ) {
-        builtResult.response.persons.forEach(person => {
-          if (wikidata[person.id]) {
-            person.links = {};
-            person.links.wikipedia = wikidata[person.id].wikipedia
-            person.links.wikidata = wikidata[person.id].wikidata
-            person.links.wikimedia = wikidata[person.id].wikimedia
-          }
-        });
-      }
 
       if (accept === 'text/csv') {
         if (builtResult.response.total < 500000) {
