@@ -235,7 +235,7 @@ docker-check:
 #############
 
 # build
-backend-dist:
+backend-dist: ${WIKIDATA_LINKS}
 	export EXEC_ENV=development; ${DC_BACKEND} -f $(DC_FILE)-dev-backend.yml run -T --no-deps --rm backend npm run build  && tar czvf ${BACKEND}/${FILE_BACKEND_DIST_APP_VERSION} -C ${BACKEND} dist
 
 backend-build-image: ${BACKEND}/${FILE_BACKEND_DIST_APP_VERSION}
@@ -267,7 +267,7 @@ backend-test:
 	@docker exec -i ${USE_TTY} ${APP} bash /deces-backend/tests/test_query_params.sh
 
 backend-test-mocha:
-	@echo Testing API with mocha tests 
+	@echo Testing API with mocha tests
 	@export EXEC_ENV=development; export BACKEND_LOG_LEVEL=error; \
 		${DC_BACKEND} -f ${DC_FILE}-dev-backend.yml run --rm backend npm run test
 
