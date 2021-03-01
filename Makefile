@@ -73,6 +73,9 @@ export DATAGOUV_CATALOG_URL = https://www.data.gouv.fr/api/1/datasets/${DATASET}
 export DATAGOUV_RESOURCES_URL = https://static.data.gouv.fr/resources/${DATASET}
 export DATAGOUV_PROXY_PATH = /${API_PATH}/api/v0/getDataGouvFile
 
+export WIKIDATA_SRC= ${BACKEND}/tests/wikidata_dead_french.csv
+export WIKIDATA_LINKS=${BACKEND}/data/wikidata.json
+
 # test artillery
 export PERF=${BACKEND}/tests/performance
 export PERF_SCENARIO_V1=${PERF}/scenarios/test-backend-v1.yml
@@ -289,10 +292,10 @@ backend-dev-test:
 	@echo Testing API parameters
 	@docker exec -i ${USE_TTY} ${APP}-development bash /deces-backend/tests/test_query_params.sh
 
-dev: network backend-dev-stop backend-dev
+dev: network backend-dev-stop ${WIKIDATA_LINKS} backend-dev
 
 # download wikidata test data
-wikidata-download:
+${WIKIDATA_SRC}:
 	@echo "downloading wikidata set of died french people...";\
 	(curl -s -f -G 'https://query.wikidata.org/sparql'      --header "Accept: text/csv"       --data-urlencode query="\
 		select ?person  ?personLabel ?firstnameLabel  ?lastnameLabel ?birthdateLabel ?birthplaceLabel ?citizenshipLabel ?diedLabel where {\
@@ -306,8 +309,26 @@ wikidata-download:
 		FILTER((?died >= '1970-01-01T00:00:00Z'^^xsd:dateTime)  )\
 		service wikibase:label { bd:serviceParam wikibase:language '[AUTO_LANGUAGE],en'. }\
 		}\
-		" | sed 's/T00:00:00Z//g;s|http://www.wikidata.org/entity/||;' > ${BACKEND}/tests/wikidata_dead_french.csv)\
+		" | sed 's/T00:00:00Z//g;s|http://www.wikidata.org/entity/||;' > ${WIKIDATA_SRC}) \
 		&& echo "done!"
+
+${WIKIDATA_LINKS}:
+	@echo "downloading wikidata and wikipedia links";\
+	mkdir -p ${BACKEND}/data;\
+	curl -s -f -G 'https://query.wikidata.org/sparql' --header "Accept: application/json" --data-urlencode query="\
+		select ?sitelink ?person ?img ?id where {\
+			?person wdt:P9058 ?id.\
+                        ?person wdt:P18 ?img.\
+			?sitelink schema:isPartOf <https://fr.wikipedia.org/>;\
+				schema:about ?person;\
+				service wikibase:label { bd:serviceParam wikibase:language '[AUTO_LANGUAGE],en'. }\
+		}" |\
+		jq -c '[ .results.bindings[] | {wikidata: .person.value, wikimedia: .img.value, wikipedia: .sitelink.value, id: .id.value} ]' \
+		> ${WIKIDATA_LINKS}
+
+wikidata-src: ${WIKIDATA_SRC}
+
+wikidata-links: ${WIKIDATA_LINKS}
 
 ###########
 #  Start  #
