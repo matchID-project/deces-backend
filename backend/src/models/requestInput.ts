@@ -21,6 +21,7 @@ import {
   fuzzyWithQuery,
   sourceWithQuery
 } from '../fieldsWithQueries';
+import { communesDict } from '../communes';
 
 import { GeoPoint, RequestField, Sort } from './entities';
 
@@ -281,17 +282,29 @@ export class RequestInput {
     }, transformedFuzzy);
     this.sex = sexWithQuery(params.sex);
     this.birthDate = birthDateWithQuery(birthDateTransformed, transformedFuzzy);
-    this.birthCity = birthCityWithQuery(params.birthCity, transformedFuzzy);
+    if (params.birthCity && Object.keys(communesDict).includes(params.birthCity.toLowerCase())) {
+      const [latitude, longitude] = communesDict[params.birthCity.toLowerCase()]
+      params.birthGeoPoint = {latitude, longitude, distance: "20km"}
+      this.birthCity = birthCityWithQuery(params.birthCity, transformedFuzzy, true);
+    } else {
+      this.birthCity = birthCityWithQuery(params.birthCity, transformedFuzzy);
+    }
     this.birthLocationCode = birthLocationCodeWithQuery(params.birthLocationCode);
     this.birthDepartment = birthDepartmentWithQuery(params.birthDepartment);
     this.birthCountry = birthCountryWithQuery(params.birthCountry, transformedFuzzy);
     this.birthGeoPoint = birthGeoPointWithQuery(params.birthGeoPoint);
     this.deathDate = deathDateWithQuery(deathDateTransformed, transformedFuzzy);
     this.deathAge = deathAgeWithQuery(params.deathAge);
-    this.deathCity = deathCityWithQuery(params.deathCity, transformedFuzzy);
     this.deathLocationCode = deathLocationCodeWithQuery(params.deathLocationCode);
     this.deathDepartment = deathDepartmentWithQuery(params.deathDepartment);
     this.deathCountry = deathCountryWithQuery(params.deathCountry, transformedFuzzy);
+    if (params.deathCity && Object.keys(communesDict).includes(params.deathCity.toLowerCase())) {
+      const [latitude, longitude] = communesDict[params.deathCity.toLowerCase()]
+      params.deathGeoPoint = {latitude, longitude, distance: "10km"}
+      this.deathCity = deathCityWithQuery(params.birthCity, transformedFuzzy, true);
+    } else {
+      this.deathCity = deathCityWithQuery(params.birthCity, transformedFuzzy);
+    }
     this.deathGeoPoint = deathGeoPointWithQuery(params.deathGeoPoint);
 
     Object.keys(this).map(field => {

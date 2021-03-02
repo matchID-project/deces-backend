@@ -65,10 +65,10 @@ export const birthDateWithQuery = (value: string|number, fuzzy: boolean) => valu
     }
 };
 
-export const birthCityWithQuery = (value: string, fuzzy: boolean) => value && {
+export const birthCityWithQuery = (value: string, fuzzy: boolean, noQuery = false) => value && {
     value,
     field: "COMMUNE_NAISSANCE",
-    query: fuzzyShouldTermQuery,
+    query: noQuery ? false : fuzzyShouldTermQuery,
     fuzzy: fuzzy ? "auto" : false
 };
 
@@ -122,10 +122,10 @@ export const deathAgeWithQuery = (value: string|number) => value && {
     }
   }
 
-export const deathCityWithQuery = (value: string, fuzzy: boolean) => value && {
+export const deathCityWithQuery = (value: string, fuzzy: boolean, noQuery = false) => value && {
     value,
     field: "COMMUNE_DECES",
-    query: fuzzyShouldTermQuery,
+    query: noQuery ? false : fuzzyShouldTermQuery,
     fuzzy: fuzzy ? "auto" : false
 };
 
