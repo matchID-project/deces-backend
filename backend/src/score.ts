@@ -8,11 +8,7 @@ import { dateTransformMask, isDateRange, isDateLimit, dateTransform } from './ma
 import soundex from '@jollie/soundex-fr';
 import loggerStream from './logger';
 import timer from './timer';
-import * as communes from './communes.json';
-
-const communesDict = communes as {
-    [key: string]: number[];
-};
+import { communesDict } from './comunnes';
 
 const perfectScoreThreshold = 0.75;
 const multipleMatchPenaltyMax = 0.5;
