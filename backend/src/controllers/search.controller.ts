@@ -131,6 +131,7 @@ export class SearchController extends Controller {
       const requestBuild = buildRequest(requestInput);
       const result = await runRequest(requestBuild, requestInput.scroll);
       const builtResult = buildResult(result.data, requestInput)
+
       if (accept === 'text/csv') {
         if (builtResult.response.total < 500000) {
           await this.responseJson2Csv(response, builtResult, requestInput, requestBody.headerLang)

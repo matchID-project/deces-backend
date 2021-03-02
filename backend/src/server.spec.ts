@@ -29,13 +29,14 @@ describe('server.ts - Express application', () => {
   it('/id/{id}', async () => {
     let res = await chai.request(app)
       .get(apiPath('search'))
-      .query({deathDate: 2020, firstName: 'Harry'})
+      .query({q: 'Georges Duboeuf'})
     const { id }: { id: string } = res.body.response.persons[0];
     res = await chai.request(app)
       .get(apiPath(`id/${id}`))
     expect(res).to.have.status(200);
-    expect(res.body.response.persons[0].name.first).to.include('Harry');
-    expect(res.body.response.persons[0].id).to.eql(id);
+    expect(res.body.response.persons[0].name.first).to.include('Georges');
+    expect(res.body.response.persons[0].id).to.eql('VhfumwT3QnUq');
+    expect(res.body.response.persons[0].links.wikidata).to.include('Q3102639');
   });
 
   const testFixtures = [

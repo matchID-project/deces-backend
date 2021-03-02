@@ -8,6 +8,7 @@ services:
       - ${BACKEND}/src:/${APP}/src/
       - ${BACKEND}/dist:/${APP}/dist/
       - ${BACKEND}/tests:/${APP}/tests/
+      - ${BACKEND}/data:/${APP}/data/
       - /${APP}/node_modules
     ports:
       - ${PORT}:8080

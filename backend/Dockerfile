@@ -61,6 +61,7 @@ RUN if [ -z "${NPM_VERBOSE}" ]; then\
 VOLUME /${app_path}/src
 VOLUME /${app_path}/dist
 VOLUME /${app_path}/tests
+VOLUME /${app_path}/data
 
 COPY tsconfig.json ./
 COPY .eslintrc.js ./
@@ -103,6 +104,7 @@ RUN  [ -f "${app_name}-${app_ver}-backend-dist.tar.gz" ] && \
      rm -rf ${app_name}-${app_ver}-backend-dist.tar.gz
 
 ADD tests ./tests
+ADD data ./data
 
 # Expose the listening port of your app
 EXPOSE ${port}
