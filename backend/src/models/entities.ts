@@ -78,6 +78,7 @@ export interface Person {
       location: Location;
     };
     links?: {
+      label?: string;
       wikipedia?: string;
       wikidata?: string;
       wikimedia?: string;

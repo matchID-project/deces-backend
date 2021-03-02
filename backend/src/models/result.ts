@@ -285,6 +285,7 @@ export const buildResultSingle = (item: ResultRawHit): Person => {
     result.links = {wikidata: wd.wikidata}
     if (wd.wikimedia) { result.links.wikimedia = wd.wikimedia }
     if (wd.wikipedia) { result.links.wikipedia = wd.wikipedia }
+    if (wd.label) { result.links.label = wd.label }
   }
   return result;
 }
