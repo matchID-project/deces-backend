@@ -298,13 +298,14 @@ dev: network backend-dev-stop ${WIKIDATA_LINKS} backend-dev
 ${WIKIDATA_SRC}:
 	@echo "downloading wikidata set of died french people...";\
 	(curl -s -f -G 'https://query.wikidata.org/sparql'      --header "Accept: text/csv"       --data-urlencode query="\
-		select ?person  ?personLabel ?firstnameLabel  ?lastnameLabel ?birthdateLabel ?birthplaceLabel ?citizenshipLabel ?diedLabel where {\
+		select ?person  ?personLabel ?firstnameLabel ?id ?lastnameLabel ?birthdateLabel ?birthplaceLabel ?citizenshipLabel ?diedLabel where {\
 		?person wdt:P27 wd:Q142.\
 		?person wdt:P734 ?lastname.\
 		?person wdt:P735 ?firstname.\
 		?person wdt:P569 ?birthdate.\
 		?person wdt:P27 ?citizenship.\
 		?person wdt:P19 ?birthplace.\
+                OPTIONAL {?person wdt:P9058 ?id.}\
 		?person wdt:P570 ?died;\
 		FILTER((?died >= '1970-01-01T00:00:00Z'^^xsd:dateTime)  )\
 		service wikibase:label { bd:serviceParam wikibase:language '[AUTO_LANGUAGE],en'. }\
@@ -316,14 +317,14 @@ ${WIKIDATA_LINKS}:
 	@echo "downloading wikidata and wikipedia links";\
 	mkdir -p ${BACKEND}/data;\
 	curl -s -f -G 'https://query.wikidata.org/sparql' --header "Accept: application/json" --data-urlencode query="\
-		select ?sitelink ?person ?img ?id where {\
+		select ?sitelink ?person ?personDescription ?img ?id where {\
 			?person wdt:P9058 ?id.\
 			OPTIONAL { ?person wdt:P18 ?img. }\
 			OPTIONAL { ?sitelink schema:isPartOf <https://fr.wikipedia.org/>;\
 			  schema:about ?person;}\
-			service wikibase:label { bd:serviceParam wikibase:language '[AUTO_LANGUAGE],en'. }\
+			service wikibase:label { bd:serviceParam wikibase:language '[AUTO_LANGUAGE],fr'. }\
 		}" |\
-		jq -c '[ .results.bindings[] | {wikidata: .person.value, wikimedia: .img.value, wikipedia: .sitelink.value, id: .id.value} | with_entries( select( .value != null )) ]' \
+		jq -c '[ .results.bindings[] | {wikidata: .person.value, label: .personDescription.value, wikimedia: .img.value, wikipedia: .sitelink.value, id: .id.value} | with_entries( select( .value != null )) ]' \
 		> ${WIKIDATA_LINKS}
 
 wikidata-src: ${WIKIDATA_SRC}
