@@ -7,6 +7,7 @@ import { dateTransformMask, isDateRange, isDateLimit, dateTransform } from './ma
 import soundex from '@jollie/soundex-fr';
 import loggerStream from './logger';
 import timer from './timer';
+import { communesDict } from './communes';
 
 const perfectScoreThreshold = 0.75;
 const multipleMatchPenaltyMax = 0.5;
@@ -497,6 +498,11 @@ let scoreLocation = (locA: Location, locB: Location): any => {
             }
         }
         if (normalize(locA.city as string|string[]) && locB.city) {
+            if (Object.keys(communesDict).includes(normalize(locA.city as string) as string)) {
+              // score geo
+              const [latA, lonA] = communesDict[normalize(locA.city as string) as string]
+              score.geo = scoreGeo(latA, lonA, locB.latitude, locB.longitude)
+            }
             score.city = scoreCity(locA.city, locB.city as string|string[]);
             if ((score.code === 1) && (score.city < perfectScoreThreshold)) {
                 // insee code has priority over label
@@ -717,8 +723,8 @@ export class ScoreResult {
               code: request.birthLocationCode,
               departmentCode: request.birthDepartment,
               country: request.birthCountry,
-              latitude: request.birthGeoPoint.latitude,
-              longitude: request.birthGeoPoint.longitude
+              latitude: request.birthGeoPoint?.latitude,
+              longitude: request.birthGeoPoint?.longitude
           }, result.birth.location);
       } else {
           this.score = 0
@@ -739,8 +745,8 @@ export class ScoreResult {
                   code: request.deathLocationCode,
                   departmentCode: request.deathDepartment,
                   country: request.deathCountry,
-                  latitude: request.deathGeoPoint.latitude,
-                  longitude: request.deathGeoPoint.longitude
+                  latitude: request.deathGeoPoint?.latitude,
+                  longitude: request.deathGeoPoint?.longitude
               }, result.death.location);
           } else {
               this.score = 0
