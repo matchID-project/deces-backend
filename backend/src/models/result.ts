@@ -223,7 +223,7 @@ export const buildResult = (result: ResultRawES, requestInput: RequestInput): Re
   const composedResult: Result =  {
     request: filteredRequest,
     response: {
-      total: result.hits.total.value,
+      total: result.hits.total?.value,
       maxScoreES: result.hits.max_score,
       size: requestInput.size,
       page: requestInput.page,
