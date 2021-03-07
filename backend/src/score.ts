@@ -125,8 +125,10 @@ const applyRegex = (a: string|string[], reTable: any): string|string[] => {
         let b = normalize(a) as string;
         reTable.map((r:any) => b = b.replace(r[0], r[1]));
         return b;
-    } else {
+    } else if (Array.isArray(a)) {
         return a.map(c => applyRegex(c, reTable) as string);
+    } else {
+        return a
     }
 }
 
@@ -135,7 +137,7 @@ const tokenize = (sentence: string|string[], tokenizeArray?: boolean): string|st
         const s = sentence.split(/,\s*|\s+/);
         return s.length === 1 ? s[0] : s ;
     } else {
-        if (tokenizeArray) {
+        if (tokenizeArray && Array.isArray(sentence)) {
             return ((sentence).map(s => tokenize(s)) as any).flat();
         } else {
             // default dont tokenize if string[]
@@ -232,7 +234,7 @@ let scoreName = (nameA: Name, nameB: Name, sex: string): any => {
         if ( ((scoreFirst >= blindNameScore) || (scoreLast >= blindNameScore))
             && (Array.isArray(lastAtokens) || Array.isArray(lastBtokens)) && (Array.isArray(firstA) || Array.isArray(firstB)) ) {
             // backoff to fuzzball set ratio for complex names situations
-            const partA = filterStopNames(lastA.toString()+" "+firstA.toString());
+            const partA = filterStopNames(lastA?.toString()+" "+firstA.toString());
             const partB = filterStopNames(lastB.toString()+" "+firstB.toString());
             fuzzScore = round((tokenPlacePenalty * fuzzyRatio(partA as string, partB as string , fuzzballPartialTokenSortRatio) ** fuzzPenalty)
             );
