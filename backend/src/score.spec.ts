@@ -96,7 +96,7 @@ describe('score.ts - Score function', () => {
       }
     });
     expect(score).to.contain.all.keys(['score', 'birthLocation', 'name'])
-    expect(score.birthLocation).to.contain.all.keys(['score', 'geo', 'city'])
+    expect(score.birthLocation).to.contain.all.keys(['score', 'geo'])
 
   });
 
