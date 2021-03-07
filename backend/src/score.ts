@@ -507,7 +507,7 @@ let scoreLocation = (locA: Location, locB: Location): any => {
             if ((score.code === 1) && (score.city < perfectScoreThreshold)) {
                 // insee code has priority over label
                 score.city = round(blindLocationScore ** 0.5);
-            } else if (score.geo && (score.geo > perfectScoreThreshold)) {
+            } else if (score.geo && (score.geo > minLocationScore)) {
                 // if geo score is very good
                 delete score.city;
             }
@@ -538,7 +538,7 @@ let scoreLocation = (locA: Location, locB: Location): any => {
                 }
             }
         }
-        score.score = ((score.country && (score.country < 1)) || score.code || score.city || score.department)
+        score.score = ((score.country && (score.country < 1)) || score.code || score.city || score.department || score.geo)
             ? Math.max(minLocationScore, scoreReduce(score)) : blindLocationScore;
     } else {
         if (normalize(locA.country as string|string[])) {
