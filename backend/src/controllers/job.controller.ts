@@ -1,5 +1,5 @@
 import Queue from 'bee-queue';
-import { Controller, Get, Route, Tags, Path, Query  } from 'tsoa';
+import { Controller, Get, Route, Tags, Path, Query, Security } from 'tsoa';
 
 @Route('queue')
 export class JobsController extends Controller {
@@ -8,7 +8,7 @@ export class JobsController extends Controller {
   @Tags('Jobs')
   @Get('/{queueName}')
   public async jobName(
-    @Path() queueName: 'jobs'|'chunks' = 'jobs'
+    @Path() queueName?: 'jobs'|'chunks'
   ): Promise<any> {
     if (queueName !== undefined) {
       const jobQueue = new Queue(queueName,  {
@@ -30,6 +30,7 @@ export class JobsController extends Controller {
     }
   }
 
+  @Security("api_key")
   @Tags('Jobs')
   @Get('/{queueName}/{jobsType}')
   public async getJobs(
