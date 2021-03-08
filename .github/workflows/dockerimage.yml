@@ -36,18 +36,18 @@ jobs:
       - name: Build the dev docker image
         run: make backend-build-all
       - name: Make deploy local
-        run: make deploy-local
+        run: make deploy-dependencies backend-dev-clinic
         env:
           FILES_TO_PROCESS: deaths.txt.gz
           STORAGE_ACCESS_KEY: ${{ secrets.aws_access_key_id }}
           STORAGE_SECRET_KEY: ${{ secrets.aws_secret_access_key }}
       - name: ⚗ Run artillery tests
         run: |
-          make backend/tests/clients_test.csv
-          docker cp backend/tests/clients_test.csv deces-backend:/deces-backend/tests/clients_test.csv
-          make test-perf-v1
+          make test-perf-v1 backend-dev-clinic-stop
       - name: 📦 Upload results as job artifact
         uses: actions/upload-artifact@v2
         with:
           name: match-results
-          path: backend/tests/performance/reports/*.html
+          path: |
+            backend/tests/performance/reports/*.html
+            backend/dist/.clinic/*html
