@@ -292,7 +292,7 @@ backend-perf-clinic:
 			fi ;\
 			((timeout--)); sleep 1 ;\
 		done ;\
-	echo -e "backend started in $$((BACKEND_TIMEOUT - timeout)) seconds"; exit $$ret
+	echo -e "backend started in $$((BULK_TIMEOUT - timeout)) seconds"; exit $$ret
 
 backend-perf-clinic-stop:
 	@echo Stop backend development container
@@ -306,7 +306,7 @@ backend-perf-clinic-stop:
 			fi ;\
 			((timeout--)); sleep 1 ;\
 		done ;\
-	echo -e "backend stopped in $$((BACKEND_TIMEOUT - timeout)) seconds"; exit $$ret
+	echo -e "backend stopped in $$((BULK_TIMEOUT - timeout)) seconds"; exit $$ret
 
 # development mode
 backend-dev:
