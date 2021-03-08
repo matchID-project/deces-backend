@@ -43,7 +43,7 @@ jobs:
           STORAGE_SECRET_KEY: ${{ secrets.aws_secret_access_key }}
       - name: ⚗ Run artillery tests
         run: |
-          docker cp backend/tests/clients_test.csv `docker ps -l --format "{{.Names}}" --filter name=deces-backend_backend`:/deces-backend/tests/clients_test.csv
+          docker cp backend/tests/clients_test.csv `docker ps -l --format "{{.Names}}" --filter name=deces-backend`:/deces-backend/tests/clients_test.csv
           make test-perf-v1 backend-perf-clinic-stop
       - name: 📦 Upload results as job artifact
         uses: actions/upload-artifact@v2
