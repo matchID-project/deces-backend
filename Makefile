@@ -279,17 +279,27 @@ test-perf-v1:
 	sed -i -E "s/;/,/g"  backend/tests/clients_test.csv
 	make -C ${APP_PATH}/${GIT_TOOLS} test-api-generic PERF_SCENARIO=${PERF_SCENARIO_V1} PERF_TEST_ENV=api-perf PERF_REPORTS=${PERF_REPORTS} DC_NETWORK=${DC_NETWORK} PERF_NAMES=${PERF_NAMES};
 
-backend-dev-clinic:
+backend-perf-clinic:
 	@echo Start API in clinic mode
-	@export EXEC_ENV=development; export BACKEND_LOG_LEVEL=debug; \
-		${DC_BACKEND} -f ${DC_FILE}-dev-backend.yml run -d --rm backend /bin/bash -c "npm install clinic && ./node_modules/.bin/clinic doctor --no-insight -- node dist/index.js && cp -r /${APP}/.clinic /${APP}/dist"
+	@export EXEC_ENV=production; export BACKEND_LOG_LEVEL=debug; \
+		${DC_BACKEND} run -v ${BACKEND}/clinic:/${APP}/clinic/ -d --rm backend /bin/bash -c "npm install clinic && ./node_modules/.bin/clinic doctor --no-insight -- node dist/index.js && mkdir -p clinic && cp -r /${APP}/.clinic/* /${APP}/clinic"
+	@timeout=${BULK_TIMEOUT} ; ret=1 ;\
+		until [ "$$timeout" -le 0 -o "$$ret" -eq "0"  ] ; do\
+			(docker exec -i ${USE_TTY} `docker ps -l --format "{{.Names}}" --filter name=deces-backend_backend` curl -s --fail -X GET http://localhost:${BACKEND_PORT}/deces/api/v1/version > /dev/null) ;\
+			ret=$$? ;\
+			if [ "$$ret" -ne "0" ] ; then\
+				echo -e "try still $$timeout seconds to start backend before timeout" ;\
+			fi ;\
+			((timeout--)); sleep 1 ;\
+		done ;\
+	echo -e "backend started in $$((BACKEND_TIMEOUT - timeout)) seconds"; exit $$ret
 
-backend-dev-clinic-stop:
+backend-perf-clinic-stop:
 	@echo Stop backend development container
 	@docker exec `docker ps -l --format "{{.Names}}" --filter name=deces-backend_backend` /bin/bash -c "kill -INT \`pidof node\`"
-	@timeout=${BACKEND_TIMEOUT} ; ret=1 ;\
+	@timeout=${BULK_TIMEOUT} ; ret=1 ;\
 		until [ "$$timeout" -le 0 -o "$$ret" -eq "0"  ] ; do\
-			(test -f backend/dist/.clinic/*html > /dev/null) ;\
+			(test -f backend/clinic/*html > /dev/null) ;\
 			ret=$$? ;\
 			if [ "$$ret" -ne "0" ] ; then\
 				echo -e "try still $$timeout seconds to stop backend before timeout" ;\
