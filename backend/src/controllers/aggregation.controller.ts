@@ -2,7 +2,7 @@ import { Controller, Get, Post, Body, Route, Query, Tags, Header, Request } from
 import express from 'express';
 import { runRequest } from '../runRequest';
 import { buildRequest } from '../buildRequest';
-import { RequestInput, RequestBody } from '../models/requestInput';
+import { RequestInput, RequestBody, AggsInputParams } from '../models/requestInput';
 import { ResultAgg } from '../models/result';
 import { StrAndNumber } from '../models/entities';
 
@@ -55,7 +55,7 @@ export class AggregationController extends Controller {
     @Query() deathCountry?: string,
     @Query() deathAge?: StrAndNumber,
     @Query() fuzzy?: 'true'|'false',
-    @Query() aggs?: string,
+    @Query() aggs?: AggsInputParams[],
     @Query() aggsSize?: number,
     @Header('Accept') accept?: string
   ): Promise<ResultAgg> {
