@@ -591,7 +591,7 @@ describe('server.ts - Express application', () => {
   })
 
   const harryRequest = (fieldName: string) => {
-    return {deathDate: 2020, firstName: 'Harry', aggs: `["${fieldName}"]`}
+    return {deathDate: 2020, firstName: 'Harry', aggs: fieldName}
   }
 
   const fixtureAggregations = [
@@ -618,7 +618,7 @@ describe('server.ts - Express application', () => {
             expect(rowCount).to.eql(total);
           });
       }},
-    {params: {deathDate: 2020, sex: 'M', aggs: `["birthDate"]`}, accept: 'text/csv', fieldName: 'birthDate',
+    {params: {deathDate: 2020, sex: 'M', aggs: "birthDate"}, accept: 'text/csv', fieldName: 'birthDate',
       testFunc: (res: any) => {
         expect(res).to.have.status(200);
         parseString(res.text, { headers: true, delimiter: ','})
@@ -632,7 +632,7 @@ describe('server.ts - Express application', () => {
           });
       }
     },
-    {params: {deathDate: 2020, sex: 'M', aggs: `["birthDate"]`}, accept: 'application/json', fieldName: 'birthDate',
+    {params: {deathDate: 2020, sex: 'M', aggs: "birthDate"}, accept: 'application/json', fieldName: 'birthDate',
       testFunc: (res: any) => {
         expect(res).to.have.status(200);
         expect(res.body.response.aggregations.length).to.eql(res.body.response.cardinality.birthDate);
