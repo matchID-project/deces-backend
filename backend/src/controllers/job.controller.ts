@@ -30,7 +30,7 @@ export class JobsController extends Controller {
     }
   }
 
-  @Security("api_key")
+  @Security("jwt", ["admin"])
   @Tags('Jobs')
   @Get('/{queueName}/{jobsType}')
   public async getJobs(
