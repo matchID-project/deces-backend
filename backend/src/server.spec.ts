@@ -5,6 +5,7 @@ import { Person } from './models/entities';
 import { promisify } from 'util';
 import { parseString } from '@fast-csv/parse';
 import { writeToBuffer } from '@fast-csv/format';
+import * as jwt from "jsonwebtoken";
 import fs from "fs";
 import chai from 'chai';
 import chaiHttp = require('chai-http');
@@ -38,6 +39,25 @@ describe('server.ts - Express application', () => {
     expect(res.body.response.persons[0].id).to.eql('VhfumwT3QnUq');
     expect(res.body.response.persons[0].links.wikidata).to.include('Q3102639');
   });
+
+  describe('/search GET', () => {
+    it('/queue/jobs query token', async () => {
+      const token = jwt.sign({ scopes: 'admin' }, process.env.BACKEND_TOKEN_KEY)
+      const res = await chai.request(app)
+        .get(apiPath(`queue/jobs/failed?token=${token}`))
+      expect(res).to.have.status(200);
+      expect(res.body.jobs.length).to.above(0);
+    });
+
+    it('/queue/jobs header token ', async () => {
+      const token = jwt.sign({ scopes: 'admin' }, process.env.BACKEND_TOKEN_KEY)
+      const res = await chai.request(app)
+        .get(apiPath(`queue/jobs/failed`))
+        .set('x-access-token', token)
+      expect(res).to.have.status(200);
+      expect(res.body.jobs.length).to.above(0);
+    });
+  })
 
   const testFixtures = [
     {params: {deathDate: 2020, firstName: 'Harry'}, testFunc: (res: any) => {
