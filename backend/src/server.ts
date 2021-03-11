@@ -4,6 +4,7 @@ import express, {
   NextFunction,
 } from "express";
 import { ValidateError } from 'tsoa';
+import { JsonWebTokenError } from 'jsonwebtoken';
 import morgan from 'morgan';
 import bodyParser from 'body-parser';
 import { RegisterRoutes } from './routes/routes';
@@ -97,12 +98,21 @@ app.use((
       details: err?.fields,
     });
   }
-  if (err instanceof Error && res.statusCode !== 200) {
+  if (err instanceof JsonWebTokenError) {
     log({
-      error: "Internal Server Error"
+        error: "Missing token",
+        path: req.path,
+    });
+    return res.status(422).json({
+      message: "Missing authentication token",
+    });
+  }
+  if (err instanceof Error) {
+    log({
+      error: err.toString()
     });
     return res.status(500).json({
-      message: "Internal Server Error",
+      message: err.toString(),
     });
   }
   next();
