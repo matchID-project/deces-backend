@@ -3,11 +3,11 @@ import { Person, Location, Name, RequestField, ScoreParams } from './models/enti
 import { distance } from 'fastest-levenshtein';
 import damlev from 'damlev';
 import fuzz from 'fuzzball';
-import moment from 'moment';
 import { dateTransformMask, isDateRange, isDateLimit, dateTransform } from './masks';
 import soundex from '@jollie/soundex-fr';
 import loggerStream from './logger';
 import timer from './timer';
+import { communesDict } from './communes';
 
 const perfectScoreThreshold = 0.75;
 const multipleMatchPenaltyMax = 0.5;
@@ -125,8 +125,10 @@ const applyRegex = (a: string|string[], reTable: any): string|string[] => {
         let b = normalize(a) as string;
         reTable.map((r:any) => b = b.replace(r[0], r[1]));
         return b;
-    } else {
+    } else if (Array.isArray(a)) {
         return a.map(c => applyRegex(c, reTable) as string);
+    } else {
+        return a
     }
 }
 
@@ -135,7 +137,7 @@ const tokenize = (sentence: string|string[], tokenizeArray?: boolean): string|st
         const s = sentence.split(/,\s*|\s+/);
         return s.length === 1 ? s[0] : s ;
     } else {
-        if (tokenizeArray) {
+        if (tokenizeArray && Array.isArray(sentence)) {
             return ((sentence).map(s => tokenize(s)) as any).flat();
         } else {
             // default dont tokenize if string[]
@@ -232,7 +234,7 @@ let scoreName = (nameA: Name, nameB: Name, sex: string): any => {
         if ( ((scoreFirst >= blindNameScore) || (scoreLast >= blindNameScore))
             && (Array.isArray(lastAtokens) || Array.isArray(lastBtokens)) && (Array.isArray(firstA) || Array.isArray(firstB)) ) {
             // backoff to fuzzball set ratio for complex names situations
-            const partA = filterStopNames(lastA.toString()+" "+firstA.toString());
+            const partA = filterStopNames(lastA?.toString()+" "+firstA.toString());
             const partB = filterStopNames(lastB.toString()+" "+firstB.toString());
             fuzzScore = round((tokenPlacePenalty * fuzzyRatio(partA as string, partB as string , fuzzballPartialTokenSortRatio) ** fuzzPenalty)
             );
@@ -486,6 +488,9 @@ let scoreLocation = (locA: Location, locB: Location): any => {
     if (locA.code && locB.code) {
         score.code = scoreLocationCode(locA.code, locB.codeHistory as string|string[]);
     }
+    if (locA.latitude && locA.longitude) {
+      score.geo = scoreGeo(locA.latitude, locA.longitude, locB.latitude, locB.longitude)
+    }
     if (BisFrench) {
         if (normalize(locA.country as string|string[])) {
             score.country = scoreCountry(locA.country, tokenize(locB.country as string));
@@ -495,10 +500,18 @@ let scoreLocation = (locA: Location, locB: Location): any => {
             }
         }
         if (normalize(locA.city as string|string[]) && locB.city) {
+            if (normalize(locA.city as string) as string in communesDict) {
+              // score geo
+              const [latA, lonA] = communesDict[normalize(locA.city as string) as string]
+              score.geo = scoreGeo(latA, lonA, locB.latitude, locB.longitude)
+            }
             score.city = scoreCity(locA.city, locB.city as string|string[]);
             if ((score.code === 1) && (score.city < perfectScoreThreshold)) {
                 // insee code has priority over label
                 score.city = round(blindLocationScore ** 0.5);
+            } else if (score.geo && (score.geo > minLocationScore)) {
+                // if geo score is very good
+                delete score.city;
             }
         }
         if (normalize(locA.departmentCode as string|string[]) && locB.departmentCode) {
@@ -527,7 +540,7 @@ let scoreLocation = (locA: Location, locB: Location): any => {
                 }
             }
         }
-        score.score = ((score.country && (score.country < 1)) || score.code || score.city || score.department)
+        score.score = ((score.country && (score.country < 1)) || score.code || score.city || score.department || score.geo)
             ? Math.max(minLocationScore, scoreReduce(score)) : blindLocationScore;
     } else {
         if (normalize(locA.country as string|string[])) {
@@ -636,8 +649,8 @@ let scoreSex = (sexA: any, sexB: string): number => {
 }
 
 const scoreGeo = (latA: number, lonA: number, latB: number, lonB: number): number => {
-    return 0.01*Math.round(
-        Math.max(0, 100/(100 + geoDistance(latA, lonA, latB, lonB)))
+    return round(
+        Math.max(0, 20/(20 + geoDistance(latA, lonA, latB, lonB)))
     )
 };
 
@@ -712,8 +725,8 @@ export class ScoreResult {
               code: request.birthLocationCode,
               departmentCode: request.birthDepartment,
               country: request.birthCountry,
-              latitude: request.birthLatitude,
-              longitude: request.birthLongitude
+              latitude: request.birthGeoPoint?.latitude,
+              longitude: request.birthGeoPoint?.longitude
           }, result.birth.location);
       } else {
           this.score = 0
@@ -734,8 +747,8 @@ export class ScoreResult {
                   code: request.deathLocationCode,
                   departmentCode: request.deathDepartment,
                   country: request.deathCountry,
-                  latitude: request.deathLatitude,
-                  longitude: request.deathLongitude
+                  latitude: request.deathGeoPoint?.latitude,
+                  longitude: request.deathGeoPoint?.longitude
               }, result.death.location);
           } else {
               this.score = 0

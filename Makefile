@@ -68,6 +68,7 @@ export DATASET=fichier-des-personnes-decedees
 export STORAGE_BUCKET=${DATASET}
 export AWS=${APP_PATH}/aws
 
+export COMMUNES_JSON=${BACKEND}/data/communes.json
 
 export DATAGOUV_CATALOG_URL = https://www.data.gouv.fr/api/1/datasets/${DATASET}/
 export DATAGOUV_RESOURCES_URL = https://static.data.gouv.fr/resources/${DATASET}
@@ -235,7 +236,7 @@ docker-check:
 #############
 
 # build
-backend-dist: ${WIKIDATA_LINKS}
+backend-dist: ${WIKIDATA_LINKS} ${COMMUNES_JSON} 
 	export EXEC_ENV=development; ${DC_BACKEND} -f $(DC_FILE)-dev-backend.yml run -T --no-deps --rm backend npm run build  && tar czvf ${BACKEND}/${FILE_BACKEND_DIST_APP_VERSION} -C ${BACKEND} dist
 
 backend-build-image: ${BACKEND}/${FILE_BACKEND_DIST_APP_VERSION}
@@ -321,7 +322,7 @@ backend-dev-test:
 	@echo Testing API parameters
 	@docker exec -i ${USE_TTY} ${APP}-development bash /deces-backend/tests/test_query_params.sh
 
-dev: network backend-dev-stop ${WIKIDATA_LINKS} backend-dev
+dev: network backend-dev-stop ${WIKIDATA_LINKS} ${COMMUNES_JSON} backend-dev
 
 # download wikidata test data
 ${WIKIDATA_SRC}:
@@ -359,6 +360,14 @@ ${WIKIDATA_LINKS}:
 wikidata-src: ${WIKIDATA_SRC}
 
 wikidata-links: ${WIKIDATA_LINKS}
+
+${COMMUNES_JSON}:
+	@echo "downloading communes geo data";\
+	curl -s -l 'http://etalab-datasets.geo.data.gouv.fr/contours-administratifs/2019/geojson/communes-1000m.geojson.gz' -O
+	gzip -d communes-1000m.geojson.gz
+	mv communes-1000m.geojson ${BACKEND}/data/communes.json
+
+communes: ${COMMUNES_JSON}
 
 ###########
 #  Start  #

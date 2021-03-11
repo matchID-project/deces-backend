@@ -588,6 +588,40 @@ describe('server.ts - Express application', () => {
       expect(res.body).to.have.lengthOf(inputArray.length - skipLines);
     }).timeout(5000);
 
+
+    it('birthCity in communes dictionary', async () => {
+      let res;
+      const inputArray = [
+        ['Prenom', 'Nom', 'Commune'],
+        ['jean', 'martin', 'La Londe'],
+      ]
+      const buf = await writeToBuffer(inputArray)
+      res = await chai.request(app)
+        .post(apiPath('search/csv'))
+        .field('sep', ',')
+        .field('firstName', 'Prenom')
+        .field('lastName', 'Nom')
+        .field('birthCity', 'Commune')
+        .attach('csv', buf, 'file.csv')
+      const { body : { id: jobId } }: { body: { id: string} } = res
+      res = await chai.request(app)
+        .get(apiPath(`search/csv/${jobId}`))
+      while (res.body.status === 'created' || res.body.status === 'waiting' || res.body.status === 'active') {
+        res = await chai.request(app)
+          .get(apiPath(`search/csv/${jobId}`))
+      }
+      expect(res).to.have.status(200);
+      parseString(res.text, { headers: true})
+        .on('data', (row: any) => {
+          expect(row).to.have.property('birth.city', 'Elbeuf');
+        })
+        .on('end', (rowCount: number) => {
+          expect(rowCount).to.eql(inputArray.length - 1);
+        });
+    }).timeout(5000);
+
+
+
   })
 
   const harryRequest = (fieldName: string) => {
