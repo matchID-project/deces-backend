@@ -235,13 +235,6 @@ export class RequestInput {
     this.sort = params.sort ? sortWithQuery(params.sort) : {value: [{score: 'desc'}]};
     this.aggs = aggsWithQuery(params.aggs);
     this.aggsSize = params.aggsSize !== undefined ? params.aggsSize : 250;
-    if ((params.birthCity && Object.keys(communesDict).includes(params.birthCity.toLowerCase())) || (params.deathCity && Object.keys(communesDict).includes(params.deathCity.toLowerCase()))) {
-      params.block = {
-        scope: ['name', 'birthDate'],
-        minimum_match: 1,
-        should: true
-      }
-    }
     this.block = params.block;
     this.id = params.id;
     this.dateFormat = params.dateFormat;
