@@ -21,7 +21,6 @@ import {
   fuzzyWithQuery,
   sourceWithQuery
 } from '../fieldsWithQueries';
-import { communesDict } from '../communes';
 
 import { GeoPoint, RequestField, Sort } from './entities';
 
