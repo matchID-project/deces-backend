@@ -68,8 +68,9 @@ describe('search.controller.ts - POST request', () => {
     expect(result.response.persons.map(x => x.birth.location.city)).to.include('Noyon')
   });
 
-  it('Query by communes using geocoding', async () => {
-    const result = await controller.searchpost({firstName: 'jean', lastName: 'martin', birthCity: 'La Londe'}, {} as express.Request)
-    expect(result.response.persons[0].birth.location.city).to.include('Elbeuf')
-  });
+  // not active in single search
+  // it('Query by communes using geocoding', async () => {
+  //   const result = await controller.searchpost({firstName: 'jean', lastName: 'martin', birthCity: 'La Londe'}, {} as express.Request)
+  //   expect(result.response.persons[0].birth.location.city).to.include('Elbeuf')
+  // });
 });

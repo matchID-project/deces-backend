@@ -500,7 +500,7 @@ let scoreLocation = (locA: Location, locB: Location): any => {
             }
         }
         if (normalize(locA.city as string|string[]) && locB.city) {
-            if (Object.keys(communesDict).includes(normalize(locA.city as string) as string)) {
+            if (normalize(locA.city as string) as string in communesDict) {
               // score geo
               const [latA, lonA] = communesDict[normalize(locA.city as string) as string]
               score.geo = scoreGeo(latA, lonA, locB.latitude, locB.longitude)
