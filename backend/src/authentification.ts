@@ -14,7 +14,7 @@ export function expressAuthentication(
 
     return new Promise((resolve, reject) => {
       if (!token) {
-        reject(new Error("No token provided"));
+        reject(new jwt.JsonWebTokenError("No token provided"));
       }
       jwt.verify(token, process.env.BACKEND_TOKEN_KEY, (err: any, decoded: any) => {
         if (err) {

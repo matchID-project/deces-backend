@@ -100,11 +100,11 @@ app.use((
   }
   if (err instanceof JsonWebTokenError) {
     log({
-        error: "Missing token",
+        error: err.name,
         path: req.path,
     });
     return res.status(422).json({
-      message: "Missing authentication token",
+      message: err.message
     });
   }
   if (err instanceof Error) {
