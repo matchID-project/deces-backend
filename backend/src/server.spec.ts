@@ -42,9 +42,10 @@ describe('server.ts - Express application', () => {
 
   describe('/queue', () => {
     it('/queue/jobs query token', async () => {
-      const token = jwt.sign({ scopes: 'admin' }, process.env.BACKEND_TOKEN_KEY)
+      const token = await chai.request(app)
+        .get(apiPath(`auth?password=${process.env.BACKEND_TOKEN_PASSWORD}`))
       const res = await chai.request(app)
-        .get(apiPath(`queue/jobs/delayed?token=${token}`))
+        .get(apiPath(`queue/jobs/delayed?token=${token.body.access_token as string}`))
       expect(res).to.have.status(200);
       expect(res.body.jobs.length).to.eql(0);
     });
@@ -64,12 +65,37 @@ describe('server.ts - Express application', () => {
     });
 
     it('/queue/jobs header token ', async () => {
-      const token = jwt.sign({ scopes: 'admin' }, process.env.BACKEND_TOKEN_KEY)
+      const token = await chai.request(app)
+        .get(apiPath(`auth?password=${process.env.BACKEND_TOKEN_PASSWORD}`))
       const res = await chai.request(app)
-        .get(apiPath(`queue/jobs/delayed`))
-        .set('x-access-token', token)
+        .get(apiPath('queue/jobs/delayed'))
+        .set('x-access-token', token.body.access_token)
       expect(res).to.have.status(200);
       expect(res.body.jobs.length).to.eql(0);
+    });
+  })
+
+  describe('/auth', () => {
+    it('get password authentification', async () => {
+      const token = await chai.request(app)
+        .get(apiPath(`auth?password=${process.env.BACKEND_TOKEN_PASSWORD}`))
+      expect(token).to.have.status(200);
+      expect(token.body).to.include.all.keys('access_token');
+    });
+
+    it('post password authentification', async () => {
+      const token = await chai.request(app)
+        .post(apiPath(`auth`))
+        .send({password: process.env.BACKEND_TOKEN_PASSWORD})
+      expect(token).to.have.status(200);
+      expect(token.body).to.include.all.keys('access_token');
+    });
+
+    it('good password', async () => {
+      const res = await chai.request(app)
+        .get(apiPath(`auth?password=wrong_password`))
+      expect(res).to.have.status(400);
+      expect(res.body.msg).to.include('Wrong password');
     });
   })
 

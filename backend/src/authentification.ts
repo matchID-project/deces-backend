@@ -23,7 +23,7 @@ export function expressAuthentication(
           // Check if JWT contains all required scopes
           for (const scope of scopes) {
             if (!decoded.scopes.includes(scope)) {
-              reject(new Error("JWT does not contain required scope."));
+              reject(new jwt.JsonWebTokenError("JWT does not contain required scope."));
             }
           }
           resolve(decoded);
