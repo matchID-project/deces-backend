@@ -53,6 +53,15 @@ export class JobsController extends Controller {
       }
       const jobs = await jobQueue.getJobs(jobsType, page)
       return { jobs };
+    } else if (jobsType === 'stalled') {
+      const checkStalledJobs = new Promise((resolve, reject) => {
+        jobQueue.checkStalledJobs((err, numStalled) => {
+          if (err) reject(err.toString())
+          resolve(numStalled)
+        })
+      });
+      const stalled = await checkStalledJobs
+      return { jobs: stalled}
     } else {
       const jobs = await jobQueue.getJob(jobsType)
       if (jobs) {

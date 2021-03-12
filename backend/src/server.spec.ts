@@ -40,18 +40,18 @@ describe('server.ts - Express application', () => {
     expect(res.body.response.persons[0].links.wikidata).to.include('Q3102639');
   });
 
-  describe('/search GET', () => {
+  describe('/queue', () => {
     it('/queue/jobs query token', async () => {
       const token = jwt.sign({ scopes: 'admin' }, process.env.BACKEND_TOKEN_KEY)
       const res = await chai.request(app)
-        .get(apiPath(`queue/jobs/failed?token=${token}`))
+        .get(apiPath(`queue/jobs/delayed?token=${token}`))
       expect(res).to.have.status(200);
-      expect(res.body.jobs.length).to.above(0);
+      expect(res.body.jobs.length).to.eql(0);
     });
 
     it('/queue/jobs query token false', async () => {
       const res = await chai.request(app)
-        .get(apiPath(`queue/jobs/failed?token=password`))
+        .get(apiPath(`queue/jobs/stalled?token=password`))
       expect(res).to.have.status(422);
       expect(res.body.message).to.eql("jwt malformed");
     });
@@ -66,10 +66,10 @@ describe('server.ts - Express application', () => {
     it('/queue/jobs header token ', async () => {
       const token = jwt.sign({ scopes: 'admin' }, process.env.BACKEND_TOKEN_KEY)
       const res = await chai.request(app)
-        .get(apiPath(`queue/jobs/failed`))
+        .get(apiPath(`queue/jobs/delayed`))
         .set('x-access-token', token)
       expect(res).to.have.status(200);
-      expect(res.body.jobs.length).to.above(0);
+      expect(res.body.jobs.length).to.eql(0);
     });
   })
 
@@ -752,6 +752,5 @@ describe('server.ts - Express application', () => {
       });
     });
   })
-
 
 });

@@ -11,11 +11,11 @@ import { generateRoutes, generateSpec, ExtendedRoutesConfig, ExtendedSpecConfig 
     noImplicitAdditionalProperties: "silently-remove-extras",
     controllerPathGlobs: ['./src/controllers/**/*controller.ts'],
     securityDefinitions: {
-      api_key: {
+      jwt: {
         type: "apiKey",
-        name: "access_token",
-        in: "query"
-      }
+        name: "x-access-token",
+        in: "header"
+      },
     }
   };
 
