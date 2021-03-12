@@ -49,6 +49,20 @@ describe('server.ts - Express application', () => {
       expect(res.body.jobs.length).to.above(0);
     });
 
+    it('/queue/jobs query token false', async () => {
+      const res = await chai.request(app)
+        .get(apiPath(`queue/jobs/failed?token=password`))
+      expect(res).to.have.status(422);
+      expect(res.body.message).to.eql("jwt malformed");
+    });
+
+    it('/queue/jobs query missing token', async () => {
+      const res = await chai.request(app)
+        .get(apiPath(`queue/jobs/failed`))
+      expect(res).to.have.status(422);
+      expect(res.body.message).to.eql("No token provided");
+    });
+
     it('/queue/jobs header token ', async () => {
       const token = jwt.sign({ scopes: 'admin' }, process.env.BACKEND_TOKEN_KEY)
       const res = await chai.request(app)
