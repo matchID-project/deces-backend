@@ -12,9 +12,12 @@ import { generateRoutes, generateSpec, ExtendedRoutesConfig, ExtendedSpecConfig 
     controllerPathGlobs: ['./src/controllers/**/*controller.ts'],
     securityDefinitions: {
       jwt: {
-        type: "apiKey",
-        name: "x-access-token",
-        in: "header"
+        type: "oauth2",
+        flow: "password",
+        tokenUrl: "/deces/api/v1/auth",
+        scopes: {
+          admin: "administration access"
+        }
       },
     }
   };

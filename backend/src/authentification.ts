@@ -7,14 +7,17 @@ export function expressAuthentication(
   scopes?: string[]
 ): Promise<any> {
   if (securityName === "jwt") {
-    const token =
-      request.body.token ||
-      request.query.token ||
-      request.headers["x-access-token"];
+    const authHeader = request.headers.Authorization || request.headers.authorization;
 
     return new Promise((resolve, reject) => {
-      if (!token) {
+      if (!authHeader) {
         reject(new jwt.JsonWebTokenError("No token provided"));
+      }
+      let token
+      if (Array.isArray(authHeader)) {
+        token = authHeader[0].split(' ')[1];
+      } else {
+        token = authHeader.split(' ')[1];
       }
       jwt.verify(token, process.env.BACKEND_TOKEN_KEY, (err: any, decoded: any) => {
         if (err) {

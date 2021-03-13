@@ -41,18 +41,20 @@ describe('server.ts - Express application', () => {
   });
 
   describe('/queue', () => {
-    it('/queue/jobs query token', async () => {
+    it('/queue/jobs with good token', async () => {
       const token = await chai.request(app)
         .get(apiPath(`auth?password=${process.env.BACKEND_TOKEN_PASSWORD}`))
       const res = await chai.request(app)
-        .get(apiPath(`queue/jobs/delayed?token=${token.body.access_token as string}`))
+        .get(apiPath('queue/jobs/delayed'))
+        .set('Authorization', `Bearer ${token.body.access_token as string}`)
       expect(res).to.have.status(200);
       expect(res.body.jobs.length).to.eql(0);
     });
 
-    it('/queue/jobs query token false', async () => {
+    it('/queue/jobs with wrong token', async () => {
       const res = await chai.request(app)
-        .get(apiPath(`queue/jobs/stalled?token=password`))
+        .get(apiPath(`queue/jobs/stalled`))
+        .set('Authorization', 'wrong password')
       expect(res).to.have.status(422);
       expect(res.body.message).to.eql("jwt malformed");
     });
@@ -62,16 +64,6 @@ describe('server.ts - Express application', () => {
         .get(apiPath(`queue/jobs/failed`))
       expect(res).to.have.status(422);
       expect(res.body.message).to.eql("No token provided");
-    });
-
-    it('/queue/jobs header token ', async () => {
-      const token = await chai.request(app)
-        .get(apiPath(`auth?password=${process.env.BACKEND_TOKEN_PASSWORD}`))
-      const res = await chai.request(app)
-        .get(apiPath('queue/jobs/delayed'))
-        .set('x-access-token', token.body.access_token)
-      expect(res).to.have.status(200);
-      expect(res.body.jobs.length).to.eql(0);
     });
   })
 
