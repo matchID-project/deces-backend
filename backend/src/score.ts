@@ -46,7 +46,7 @@ const boroughLocationPenalty = 0.9;
 const minCodeScore = 0.7;
 const minDepScore = 0.7;
 const minNotFrCityScore = 0.65;
-const minNotFrCountryScore = 0.4;
+const minCityCountrySwapScore = 0.6;
 const minNotFrScore = 0.4;
 const blindLocationScore = 0.75;
 
@@ -530,7 +530,7 @@ let scoreLocation = (locA: Location, locB: Location): any => {
                     }
                 } else {
                     if (locA.departmentCode === '99') {
-                        if (score.country < perfectScoreThreshold) {
+                        if (score.country < blindLocationScore) {
                             score.country = minLocationScore;
                         }
                         else {
@@ -548,8 +548,8 @@ let scoreLocation = (locA: Location, locB: Location): any => {
         } else {
             if (normalize(locA.city as string|string[])) {
                 const sCountry = scoreCountry(locA.city, tokenize(locB.country as string));
-                if (sCountry > minNotFrCountryScore) {
-                    score.country = sCountry;
+                if ((sCountry > minCityCountrySwapScore) && (score.country ? (sCountry > score.country) : true)) {
+                    score.country = sCountry ** 0.3;
                 }
             } else {
                 if (!score.code) {
