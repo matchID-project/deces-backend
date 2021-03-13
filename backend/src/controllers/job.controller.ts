@@ -1,10 +1,20 @@
 import Queue from 'bee-queue';
 import { Controller, Get, Route, Tags, Path, Query, Security } from 'tsoa';
 
+/**
+ * @swagger
+ * tags:
+ *   name: Jobs
+ *   description: Verifier le status de jobs
+ */
 @Route('queue')
 export class JobsController extends Controller {
 
-
+  /**
+   * Number of jobs
+   * @summary Vérifier le nombre de jobs
+   * @param queueName Name of queue
+   */
   @Tags('Jobs')
   @Get('/{queueName}')
   public async jobName(
@@ -30,6 +40,15 @@ export class JobsController extends Controller {
     }
   }
 
+  /**
+   * Jobs details
+   * @summary Détails du jobs par type et par id
+   * @param queueName Name of queue
+   * @param jobsType Jobs type or Id
+   * @param size Number of returned jobs in list
+   * @param start Jobs list page start
+   * @param end Jobs list page end
+   */
   @Security("jwt", ["admin"])
   @Tags('Jobs')
   @Get('/{queueName}/{jobsType}')
