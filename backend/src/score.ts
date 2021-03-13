@@ -65,7 +65,7 @@ const normalize = (token: string|string[]): string|string[] => {
         return '';
     }
     if (typeof(token) === 'string') {
-        return token.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').replace(/\s+/g,' ').replace(/^\s*$/,'');
+        return token.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').replace(/\s+/g,' ').replace(/^\s*/,'').replace(/\s*$/,'');
     } else {
         return token.map(t => normalize(t) as string);
     }
