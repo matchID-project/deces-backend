@@ -431,7 +431,11 @@ const scoreDepCode = (depCodeA: number|string|string[]|RequestField, depCodeB: n
     if (normDepCodeA === normDepCodeB) {
         return 1;
     } else {
-        if ((['78','91','92','93','94','95'].indexOf(normDepCodeB as string)>=0) && (['78','91','92','93','94','95'].indexOf(normDepCodeA as string)>=0)) {
+        if (
+            ((['78','75'].indexOf(normDepCodeB as string)>=0) && (['91','92','93','94','95'].indexOf(normDepCodeA as string)>=0))
+            ||
+            ((['78','75'].indexOf(normDepCodeA as string)>=0) && (['91','92','93','94','95'].indexOf(normDepCodeB as string)>=0))
+        ) {
             if (sameCity === true) {
                 return 1;
             } else {
