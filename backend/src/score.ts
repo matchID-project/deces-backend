@@ -458,13 +458,13 @@ let scoreLocation = (locA: Location, locB: Location): any => {
             if ((score.code === 1) && (score.city < perfectScoreThreshold)) {
                 // insee code has priority over label
                 score.city = round(blindLocationScore ** 0.5);
-            } else if ((score.city < perfectScoreThreshold) && normalize(locA.city as string) as string in communesDict) {
-                const { lat: latA, lon: lonA, code: codeA } = communesDict[normalize(locA.city as string) as string]
+            } else if ((score.city < perfectScoreThreshold) && cityNorm(locA.city as string) as string in communesDict) {
+                const { lat: latA, lon: lonA, code: codeA } = communesDict[cityNorm(locA.city as string) as string]
               score.code = scoreLocationCode(codeA, locB.codeHistory as string|string[]);
               if (score.code >= perfectScoreThreshold) {
                 score.city = 1.0
               } else {
-                score.city = round(Math.max(scoreGeo(latA, lonA, locB.latitude, locB.longitude),score.city))
+                score.city = Math.max(scoreGeo(latA, lonA, locB.latitude, locB.longitude),score.city)
               }
             }
         }
