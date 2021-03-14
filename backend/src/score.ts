@@ -389,7 +389,7 @@ const scoreLocationCode = (codeA: string|string[]|RequestField, codeB: string|st
             if (codeA === codeB) { return 1 }
             else {
                 const depA = codeA.substring(0,2);
-                const depB = codeA.substring(0,2);
+                const depB = codeB.substring(0,2);
                 if ((["91","92","93","94","99"].indexOf(depB) >= 0) && (codeB.substring(2,5) === "352")) {
                     return (["91","92","93","94"].indexOf(depA) >= 0 || (codeA.substring(2,5) === "352")) ? round(blindLocationScore ** 0.5) : minCodeScore;
                 }
