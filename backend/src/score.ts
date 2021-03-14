@@ -519,27 +519,25 @@ let scoreLocation = (locA: Location, locB: Location): any => {
             }
         }
         if (normalize(locA.departmentCode as string|string[]) && locB.departmentCode) {
-            if (BisFrench) {
-                const sDep = scoreDepCode(locA.departmentCode, locB.departmentCode,
-                    (score.city && (score.city >= perfectScoreThreshold))
-                    ||
-                    (score.code && (score.code >= perfectScoreThreshold))
-                    );
-                if (sDep) {
-                    // good insee code has priority over wrong dep
-                    score.department = sDep;
-                    if ((score.code >= perfectScoreThreshold) && (score.department < perfectScoreThreshold)) {
-                        // insee code has priority over label
-                        score.department = blindLocationScore ** 0.5;
+            const sDep = scoreDepCode(locA.departmentCode, locB.departmentCode,
+                (score.city && (score.city >= perfectScoreThreshold))
+                ||
+                (score.code && (score.code >= perfectScoreThreshold))
+                );
+            if (sDep) {
+                // good insee code has priority over wrong dep
+                score.department = sDep;
+                if ((score.code >= perfectScoreThreshold) && (score.department < perfectScoreThreshold)) {
+                    // insee code has priority over label
+                    score.department = blindLocationScore ** 0.5;
+                }
+            } else {
+                if (locA.departmentCode === '99') {
+                    if (score.country < blindLocationScore) {
+                        score.country = minLocationScore;
                     }
-                } else {
-                    if (locA.departmentCode === '99') {
-                        if (score.country < blindLocationScore) {
-                            score.country = minLocationScore;
-                        }
-                        else {
-                            score.department = minDepScore;
-                        }
+                    else {
+                        score.department = minDepScore;
                     }
                 }
             }
