@@ -504,18 +504,18 @@ let scoreLocation = (locA: Location, locB: Location): any => {
             }
         }
         if (normalize(locA.city as string|string[]) && locB.city) {
-            if (normalize(locA.city as string) as string in communesDict) {
-              // score geo
-              const [latA, lonA] = communesDict[normalize(locA.city as string) as string]
-              score.geo = scoreGeo(latA, lonA, locB.latitude, locB.longitude)
-            }
             score.city = scoreCity(locA.city, locB.city as string|string[]);
             if ((score.code === 1) && (score.city < perfectScoreThreshold)) {
                 // insee code has priority over label
                 score.city = round(blindLocationScore ** 0.5);
-            } else if (score.geo && (score.geo > minLocationScore)) {
-                // if geo score is very good
-                delete score.city;
+            } else if ((score.city < perfectScoreThreshold) && normalize(locA.city as string) as string in communesDict) {
+                const { lat: latA, lon: lonA, code: codeA } = communesDict[normalize(locA.city as string) as string]
+              score.code = scoreLocationCode(codeA, locB.codeHistory as string|string[]);
+              if (score.code > perfectScoreThreshold) {
+                score.city = 1.0
+              } else {
+                score.city = scoreGeo(latA, lonA, locB.latitude, locB.longitude)
+              }
             }
         }
         if (normalize(locA.departmentCode as string|string[]) && locB.departmentCode) {

@@ -72,8 +72,9 @@ describe('score.ts - Score function', () => {
         date: "19691101",
         location: {
           city: 'Vincennes',
-          code: '',
-          departmentCode: '',
+          code: '75080',
+          codeHistory: ['75080', '94800'],
+          departmentCode: '75',
           country: '',
           countryCode: 'FRA',
           latitude: +'48.847759',
@@ -96,7 +97,7 @@ describe('score.ts - Score function', () => {
       }
     });
     expect(score).to.contain.all.keys(['score', 'birthLocation', 'name'])
-    expect(score.birthLocation).to.contain.all.keys(['score', 'geo'])
+    expect(score.birthLocation).to.contain.all.keys(['score', 'city', 'code'])
 
   });
 

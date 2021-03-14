@@ -23,13 +23,21 @@ try {
 
   rawdata.features.filter((feature : any) => feature.geometry && feature.geometry.coordinates)
     .forEach((feature: any) => {
-      dic[feature.properties.nom.toLowerCase()] = getLatLon(feature.geometry.coordinates.flat(3))
-    });
+      const [ lat, lon ] = getLatLon(feature.geometry.coordinates.flat(3))
+      dic[feature.properties.nom.toLowerCase()] = {
+        lat,
+        lon,
+        code: feature.properties.code
+      }});
 } catch(e) {
     // eslint-disable-next-line no-console
     console.log('Failed loading communes data',e);
 }
 
 export const communesDict = dic as {
-    [key: string]: number[];
+    [key: string]: {
+      lat: number;
+      lon: number;
+      code: string;
+    };
 };
