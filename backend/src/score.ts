@@ -721,7 +721,7 @@ export const scoreResults = (request: RequestBody, results: Person[], params: Sc
     let bestScoreNumber = 0;
     let filteredResultsNumber = 0;
     // following count of meaning arguments (sex and deaths fields not taken as such) used to reduce penalty of blind scoring penalties
-    const requestMeaningArgsNumber = ((request.fullText || request.lastName || request.firstName || request.lastName) ? 1 : 0)
+    const requestMeaningArgsNumber = ((request.fullText || request.lastName || request.firstName) ? 1 : 0)
         + (request.birthDate ? 1 : 0)
         + ((request.birthCity || request.birthLocationCode || request.birthCountry || request.birthDepartment || request.birthGeoPoint) ? 1 : 0)
     const resultsWithScores: any = results
@@ -729,7 +729,11 @@ export const scoreResults = (request: RequestBody, results: Person[], params: Sc
             .map((result:any) => {
                 try {
                     result.scores = new ScoreResult(request, result, params);
-                    result.scores.score =  round(scoreReduce(result.scores, true) ** (requestMeaningArgsNumber/(Object.keys(result.scores).length || 1)));
+                    const perfectScores =
+                        ((result.scores.name && result.scores.name.score >= perfectScoreThreshold) ? 1 : 0) +
+                        ((result.scores.birtDate && result.scores.birthDate.score === 1) ? 1 : 0) +
+                        ((result.scores.birthLocation && result.scores.birthLocation.score >= perfectScoreThreshold) ? 1 : 0)
+                    result.scores.score =  round(scoreReduce(result.scores, true) ** (requestMeaningArgsNumber/(0.5 * perfectScores + Object.keys(result.scores).length || 1)));
                 } catch(err) {
                     loggerStream.write(JSON.stringify({
                         backend: {
