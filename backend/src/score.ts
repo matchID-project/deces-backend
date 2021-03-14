@@ -7,7 +7,7 @@ import { dateTransformMask, isDateRange, isDateLimit, dateTransform } from './ma
 import soundex from '@jollie/soundex-fr';
 import loggerStream from './logger';
 import timer from './timer';
-import { communesDict } from './communes';
+import { communesDict, cityNorm, applyRegex, normalize } from './communes';
 
 const perfectScoreThreshold = 0.75;
 const multipleMatchPenaltyMax = 0.5;
@@ -60,17 +60,6 @@ const sum = (a:number, b: number): number => a+b;
 const mean = (table: number[]): number => (table.length ? table.reduce(sum)/table.length : 0);
 const round = (s: number): number => parseFloat(s.toFixed(2));
 
-const normalize = (token: string|string[]): string|string[] => {
-    if ((token === undefined) || (token === null)) {
-        return '';
-    }
-    if (typeof(token) === 'string') {
-        return token.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').replace(/\s+/g,' ').replace(/^\s*/,'').replace(/\s*$/,'');
-    } else {
-        return token.map(t => normalize(t) as string);
-    }
-}
-
 const levRatio = (tokenA: string, tokenB: string, option?: any): number => {
     const lev = option || distance;
     if (!tokenA || !tokenB) { return 0 }
@@ -117,18 +106,6 @@ const fuzzMixRatio = (a: string, b: string) => {
         return 0.01 * fuzz.token_set_ratio(a,b);
     } else {
         return levRatio(a,b);
-    }
-}
-
-const applyRegex = (a: string|string[], reTable: any): string|string[] => {
-    if (typeof(a) === 'string') {
-        let b = normalize(a) as string;
-        reTable.map((r:any) => b = b.replace(r[0], r[1]));
-        return b;
-    } else if (Array.isArray(a)) {
-        return a.map(c => applyRegex(c, reTable) as string);
-    } else {
-        return a
     }
 }
 
@@ -329,33 +306,6 @@ const scoreToken = (tokenA: string|string[], tokenB: string|string[], option?: a
     return s;
 }
 
-const cityRegExp = [
-    [ /^\s*(lyon|marseille|paris)(\s.*|\s*\d\d*.*|.*art.*|.*arr.*)$/, '$1'],
-    [ /(^|\s)ste(\s|$)/, '$1sainte$2'],
-    [ /(^|\s)st(\s|$)/, '$1saint$2'],
-    [ /^aix pce$/, 'aix provence'],
-    [ /(^|\s)(de|en|les|le|la|a|aux|au|du|de la|sous|ss?|sur|l|d|des)\s/g, ' '],
-    [ /(^|\s)(de|en|les|le|la|a|aux|au|du|de la|sous|ss?|sur|l|d|des)\s/g, ' '],
-    [ /^x$:/, ''],
-    [ /\s+/, ' '],
-    [ /œ/, 'oe'],
-    [ /æ/, 'ae'],
-    [ /^.*inconnu.*$/, ''],
-    [ /sainte clotilde/, 'saint denis'],
-    [ /berck mer/, 'berck'],
-    [ /montreuil s.* bois/, 'montreuil'],
-    [ /asnieres s.* seine/, 'asnieres'],
-    [ /clichy garenne.*/, 'clichy'],
-    [ /belleville saone/, 'belleville'],
-    [ /^levallois$/, 'levallois perret'],
-    [ /'\s$/, ''],
-    [ /^\s*/, '']
-];
-
-const cityNorm = (city: string|string[]): string|string[] => {
-    return applyRegex(city, cityRegExp);
-}
-
 const scoreCity = (cityA: string|string[]|RequestField, cityB: string|string[]): number => {
     if (typeof(cityA) === 'string') {
         const cityNormA = cityNorm(cityA) as string;
@@ -511,10 +461,10 @@ let scoreLocation = (locA: Location, locB: Location): any => {
             } else if ((score.city < perfectScoreThreshold) && normalize(locA.city as string) as string in communesDict) {
                 const { lat: latA, lon: lonA, code: codeA } = communesDict[normalize(locA.city as string) as string]
               score.code = scoreLocationCode(codeA, locB.codeHistory as string|string[]);
-              if (score.code > perfectScoreThreshold) {
+              if (score.code >= perfectScoreThreshold) {
                 score.city = 1.0
               } else {
-                score.city = scoreGeo(latA, lonA, locB.latitude, locB.longitude)
+                score.city = round(Math.max(scoreGeo(latA, lonA, locB.latitude, locB.longitude),score.city))
               }
             }
         }
