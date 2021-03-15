@@ -67,4 +67,10 @@ describe('search.controller.ts - POST request', () => {
     const result = await controller.searchpost({birthGeoPoint: {latitude: 49.6, longitude: 2.98, distance: "10km"}}, {} as express.Request)
     expect(result.response.persons.map(x => x.birth.location.city)).to.include('Noyon')
   });
+
+  // not active in single search
+  // it('Query by communes using geocoding', async () => {
+  //   const result = await controller.searchpost({firstName: 'jean', lastName: 'martin', birthCity: 'La Londe'}, {} as express.Request)
+  //   expect(result.response.persons[0].birth.location.city).to.include('Elbeuf')
+  // });
 });

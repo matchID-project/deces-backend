@@ -68,6 +68,7 @@ export DATASET=fichier-des-personnes-decedees
 export STORAGE_BUCKET=${DATASET}
 export AWS=${APP_PATH}/aws
 
+export COMMUNES_JSON=${BACKEND}/data/communes.json
 
 export DATAGOUV_CATALOG_URL = https://www.data.gouv.fr/api/1/datasets/${DATASET}/
 export DATAGOUV_RESOURCES_URL = https://static.data.gouv.fr/resources/${DATASET}
@@ -235,7 +236,7 @@ docker-check:
 #############
 
 # build
-backend-dist: ${WIKIDATA_LINKS}
+backend-dist: ${WIKIDATA_LINKS} ${COMMUNES_JSON} 
 	export EXEC_ENV=development; ${DC_BACKEND} -f $(DC_FILE)-dev-backend.yml run -T --no-deps --rm backend npm run build  && tar czvf ${BACKEND}/${FILE_BACKEND_DIST_APP_VERSION} -C ${BACKEND} dist
 
 backend-build-image: ${BACKEND}/${FILE_BACKEND_DIST_APP_VERSION}
@@ -279,6 +280,35 @@ test-perf-v1:
 	sed -i -E "s/;/,/g"  backend/tests/clients_test.csv
 	make -C ${APP_PATH}/${GIT_TOOLS} test-api-generic PERF_SCENARIO=${PERF_SCENARIO_V1} PERF_TEST_ENV=api-perf PERF_REPORTS=${PERF_REPORTS} DC_NETWORK=${DC_NETWORK} PERF_NAMES=${PERF_NAMES};
 
+backend-perf-clinic:
+	@echo Start API in clinic mode
+	@export EXEC_ENV=production; export BACKEND_LOG_LEVEL=debug; \
+		${DC_BACKEND} run -v ${BACKEND}/clinic:/${APP}/clinic/ -d --rm --name deces-backend --use-aliases backend /bin/bash -c "npm install clinic && ./node_modules/.bin/clinic doctor --no-insight -- node dist/index.js && mkdir -p clinic && cp -r /${APP}/.clinic/* /${APP}/clinic"
+	@timeout=${BULK_TIMEOUT} ; ret=1 ;\
+		until [ "$$timeout" -le 0 -o "$$ret" -eq "0"  ] ; do\
+			(docker exec -i ${USE_TTY} `docker ps -l --format "{{.Names}}" --filter name=deces-backend` curl -s --fail -X GET http://localhost:${BACKEND_PORT}/deces/api/v1/version > /dev/null) ;\
+			ret=$$? ;\
+			if [ "$$ret" -ne "0" ] ; then\
+				echo -e "try still $$timeout seconds to start backend before timeout" ;\
+			fi ;\
+			((timeout--)); sleep 1 ;\
+		done ;\
+	echo -e "backend started in $$((BULK_TIMEOUT - timeout)) seconds"; exit $$ret
+
+backend-perf-clinic-stop:
+	@echo Stop backend development container
+	@docker exec `docker ps -l --format "{{.Names}}" --filter name=deces-backend` /bin/bash -c "kill -INT \`pidof node\`"
+	@timeout=${BULK_TIMEOUT} ; ret=1 ;\
+		until [ "$$timeout" -le 0 -o "$$ret" -eq "0"  ] ; do\
+			(test -f backend/clinic/*html > /dev/null) ;\
+			ret=$$? ;\
+			if [ "$$ret" -ne "0" ] ; then\
+				echo -e "try still $$timeout seconds to stop backend before timeout" ;\
+			fi ;\
+			((timeout--)); sleep 1 ;\
+		done ;\
+	echo -e "backend stopped in $$((BULK_TIMEOUT - timeout)) seconds"; exit $$ret
+
 # development mode
 backend-dev:
 	@echo docker-compose up backend for dev
@@ -292,7 +322,7 @@ backend-dev-test:
 	@echo Testing API parameters
 	@docker exec -i ${USE_TTY} ${APP}-development bash /deces-backend/tests/test_query_params.sh
 
-dev: network backend-dev-stop ${WIKIDATA_LINKS} backend-dev
+dev: network backend-dev-stop ${WIKIDATA_LINKS} ${COMMUNES_JSON} backend-dev
 
 # download wikidata test data
 ${WIKIDATA_SRC}:
@@ -330,6 +360,14 @@ ${WIKIDATA_LINKS}:
 wikidata-src: ${WIKIDATA_SRC}
 
 wikidata-links: ${WIKIDATA_LINKS}
+
+${COMMUNES_JSON}:
+	@echo "downloading communes geo data";\
+	curl -s -l 'http://etalab-datasets.geo.data.gouv.fr/contours-administratifs/2019/geojson/communes-1000m.geojson.gz' -O
+	gzip -d communes-1000m.geojson.gz
+	mv communes-1000m.geojson ${BACKEND}/data/communes.json
+
+communes: ${COMMUNES_JSON}
 
 ###########
 #  Start  #

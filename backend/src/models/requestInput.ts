@@ -30,6 +30,8 @@ export interface Block {
   should?: boolean
 }
 
+export type AggsInputParams = 'firstName'|'lastName'|'birthDate'|'birthCity'|'birthDepartment'|'birthCountry'|'deathDate'|'deathCity'|'deathDepartment'|'deathCountry'|'deathAge'|'sex';
+
 /**
  * These are all the query parameters
  * @tsoaModel
@@ -148,7 +150,7 @@ export interface RequestBody {
  /**
   * Champs à aggréger
   */
- aggs?: string[];
+ aggs?: AggsInputParams[];
   /**
   * Nombre de clé max d'aggrégation
   */
