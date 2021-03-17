@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Route, Query, Response, Tags, Header, Request, Path } from 'tsoa';
+import { Controller, Get, Post, Body, Route, Query, Response, Tags, Header, Request, Path, Security } from 'tsoa';
 import express from 'express';
 import { resultsHeader, jsonPath, prettyString } from '../processStream';
 import { runRequest } from '../runRequest';
@@ -223,4 +223,53 @@ export class SearchController extends Controller {
     const builtResult = buildResult(result.data, requestInput)
     return builtResult
   }
+
+  /**
+   * Search by ID
+   * @summary Use unique identifier to search for people
+   * @param id Person unique identifier
+   */
+  @Security("jwt", ["user"])
+  @Response<ErrorResponse>('400', 'Bad request')
+  @Tags('Simple')
+  @Post('/id/{id}')
+  public async updateId(
+    @Path() id: string,
+    @Body() updateFields: UpdateFields
+  ): Promise<any> {
+    const requestInput = new RequestInput({id});
+    const requestBuild = buildRequest(requestInput);
+    const result = await runRequest(requestBuild, requestInput.scroll);
+    const builtResult = buildResult(result.data, requestInput)
+    if (builtResult.response.persons.length > 0) {
+      // Save updateFields to disk
+      return { msg: "OK" }
+    } else {
+      return { msg: "KO" }
+    }
+  }
+
+}
+
+
+/**
+ * Identity modification
+ * @tsoaModel
+ * @example
+ * {
+ *   "firstName": "Paul"
+ * }
+ */
+interface UpdateFields {
+  firstName?: string;
+  lastName?: string;
+  birthDate?: string;
+  birthCity?: string;
+  birthCountry?: string;
+  birthLocationCode?: string;
+  deathAge: number;
+  deathDate: string;
+  deathCity: string;
+  deathCountry: string;
+  deathLocationCode: string;
 }

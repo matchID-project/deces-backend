@@ -1,11 +1,11 @@
 import * as express from "express";
 import * as jwt from "jsonwebtoken";
 
-export function expressAuthentication(
+export const expressAuthentication = (
   request: express.Request,
   securityName: string,
   scopes?: string[]
-): Promise<any> {
+): Promise<any> => {
   if (securityName === "jwt") {
     const authHeader = request.headers.Authorization || request.headers.authorization;
 
