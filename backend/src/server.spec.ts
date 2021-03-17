@@ -5,6 +5,7 @@ import { Person } from './models/entities';
 import { promisify } from 'util';
 import { parseString } from '@fast-csv/parse';
 import { writeToBuffer } from '@fast-csv/format';
+import * as jwt from "jsonwebtoken";
 import fs from "fs";
 import chai from 'chai';
 import chaiHttp = require('chai-http');
@@ -38,6 +39,57 @@ describe('server.ts - Express application', () => {
     expect(res.body.response.persons[0].id).to.eql('VhfumwT3QnUq');
     expect(res.body.response.persons[0].links.wikidata).to.include('Q3102639');
   });
+
+  describe('/queue', () => {
+    it('/queue/jobs with good token', async () => {
+      const token = await chai.request(app)
+        .get(apiPath(`auth?password=${process.env.BACKEND_TOKEN_PASSWORD}`))
+      const res = await chai.request(app)
+        .get(apiPath('queue/jobs/delayed'))
+        .set('Authorization', `Bearer ${token.body.access_token as string}`)
+      expect(res).to.have.status(200);
+      expect(res.body.jobs.length).to.eql(0);
+    });
+
+    it('/queue/jobs with wrong token', async () => {
+      const res = await chai.request(app)
+        .get(apiPath(`queue/jobs/stalled`))
+        .set('Authorization', 'wrong password')
+      expect(res).to.have.status(422);
+      expect(res.body.message).to.eql("jwt malformed");
+    });
+
+    it('/queue/jobs query missing token', async () => {
+      const res = await chai.request(app)
+        .get(apiPath(`queue/jobs/failed`))
+      expect(res).to.have.status(422);
+      expect(res.body.message).to.eql("No token provided");
+    });
+  })
+
+  describe('/auth', () => {
+    it('get password authentification', async () => {
+      const token = await chai.request(app)
+        .get(apiPath(`auth?password=${process.env.BACKEND_TOKEN_PASSWORD}`))
+      expect(token).to.have.status(200);
+      expect(token.body).to.include.all.keys('access_token');
+    });
+
+    it('post password authentification', async () => {
+      const token = await chai.request(app)
+        .post(apiPath(`auth`))
+        .send({password: process.env.BACKEND_TOKEN_PASSWORD})
+      expect(token).to.have.status(200);
+      expect(token.body).to.include.all.keys('access_token');
+    });
+
+    it('good password', async () => {
+      const res = await chai.request(app)
+        .get(apiPath(`auth?password=wrong_password`))
+      expect(res).to.have.status(400);
+      expect(res.body.msg).to.include('Wrong password');
+    });
+  })
 
   const testFixtures = [
     {params: {deathDate: 2020, firstName: 'Harry'}, testFunc: (res: any) => {
@@ -718,6 +770,5 @@ describe('server.ts - Express application', () => {
       });
     });
   })
-
 
 });
