@@ -1,5 +1,8 @@
 import { Controller, Get, Post, Body, Route, Query, Response, Tags, Header, Request, Path, Security } from 'tsoa';
+import multer from 'multer';
+import forge from 'node-forge';
 import express from 'express';
+import { writeFileSync, existsSync, mkdirSync } from 'fs';
 import { resultsHeader, jsonPath, prettyString } from '../processStream';
 import { runRequest } from '../runRequest';
 import { buildRequest } from '../buildRequest';
@@ -235,18 +238,71 @@ export class SearchController extends Controller {
   @Post('/id/{id}')
   public async updateId(
     @Path() id: string,
-    @Body() updateFields: UpdateFields
+    @Body() updateFields: UpdateFields,
+    @Request() request: express.Request
   ): Promise<any> {
+    await this.handleFile(request);
     const requestInput = new RequestInput({id});
     const requestBuild = buildRequest(requestInput);
     const result = await runRequest(requestBuild, requestInput.scroll);
     const builtResult = buildResult(result.data, requestInput)
     if (builtResult.response.persons.length > 0) {
-      // Save updateFields to disk
+      let proof
+      const date = new Date(Date.now()).toISOString()
+      const { author_id: author } = updateFields;
+      const bytes = forge.random.getBytesSync(24);
+      const randomId = forge.util.bytesToHex(bytes);
+      if (request.files && request.files.length > 0) {
+        const [ file ]: any = request.files
+        proof = file.path
+      } else if (updateFields.proof) {
+        ({ proof } = updateFields);
+        delete updateFields.proof
+      } else {
+        return { msg: 'no proof' }
+      }
+      const correctionData = {
+        id: randomId,
+        date,
+        auth: 0,
+        proof,
+        author,
+        fields: updateFields
+      }
+      writeFileSync(`./proofs/${id}/${date}_${id}.json`, JSON.stringify(correctionData));
       return { msg: "OK" }
     } else {
       return { msg: "KO" }
     }
+  }
+
+  private handleFile(request: express.Request): Promise<any> {
+    const storage = multer.diskStorage({
+      destination: (req, _, cb) => {
+        if (!existsSync('./proofs')){
+          mkdirSync('./proofs');
+        }
+        const { id } = req.params
+        const dir = `./proofs/${id}`
+        if (!existsSync(dir)){
+          mkdirSync(dir);
+        }
+        cb(null, dir)
+      },
+      filename: (_, file, cb) => {
+        const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1E9)}`
+        cb(null, `${uniqueSuffix}_${file.originalname}`)
+      }
+    })
+    const multerSingle = multer({storage}).any();
+    return new Promise((resolve, reject) => {
+      multerSingle(request, undefined, (error: any) => {
+        if (error) {
+          reject(error);
+        }
+        resolve(true);
+      });
+    });
   }
 
 }
@@ -261,15 +317,17 @@ export class SearchController extends Controller {
  * }
  */
 interface UpdateFields {
+  'author_id'?: string;
   firstName?: string;
   lastName?: string;
   birthDate?: string;
   birthCity?: string;
   birthCountry?: string;
   birthLocationCode?: string;
-  deathAge: number;
-  deathDate: string;
-  deathCity: string;
-  deathCountry: string;
-  deathLocationCode: string;
+  deathAge?: number;
+  deathDate?: string;
+  deathCity?: string;
+  deathCountry?: string;
+  deathLocationCode?: string;
+  proof?: string;
 }
