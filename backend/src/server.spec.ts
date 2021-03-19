@@ -27,18 +27,34 @@ describe('server.ts - Express application', () => {
     expect(res.body.msg).to.eql("OK");
   });
 
-  it('/id/{id}', async () => {
-    let res = await chai.request(app)
-      .get(apiPath('search'))
-      .query({q: 'Georges Duboeuf'})
-    const { id }: { id: string } = res.body.response.persons[0];
-    res = await chai.request(app)
-      .get(apiPath(`id/${id}`))
-    expect(res).to.have.status(200);
-    expect(res.body.response.persons[0].name.first).to.include('Georges');
-    expect(res.body.response.persons[0].id).to.eql('VhfumwT3QnUq');
-    expect(res.body.response.persons[0].links.wikidata).to.include('Q3102639');
-  });
+  describe('/id/{id}', () => {
+    it('search', async () => {
+      let res = await chai.request(app)
+        .get(apiPath('search'))
+        .query({q: 'Georges Duboeuf'})
+      const { id }: { id: string } = res.body.response.persons[0];
+      res = await chai.request(app)
+        .get(apiPath(`id/${id}`))
+      expect(res).to.have.status(200);
+      expect(res.body.response.persons[0].name.first).to.include('Georges');
+      expect(res.body.response.persons[0].id).to.eql('VhfumwT3QnUq');
+      expect(res.body.response.persons[0].links.wikidata).to.include('Q3102639');
+    });
+
+    it('update', async () => {
+      const token = await chai.request(app)
+        .get(apiPath(`auth?password=user1`))
+      const buf = Buffer.from('weird pdf', 'base64')
+      const res = await chai.request(app)
+        .post(apiPath(`id/VhfumwT3QnUq`))
+        .set('Authorization', `Bearer ${token.body.access_token as string}`)
+        .field('author_id', 'Ked3oh@oPho3m.com')
+        .field('lastName', 'Aiph7u')
+        .attach('pdf', buf, 'file.pdf')
+      expect(res).to.have.status(200);
+      expect(res.body.msg).to.equal('OK');
+    });
+  })
 
   describe('/queue', () => {
     it('/queue/jobs with good token', async () => {
