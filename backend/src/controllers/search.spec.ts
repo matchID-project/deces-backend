@@ -79,36 +79,16 @@ describe('search.controller.ts - POST request', () => {
 describe('search.controller.ts - POST id', () => {
   const controller = new SearchController()
   it('update id', async () => {
-    // let res: any;
-    const inputArray = [
-      ['Prenom', 'Nom', 'Date', 'Sex'],
-      ['jean', 'pierre', '04/08/1933', 'M'],
-      ['georges', 'michel', '12/03/1939', 'M']
-    ]
-    const buf: any = await writeToBuffer(inputArray)
     const body = {
       'author_id': 'Ked3oh@oPho3m.com',
-      lastName: 'Aiph7u'
+      lastName: 'Aiph7u',
+      proof: 'https://somwhere.in.the.internet',
     }
     const req = {
       headers: {},
-      body,
-      files: buf
+      body
     } as express.Request
     const res = await controller.updateId('POgzt_2CZT2o', body, req)
     expect(res.msg).to.equal('OK');
-    // const { id: jobId }: { id: string } = res
-    // await controller.downloadResults({res: {send: (x) => res = x, status: (x) => console.log(x)}} as express.Request, 'csv', jobId)
-    // console.log(res);
-    // await new Promise(r => setTimeout(r, 2000));
-    // console.log("finish sleep");
-    // while (res.status === 'created' || res.status === 'waiting' || res.status === 'active') {
-    //   const response: any = {res: {send: (x) => res = x, status: (_) => {
-    //     return {send: (x) => res = x}}
-    //   }} as express.Request
-    //   await controller.downloadResults(response, 'csv', jobId)
-    //   console.log(res);
-    // }
-    // console.log(res);
   });
 });

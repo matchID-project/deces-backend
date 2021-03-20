@@ -249,18 +249,21 @@ export class SearchController extends Controller {
     if (builtResult.response.persons.length > 0) {
       let proof
       const date = new Date(Date.now()).toISOString()
-      const { author_id: author } = updateFields;
       const bytes = forge.random.getBytesSync(24);
       const randomId = forge.util.bytesToHex(bytes);
       if (request.files && request.files.length > 0) {
         const [ file ]: any = request.files
         proof = file.path
+        updateFields = {...request.body};
       } else if (updateFields.proof) {
         ({ proof } = updateFields);
         delete updateFields.proof
       } else {
         return { msg: 'no proof' }
       }
+      if (!('author_id' in updateFields)) return { msg: 'missing author_id' }
+      const { author_id: author } = updateFields;
+      delete updateFields['author_id']
       const correctionData = {
         id: randomId,
         date,
@@ -268,6 +271,9 @@ export class SearchController extends Controller {
         proof,
         author,
         fields: updateFields
+      }
+      if (!existsSync(`./proofs/${id}`)){
+        mkdirSync(`./proofs/${id}`, { recursive: true });
       }
       writeFileSync(`./proofs/${id}/${date}_${id}.json`, JSON.stringify(correctionData));
       return { msg: "OK" }
@@ -279,13 +285,10 @@ export class SearchController extends Controller {
   private handleFile(request: express.Request): Promise<any> {
     const storage = multer.diskStorage({
       destination: (req, _, cb) => {
-        if (!existsSync('./proofs')){
-          mkdirSync('./proofs');
-        }
         const { id } = req.params
         const dir = `./proofs/${id}`
         if (!existsSync(dir)){
-          mkdirSync(dir);
+          mkdirSync(dir, { recursive: true });
         }
         cb(null, dir)
       },
