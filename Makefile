@@ -239,7 +239,7 @@ docker-check:
 #############
 
 # build
-backend-dist: ${WIKIDATA_LINKS} ${COMMUNES_JSON}
+backend-dist: ${WIKIDATA_LINKS} ${COMMUNES_JSON} ${DB_JSON} 
 	export EXEC_ENV=development; ${DC_BACKEND} -f $(DC_FILE)-dev-backend.yml run -T --no-deps --rm backend npm run build  && tar czvf ${BACKEND}/${FILE_BACKEND_DIST_APP_VERSION} -C ${BACKEND} dist
 
 backend-build-image: ${BACKEND}/${FILE_BACKEND_DIST_APP_VERSION}
