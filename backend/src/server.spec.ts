@@ -43,7 +43,8 @@ describe('server.ts - Express application', () => {
   describe('/queue', () => {
     it('/queue/jobs with good token', async () => {
       const token = await chai.request(app)
-        .get(apiPath(`auth?password=${process.env.BACKEND_TOKEN_PASSWORD}`))
+        .post(apiPath(`auth`))
+        .send({password: process.env.BACKEND_TOKEN_PASSWORD})
       const res = await chai.request(app)
         .get(apiPath('queue/jobs/delayed'))
         .set('Authorization', `Bearer ${token.body.access_token as string}`)
@@ -68,14 +69,7 @@ describe('server.ts - Express application', () => {
   })
 
   describe('/auth', () => {
-    it('get password authentification', async () => {
-      const token = await chai.request(app)
-        .get(apiPath(`auth?password=${process.env.BACKEND_TOKEN_PASSWORD}`))
-      expect(token).to.have.status(200);
-      expect(token.body).to.include.all.keys('access_token');
-    });
-
-    it('post password authentification', async () => {
+    it('good password authentification', async () => {
       const token = await chai.request(app)
         .post(apiPath(`auth`))
         .send({password: process.env.BACKEND_TOKEN_PASSWORD})
@@ -83,9 +77,10 @@ describe('server.ts - Express application', () => {
       expect(token.body).to.include.all.keys('access_token');
     });
 
-    it('good password', async () => {
+    it('wrong password authentification', async () => {
       const res = await chai.request(app)
-        .get(apiPath(`auth?password=wrong_password`))
+        .post(apiPath(`auth`))
+        .send({password: 'wrong_password'})
       expect(res).to.have.status(400);
       expect(res.body.msg).to.include('Wrong password');
     });
