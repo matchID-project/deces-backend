@@ -71,6 +71,7 @@ export class JobsController extends Controller {
         end: end || 25
       }
       const jobs = await jobQueue.getJobs(jobsType, page)
+      jobs.forEach(j => delete j.queue);
       return { jobs };
     } else if (jobsType === 'stalled') {
       const checkStalledJobs = new Promise((resolve, reject) => {
