@@ -263,7 +263,7 @@ export class SearchController extends Controller {
       }
       if (!('author_id' in updateFields)) return { msg: 'missing author_id' }
       const { author_id: author } = updateFields;
-      delete updateFields['author_id']
+      delete updateFields.author_id
       const correctionData = {
         id: randomId,
         date,

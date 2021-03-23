@@ -43,7 +43,8 @@ describe('server.ts - Express application', () => {
 
     it('update', async () => {
       const token = await chai.request(app)
-        .get(apiPath(`auth?password=user1`))
+        .post(apiPath(`auth`))
+        .send({password: 'user1'})
       const buf = Buffer.from('weird pdf', 'base64')
       const res = await chai.request(app)
         .post(apiPath(`id/VhfumwT3QnUq`))
