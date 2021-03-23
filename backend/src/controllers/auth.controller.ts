@@ -1,5 +1,5 @@
 import * as jwt from "jsonwebtoken";
-import { Controller, Get, Post, Route, Tags, Body, Query } from 'tsoa';
+import {Body, Controller, Post, Route, Tags} from 'tsoa';
 
 /**
  * @swagger
@@ -28,24 +28,6 @@ export class AuthController extends Controller {
     }
   }
 
-  /**
-   * Authentification endpoint
-   * @summary Route d'authentification
-   * @param password User password
-   */
-  @Tags('Auth')
-  @Get('')
-  public authentificationGet(
-    @Query() password: string,
-  ): AccessToken {
-    if (password === process.env.BACKEND_TOKEN_PASSWORD) {
-      const accessToken = jwt.sign({password, scopes: ['admin']}, process.env.BACKEND_TOKEN_KEY, { expiresIn: "1d" })
-      return { 'access_token': accessToken }
-    } else {
-      this.setStatus(400);
-      return { msg: "Wrong password" }
-    }
-  }
 }
 
 
