@@ -168,6 +168,7 @@ export class AggregationController extends Controller {
           })
         }
       }
+      response.end();
     } else {
       response.setHeader('Content-Type', 'application/json');
       const filteredRequest: any = {}
@@ -207,6 +208,7 @@ export class AggregationController extends Controller {
         }
       }
       response.write(`],"delay": ${delay as string}}}`)
+      response.end();
     }
   }
 }

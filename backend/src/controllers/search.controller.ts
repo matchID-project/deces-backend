@@ -202,6 +202,7 @@ export class SearchController extends Controller {
         ])
       });
     }
+    csvStream.end()
   }
 
   /**
