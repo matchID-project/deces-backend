@@ -7,7 +7,7 @@ import { resultsHeader, jsonPath, prettyString } from '../processStream';
 import { runRequest } from '../runRequest';
 import { buildRequest } from '../buildRequest';
 import { RequestInput, RequestBody } from '../models/requestInput';
-import { StrAndNumber } from '../models/entities';
+import { StrAndNumber, UpdateFields } from '../models/entities';
 import { buildResult, Result, ErrorResponse } from '../models/result';
 import { format } from '@fast-csv/format';
 import { updatedFields } from '../updatedIds';
@@ -315,29 +315,4 @@ export class SearchController extends Controller {
     });
   }
 
-}
-
-
-/**
- * Identity modification
- * @tsoaModel
- * @example
- * {
- *   "firstName": "Paul"
- * }
- */
-interface UpdateFields {
-  'author_id'?: string;
-  firstName?: string;
-  lastName?: string;
-  birthDate?: string;
-  birthCity?: string;
-  birthCountry?: string;
-  birthLocationCode?: string;
-  deathAge?: number;
-  deathDate?: string;
-  deathCity?: string;
-  deathCountry?: string;
-  deathLocationCode?: string;
-  proof?: string;
 }

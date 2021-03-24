@@ -22,14 +22,15 @@ const walk = (directory: string) => {
   return fileList;
 }
 
-const rawData: any = [];
+const rawData: any = {};
 try {
     const jsonFiles = walk('./data/proofs')
     jsonFiles.forEach((jsonFile: string) => {
-      rawData.push(JSON.parse(readFileSync(jsonFile,'utf8')))
+      // data/proof/{id} => id=2
+      rawData[jsonFile.split("/")[2]] = JSON.parse(readFileSync(jsonFile,'utf8'))
     })
 } catch(e) {
     // eslint-disable-next-line no-console
     console.log('Failed loading updatedFields',e);
 }
-export const updatedFields = rawData.length ? rawData : undefined;
+export const updatedFields = Object.keys(rawData).length ? rawData : undefined;
