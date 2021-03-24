@@ -10,6 +10,7 @@ import { RequestInput, RequestBody } from '../models/requestInput';
 import { StrAndNumber } from '../models/entities';
 import { buildResult, Result, ErrorResponse } from '../models/result';
 import { format } from '@fast-csv/format';
+import { updatedFields } from '../updatedIds';
 // import getDataGouvCatalog from '../getDataGouvCatalog';
 
 /**
@@ -272,21 +273,27 @@ export class SearchController extends Controller {
         author,
         fields: updateFields
       }
-      if (!existsSync(`./proofs/${id}`)){
-        mkdirSync(`./proofs/${id}`, { recursive: true });
+      if (!existsSync(`./data/proofs/${id}`)){
+        mkdirSync(`./data/proofs/${id}`, { recursive: true });
       }
-      writeFileSync(`./proofs/${id}/${date}_${id}.json`, JSON.stringify(correctionData));
+      writeFileSync(`./data/proofs/${id}/${date}_${id}.json`, JSON.stringify(correctionData));
       return { msg: "OK" }
     } else {
       return { msg: "KO" }
     }
   }
 
+  @Tags('Simple')
+  @Get('/updated')
+  public updateList(): any {
+    return updatedFields
+  }
+
   private handleFile(request: express.Request): Promise<any> {
     const storage = multer.diskStorage({
       destination: (req, _, cb) => {
         const { id } = req.params
-        const dir = `./proofs/${id}`
+        const dir = `./data/proofs/${id}`
         if (!existsSync(dir)){
           mkdirSync(dir, { recursive: true });
         }
