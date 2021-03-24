@@ -2,6 +2,7 @@ import { Person } from './entities';
 import { RequestInput } from './requestInput';
 import { scoreResults } from '../score';
 import { wikidata } from '../wikidata';
+import { updatedFields } from '../updatedIds';
 
 interface RequestType {
   [key: string]: any; // Index signature
@@ -286,6 +287,10 @@ export const buildResultSingle = (item: ResultRawHit): Person => {
     if (wd.wikimedia) { result.links.wikimedia = wd.wikimedia }
     if (wd.wikipedia) { result.links.wikipedia = wd.wikipedia }
     if (wd.label) { result.links.label = wd.label }
+  }
+  const updatedData = updatedFields[result.id]
+  if (updatedData) {
+    result.modifications = updatedData
   }
   return result;
 }
