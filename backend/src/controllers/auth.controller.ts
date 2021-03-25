@@ -1,6 +1,7 @@
 import * as jwt from "jsonwebtoken";
 import {Body, Controller, Post, Route, Tags} from 'tsoa';
 import {userDB} from '../userDB';
+import crypto from 'crypto';
 
 /**
  * @swagger
@@ -20,16 +21,18 @@ export class AuthController extends Controller {
   public authentificationPost(
     @Body() jsonToken: JsonToken
   ): AccessToken {
-    if (jsonToken.password === process.env.BACKEND_TOKEN_PASSWORD) {
-      const accessToken = jwt.sign({...jsonToken, scopes: ['admin']}, process.env.BACKEND_TOKEN_KEY, { expiresIn: "1d" })
-      return { 'access_token': accessToken }
-    } else if (userDB.includes(jsonToken.password)) {
+    if (jsonToken.user === process.env.BACKEND_TOKEN_USER) {
+      // admin username may not be overrided through user db or any other mean
+      if (jsonToken.password === process.env.BACKEND_TOKEN_PASSWORD) {
+        const accessToken = jwt.sign({...jsonToken, scopes: ['admin','user']}, process.env.BACKEND_TOKEN_KEY, { expiresIn: "1d" })
+        return { 'access_token': accessToken }
+      }
+    } else if ((Object.keys(userDB).indexOf(jsonToken.user)>=0) && userDB[jsonToken.user] === crypto.createHash('sha256').update(jsonToken.password).digest('hex')) {
       const accessToken = jwt.sign({...jsonToken, scopes: ['user']}, process.env.BACKEND_TOKEN_KEY, { expiresIn: "1d" })
       return { 'access_token': accessToken }
-    } else {
-      this.setStatus(400);
-      return { msg: "Wrong password" }
     }
+    this.setStatus(401);
+    return { msg: "Wrong username or password"}
   }
 
 }
@@ -44,6 +47,7 @@ export class AuthController extends Controller {
  * }
  */
 interface JsonToken {
+  user: string;
   password: string;
 }
 

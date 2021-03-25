@@ -44,7 +44,7 @@ describe('server.ts - Express application', () => {
     it('update', async () => {
       const token = await chai.request(app)
         .post(apiPath(`auth`))
-        .send({password: 'user1'})
+        .send({user:'user1@gmail.com', password: 'magicPass'})
       const buf = Buffer.from('weird pdf', 'base64')
       const res = await chai.request(app)
         .post(apiPath(`id/VhfumwT3QnUq`))
@@ -61,7 +61,7 @@ describe('server.ts - Express application', () => {
     it('/queue/jobs with good token', async () => {
       const token = await chai.request(app)
         .post(apiPath(`auth`))
-        .send({password: process.env.BACKEND_TOKEN_PASSWORD})
+        .send({user: process.env.BACKEND_TOKEN_USER, password: process.env.BACKEND_TOKEN_PASSWORD})
       const res = await chai.request(app)
         .get(apiPath('queue/jobs/delayed'))
         .set('Authorization', `Bearer ${token.body.access_token as string}`)
@@ -72,7 +72,7 @@ describe('server.ts - Express application', () => {
     it('/queue/jobs with wrong token', async () => {
       const res = await chai.request(app)
         .get(apiPath(`queue/jobs/stalled`))
-        .set('Authorization', 'wrong password')
+        .set('Authorization', 'Wrong username or password')
       expect(res).to.have.status(422);
       expect(res.body.message).to.eql("jwt malformed");
     });
@@ -89,7 +89,7 @@ describe('server.ts - Express application', () => {
     it('good password authentification', async () => {
       const token = await chai.request(app)
         .post(apiPath(`auth`))
-        .send({password: process.env.BACKEND_TOKEN_PASSWORD})
+        .send({user: process.env.BACKEND_TOKEN_USER, password: process.env.BACKEND_TOKEN_PASSWORD})
       expect(token).to.have.status(200);
       expect(token.body).to.include.all.keys('access_token');
     });
@@ -98,8 +98,8 @@ describe('server.ts - Express application', () => {
       const res = await chai.request(app)
         .post(apiPath(`auth`))
         .send({password: 'wrong_password'})
-      expect(res).to.have.status(400);
-      expect(res.body.msg).to.include('Wrong password');
+      expect(res).to.have.status(401);
+      expect(res.body.msg).to.include('Wrong username or password');
     });
   })
 

@@ -38,6 +38,7 @@ export BACKEND_HOST=backend
 export API_URL?=localhost:${PORT}
 export API_EMAIL?=matchid.project@gmail.com
 export API_SSL?=1
+export BACKEND_TOKEN_USER?=${API_EMAIL}
 export BACKEND_TOKEN_KEY?=$(shell echo $$RANDOM )
 export BACKEND_TOKEN_PASSWORD?=$(shell echo $$RANDOM )
 export BACKEND_PROXY_PATH=/${API_PATH}/api/v1
@@ -271,7 +272,10 @@ backend-test:
 	@echo Testing API parameters
 	@docker exec -i ${USE_TTY} ${APP} bash /deces-backend/tests/test_query_params.sh
 
-backend-test-mocha:
+db-json-fake:
+	echo '{"user1@gmail.com": "e8ac896ffdf4f3c76f6c6129584f8c6ff310a8b11691f841851b80101e3f3aa6"}' > ${DB_JSON}
+
+backend-test-mocha: db-json-fake
 	@echo Testing API with mocha tests
 	@export EXEC_ENV=development; export BACKEND_LOG_LEVEL=error; \
 		${DC_BACKEND} -f ${DC_FILE}-dev-backend.yml run --rm backend npm run test
@@ -377,8 +381,8 @@ ${PROOFS}:
 	mkdir -p ${PROOFS}
 
 ${DB_JSON}:
-	@echo "downloading sample db";\
-	echo '["user1"]' > ${DB_JSON}
+	@echo "initiating void db";\
+	echo '{}' > ${DB_JSON}
 
 db-json: ${DB_JSON}
 
