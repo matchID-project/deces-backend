@@ -229,11 +229,12 @@ export class SearchController extends Controller {
   }
 
   /**
-   * Search by ID
+   * Update by ID
    * @summary Use unique identifier to search for people
    * @param id Person unique identifier
+   * must be authentified (simple, user or admin)
    */
-  @Security("jwt", ["user"])
+  @Security("jwt", ["simple"])
   @Response<ErrorResponse>('400', 'Bad request')
   @Tags('Simple')
   @Post('/id/{id}')
