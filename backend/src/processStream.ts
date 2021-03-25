@@ -1,6 +1,5 @@
 import { Readable, Transform, pipeline, finished } from 'stream';
 import fs from 'fs';
-import forge from 'node-forge';
 import Queue from 'bee-queue';
 import { RequestInput } from './models/requestInput';
 import { buildRequest } from './buildRequest';
@@ -133,9 +132,7 @@ export const processCsv =  async (job: Queue.Job<any>, jobFile: any): Promise<an
     // const inputHeaders: string[] = [];
     // let outputHeaders: any;
     const mapField:any = {};
-    const md = forge.md.sha256.create();
-    md.update(job.data.randomKey);
-    const jobId = md.digest().toHex();
+    const jobId = crypto.createHash('sha256').update(job.data.randomKey).digest('hex');
 
     validFields.forEach(key => mapField[job.data[key] || key] = key );
 
@@ -382,11 +379,10 @@ export class ProcessStream<I extends any, O extends any> extends Transform {
 
 export const csvHandle = async (request: any, options: any) => {
   // Use hash key index
-  const md = forge.md.sha256.create();
-  md.update(options.randomKey);
+  const jobId = crypto.createHash('sha256').update(options.randomKey).digest('hex');
   const gzipStream =  createGzip();
   const encryptStream =  crypto.createCipheriv('aes-256-cbc', pbkdf2(options.randomKey), encryptioniv);
-  const writeStream: any = fs.createWriteStream(`${md.digest().toHex()}.in.enc`)
+  const writeStream: any = fs.createWriteStream(`${jobId}.in.enc`)
   const readStream = new Readable().on('data', function(buffer: any) {
     // count lines from buffer without duplicating it
     let idx = -1;
@@ -400,10 +396,10 @@ export const csvHandle = async (request: any, options: any) => {
   readStream.push(request.files[0].buffer);
   readStream.push(null);
   await finishedAsync(writeStream);
-  inputsArray.push({id: md.digest().toHex(), file: `${md.digest().toHex()}.in.enc`, size: options.totalRows}) // Use key hash as job identifier
+  inputsArray.push({id: jobId, file: `${jobId}.in.enc`, size: options.totalRows}) // Use key hash as job identifier
   const job = await jobQueue
     .createJob({...options})
-    .setId(md.digest().toHex())
+    .setId(jobId)
     .save()
   job.on('succeeded', (result: any) => {
     if (!stopJob.includes(job.id)) {
@@ -417,9 +413,7 @@ export const csvHandle = async (request: any, options: any) => {
 }
 
 export const returnBulkResults = async (response: any, id: string, outputFormat: string, order: string) => {
-  const md = forge.md.sha256.create();
-  md.update(id);
-  const jobId = md.digest().toHex();
+  const jobId = crypto.createHash('sha256').update(id).digest('hex');
   const job: Queue.Job<any>|any = await jobQueue.getJob(jobId);
   const jobsActive = await jobQueue.getJobs('active', {start: 0, end: 25})
   if (job && job.status === 'succeeded') {
@@ -552,9 +546,7 @@ export const returnBulkResults = async (response: any, id: string, outputFormat:
 }
 
 export const deleteThreadJob = async (response: any, id: string) => {
-  const md = forge.md.sha256.create();
-  md.update(id);
-  const jobId = md.digest().toHex()
+  const jobId = crypto.createHash('sha256').update(id).digest('hex');
   const job: Queue.Job<any>|any= await jobQueue.getJob(jobId)
   if (job && job.status === 'created') {
     stopJob.push(job.id);
