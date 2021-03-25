@@ -72,6 +72,7 @@ export AWS=${APP_PATH}/aws
 
 export COMMUNES_JSON=${BACKEND}/data/communes.json
 export DB_JSON=${BACKEND}/data/userDB.json
+export PROOFS=${BACKEND}/data/proofs
 
 export DATAGOUV_CATALOG_URL = https://www.data.gouv.fr/api/1/datasets/${DATASET}/
 export DATAGOUV_RESOURCES_URL = https://static.data.gouv.fr/resources/${DATASET}
@@ -239,7 +240,7 @@ docker-check:
 #############
 
 # build
-backend-dist: ${WIKIDATA_LINKS} ${COMMUNES_JSON} ${DB_JSON} 
+backend-dist: ${WIKIDATA_LINKS} ${COMMUNES_JSON} ${DB_JSON} ${PROOFS}
 	export EXEC_ENV=development; ${DC_BACKEND} -f $(DC_FILE)-dev-backend.yml run -T --no-deps --rm backend npm run build  && tar czvf ${BACKEND}/${FILE_BACKEND_DIST_APP_VERSION} -C ${BACKEND} dist
 
 backend-build-image: ${BACKEND}/${FILE_BACKEND_DIST_APP_VERSION}
@@ -325,7 +326,7 @@ backend-dev-test:
 	@echo Testing API parameters
 	@docker exec -i ${USE_TTY} ${APP}-development bash /deces-backend/tests/test_query_params.sh
 
-dev: network backend-dev-stop ${WIKIDATA_LINKS} ${COMMUNES_JSON} ${DB_JSON} backend-dev
+dev: network backend-dev-stop ${WIKIDATA_LINKS} ${COMMUNES_JSON} ${DB_JSON} ${PROOFS} backend-dev
 
 # download wikidata test data
 ${WIKIDATA_SRC}:
@@ -371,6 +372,9 @@ ${COMMUNES_JSON}:
 	mv communes-1000m.geojson ${BACKEND}/data/communes.json
 
 communes: ${COMMUNES_JSON}
+
+${PROOFS}:
+	mkdir -p ${PROOFS}
 
 ${DB_JSON}:
 	@echo "downloading sample db";\
