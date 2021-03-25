@@ -24,11 +24,15 @@ export class AuthController extends Controller {
     if (jsonToken.user === process.env.BACKEND_TOKEN_USER) {
       // admin username may not be overrided through user db or any other mean
       if (jsonToken.password === process.env.BACKEND_TOKEN_PASSWORD) {
-        const accessToken = jwt.sign({...jsonToken, scopes: ['admin','user']}, process.env.BACKEND_TOKEN_KEY, { expiresIn: "1d" })
+        const accessToken = jwt.sign({...jsonToken, scopes: ['admin','user','simple']}, process.env.BACKEND_TOKEN_KEY, { expiresIn: "1d" })
         return { 'access_token': accessToken }
       }
     } else if ((Object.keys(userDB).indexOf(jsonToken.user)>=0) && userDB[jsonToken.user] === crypto.createHash('sha256').update(jsonToken.password).digest('hex')) {
-      const accessToken = jwt.sign({...jsonToken, scopes: ['user']}, process.env.BACKEND_TOKEN_KEY, { expiresIn: "1d" })
+      const accessToken = jwt.sign({...jsonToken, scopes: ['user','simple']}, process.env.BACKEND_TOKEN_KEY, { expiresIn: "1d" })
+      return { 'access_token': accessToken }
+    } else if (jsonToken.user) {
+      // allow low level identification, self-declared mail, 1h access
+      const accessToken = jwt.sign({...jsonToken, scopes: ['user','simple']}, process.env.BACKEND_TOKEN_KEY, { expiresIn: "1h" })
       return { 'access_token': accessToken }
     }
     this.setStatus(401);
@@ -48,7 +52,7 @@ export class AuthController extends Controller {
  */
 interface JsonToken {
   user: string;
-  password: string;
+  password?: string;
 }
 
 
