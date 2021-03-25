@@ -33,4 +33,4 @@ try {
     // eslint-disable-next-line no-console
     console.log('Failed loading updatedFields',e);
 }
-export const updatedFields = Object.keys(rawData).length ? rawData : undefined;
+export const updatedFields = Object.keys(rawData).length ? rawData : {};
