@@ -256,7 +256,7 @@ export class SearchController extends Controller {
       if (request.files && request.files.length > 0) {
         const [ file ]: any = request.files
         proof = file.path
-        updateFields = {...request.body};
+        updateFields = {...await request.body};
       } else if (updateFields.proof) {
         ({ proof } = updateFields);
         delete updateFields.proof
@@ -278,6 +278,8 @@ export class SearchController extends Controller {
         mkdirSync(`./data/proofs/${id}`, { recursive: true });
       }
       writeFileSync(`./data/proofs/${id}/${date}_${id}.json`, JSON.stringify(correctionData));
+      if (!updatedFields[id]) { updatedFields[id] = [] }
+      updatedFields[id].push(correctionData);
       return { msg: "OK" }
     } else {
       return { msg: "KO" }

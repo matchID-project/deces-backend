@@ -27,7 +27,9 @@ try {
     const jsonFiles = walk('./data/proofs')
     jsonFiles.forEach((jsonFile: string) => {
       // data/proof/{id} => id=2
-      rawData[jsonFile.split("/")[2]] = JSON.parse(readFileSync(jsonFile,'utf8'))
+      const id = jsonFile.split("/")[2];
+      if (!rawData[id]) { rawData[id] = []}
+      rawData[id].push(JSON.parse(readFileSync(jsonFile,'utf8')));
     })
 } catch(e) {
     // eslint-disable-next-line no-console
