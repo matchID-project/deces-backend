@@ -288,7 +288,7 @@ export const buildResultSingle = (item: ResultRawHit): Person => {
     if (wd.wikipedia) { result.links.wikipedia = wd.wikipedia }
     if (wd.label) { result.links.label = wd.label }
   }
-  const updatedData = updatedFields[result.id]
+  const updatedData = updatedFields[result.id];
   if (updatedData) {
     result.modifications = updatedData
   }
