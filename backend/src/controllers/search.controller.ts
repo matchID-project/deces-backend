@@ -234,7 +234,7 @@ export class SearchController extends Controller {
    * @param id Person unique identifier
    * must be authentified (simple, user or admin)
    */
-  @Security("jwt", ["simple"])
+  @Security("jwt", ["user"])
   @Response<ErrorResponse>('400', 'Bad request')
   @Tags('Simple')
   @Post('/id/{id}')
