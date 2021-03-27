@@ -55,6 +55,7 @@ const formatAsJson = (tokens: any, req: any, res: any) => {
 
 app.use(morgan(formatAsJson, { stream: loggerStream }))
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const addRawBody = (req: any, res: any, buf: any, encoding: any) => {
     req.rawBody = buf.toString();
 }

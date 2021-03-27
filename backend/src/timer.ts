@@ -50,7 +50,7 @@ const isAsync = (func: any) => {
     return /=>\s*__awaiter/.test(func.toString().trim());
 }
 
-// eslint-disable-next-line
+// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export default (fn: any, name: string, showEveryLines?: number): any => {
   if (!active) {
       return fn;
