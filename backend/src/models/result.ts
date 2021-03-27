@@ -148,8 +148,8 @@ export interface ResultRawES {
     hits:  ResultRawHit[]
   };
   aggregations?: {
-    doc_count_error_upper_bound: number;
-    sum_other_doc_count: number;
+    'doc_count_error_upper_bound': number;
+    'sum_other_doc_count': number;
     buckets: any[];
   }
 }

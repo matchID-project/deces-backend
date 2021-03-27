@@ -17,10 +17,10 @@ const generateOTP = (email: string) => {
     setTimeout(() => {delete OTP[email]}, 600000);
 }
 
-export const sendOTP = async (email: string) => {
+export const sendOTP = async (email: string): Promise<boolean> => {
     try {
         generateOTP(email);
-        const message = await client.sendAsync({
+        await client.sendAsync({
             subject: 'Validez votre identité - deces.matchid.io',
             text: `Votre code, valide 10 minutes: ${OTP[email] as string}`,
             from: 'matchid.project@gmail.com',
@@ -33,7 +33,7 @@ export const sendOTP = async (email: string) => {
     }
 }
 
-export const validateOTP = (email:string,otp:string) => {
+export const validateOTP = (email:string,otp:string): boolean => {
     if (otp && (OTP[email] === otp)) {
         delete OTP[email];
         return true;
