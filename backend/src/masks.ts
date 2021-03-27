@@ -38,15 +38,15 @@ export const dateRangeValidationMask = (dateRangeString: string): boolean => {
 
 const dateRangeRegexp = /^(\d{4}|\d{4}.?\d{2}.?\d{2}|\d{2}.?\d{2}.?\d{4})\-(\d{4}|\d{4}.?\d{2}.?\d{2}|\d{2}.?\d{2}.?\d{4})$/;
 
-export const isDateRange = (dateRangeString: string): any => {
+export const isDateRange = (dateRangeString: string): string[] => {
   const l = dateRangeString.length;
-  return (((l === 9) || (l > 10)) && dateRangeString.indexOf('-'))  ? (dateRangeRegexp.exec(dateRangeString)) : false;
+  return (((l === 9) || (l > 10)) && dateRangeString.indexOf('-'))  ? (dateRangeRegexp.exec(dateRangeString)) : undefined;
 }
 
 // const dateLimitRegexp = /^([\<\>])(\d{4}|\d{4}.?\d{2}.?\d{2}|\d{2}.?\d{2}.?\d{4})$/;
 
-export const isDateLimit = (dateRangeString: string): any => {
-  return ['<','>'].indexOf(dateRangeString[0]) >= 0 ? [null,dateRangeString[0],dateRangeString.substring(1)] : false;
+export const isDateLimit = (dateRangeString: string): string[] => {
+  return ['<','>'].indexOf(dateRangeString[0]) >= 0 ? [null,dateRangeString[0],dateRangeString.substring(1)] : undefined;
 }
 
 export const dateTransform = (dateString: string|number, dateFormatInput: string, dateFormatOutput?: string): string => {

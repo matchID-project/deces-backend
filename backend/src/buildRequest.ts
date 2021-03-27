@@ -465,7 +465,7 @@ const buildAggregation = (aggs: string[], aggsSize: number, afterKey: number): a
 }
 
 export const buildRequest = (requestInput: RequestInput): BodyResponse|ScrolledResponse => {
-  const sort = buildSort(requestInput.sort.value);
+  const sort = buildSort(requestInput.sort.value as Sort[]);
   const match = buildMatch(requestInput);
   const transformedAggs = (requestInput.aggs && requestInput.aggs.value) ? requestInput.aggs.mask.transform(requestInput.aggs.value) : []
   const aggregations = buildAggregation(transformedAggs, requestInput.aggsSize, requestInput.afterKey);
