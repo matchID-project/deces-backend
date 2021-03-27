@@ -108,7 +108,6 @@ export interface ScoreParams {
  * }
  */
 export interface UpdateFields {
-  'author_id'?: string;
   firstName?: string;
   lastName?: string;
   birthDate?: string;

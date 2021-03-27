@@ -244,6 +244,9 @@ export class SearchController extends Controller {
     @Request() request: express.Request
   ): Promise<any> {
     await this.handleFile(request);
+    // get user & rights from Security
+    const author = (request as any).user && (request as any).user.user
+    const isAdmin = (request as any).user && (request as any).user.scopes && (request as any).user.scopes.includes('admin');
     const requestInput = new RequestInput({id});
     const requestBuild = buildRequest(requestInput);
     const result = await runRequest(requestBuild, requestInput.scroll);
@@ -253,36 +256,81 @@ export class SearchController extends Controller {
       const date = new Date(Date.now()).toISOString()
       const bytes = forge.random.getBytesSync(24);
       const randomId = forge.util.bytesToHex(bytes);
-      if (request.files && request.files.length > 0) {
-        const [ file ]: any = request.files
-        proof = file.path
-        updateFields = {...await request.body};
-      } else if (updateFields.proof) {
-        ({ proof } = updateFields);
-        delete updateFields.proof
+      if (!isAdmin) {
+        if (request.files && request.files.length > 0) {
+          const [ file ]: any = request.files
+          proof = file.path
+          updateFields = {...await request.body};
+        } else if (updateFields.proof) {
+          ({ proof } = updateFields);
+          delete updateFields.proof
+          if (Object.keys(updateFields).length === 0) {
+            this.setStatus(400);
+            return { msg: 'A field at least must be provided' }
+          }
+        } else {
+          this.setStatus(400);
+          return { msg: 'Proof must be provided' }
+        }
+        const correctionData = {
+          id: randomId,
+          date,
+          proof,
+          auth: 0,
+          author,
+          fields: updateFields
+        }
+        if (!existsSync(`./data/proofs/${id}`)){
+          mkdirSync(`./data/proofs/${id}`, { recursive: true });
+        }
+        writeFileSync(`./data/proofs/${id}/${date}_${id}.json`, JSON.stringify(correctionData));
+        if (!updatedFields[id]) { updatedFields[id] = [] }
+        updatedFields[id].push(correctionData);
+        return { msg: "Updated stored" };
       } else {
-        return { msg: 'no proof' }
+        if (!updatedFields[id]) {
+          this.setStatus(406);
+          return { msg: "Id exists but no update to validate" }
+        } else {
+          const checkedIds = {...await request.body};
+          const checks = Object.keys(checkedIds).length;
+          let validated = 0;
+          let rejected = 0;
+          (updatedFields as any)[id].forEach((update: any) => {
+            if (checkedIds[update.id] === 'true') {
+              update.auth = 1;
+              validated++;
+              writeFileSync(`./data/proofs/${id}/${update.date as string}_${id}.json`, JSON.stringify(update));
+              delete checkedIds[update.id];
+            } else if (checkedIds[update.id] === 'false') {
+              update.auth = -1;
+              rejected++;
+              writeFileSync(`./data/proofs/${id}/${update.date as string}_${id}.json`, JSON.stringify(update));
+              delete checkedIds[update.id];
+            }
+          })
+          if (Object.keys(checkedIds).length === checks) {
+            this.setStatus(406)
+            return { msg: "Update ids are all invalid"}
+          } else if (Object.keys(checkedIds).length > 0) {
+            return {
+              msg: "Partial validation could be achieved",
+              validated,
+              rejected,
+              invalidIds: Object.keys(checkedIds)
+            }
+          } else {
+            return {
+              msg: "All validations processed",
+              validated,
+              rejected
+            }
+          }
+        }
       }
-      if (!('author_id' in updateFields)) return { msg: 'missing author_id' }
-      const { author_id: author } = updateFields;
-      delete updateFields.author_id
-      const correctionData = {
-        id: randomId,
-        date,
-        auth: 0,
-        proof,
-        author,
-        fields: updateFields
-      }
-      if (!existsSync(`./data/proofs/${id}`)){
-        mkdirSync(`./data/proofs/${id}`, { recursive: true });
-      }
-      writeFileSync(`./data/proofs/${id}/${date}_${id}.json`, JSON.stringify(correctionData));
-      if (!updatedFields[id]) { updatedFields[id] = [] }
-      updatedFields[id].push(correctionData);
-      return { msg: "OK" }
     } else {
-      return { msg: "KO" }
+      this.setStatus(404)
+      return { msg: "Id not found" }
     }
   }
 
