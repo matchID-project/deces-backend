@@ -83,7 +83,7 @@ const getRangeFilter = (filter: Filter) => {
   }
 }
 
-export const buildRequestFilter = (filters: any[]) => {
+export const buildRequestFilter = (filters: any[]): any => {
   if (!filters) return;
 
   filters = filters.reduce((acc, filter) => {

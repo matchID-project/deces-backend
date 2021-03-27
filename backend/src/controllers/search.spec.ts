@@ -1,6 +1,5 @@
 import { SearchController } from './search.controller';
 import express from 'express';
-import { writeToBuffer } from '@fast-csv/format';
 import { expect } from 'chai';
 import 'mocha';
 
