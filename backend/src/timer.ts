@@ -23,10 +23,10 @@ const reporter:any = new Reporter();
 
 const round = (s: number): number => parseFloat(s.toFixed(3));
 
-reporter.on('report', function (report: Report) {
+reporter.on('report', (report: Report) => {
   report.store.push(report.duration);
   if ((report.store.length % report.showEveryLines) === 0) {
-    const sum = (report.store.reduce(function (a, b) {
+    const sum = (report.store.reduce((a, b) => {
         return a + b;
         }));
 
@@ -46,11 +46,12 @@ reporter.on('report', function (report: Report) {
   }
 });
 
-function isAsync (func: any) {
+const isAsync = (func: any) => {
     return /=>\s*__awaiter/.test(func.toString().trim());
 }
 
-export default function (fn: any, name: string, showEveryLines?: number) {
+// eslint-disable-next-line
+export default (fn: any, name: string, showEveryLines?: number): any => {
   if (!active) {
       return fn;
   }
