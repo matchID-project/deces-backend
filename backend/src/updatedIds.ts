@@ -1,7 +1,7 @@
 import { readFileSync, readdirSync, statSync } from 'fs';
 import path from "path";
 
-const walk = (directory: string) => {
+const walk = (directory: string): string[]=> {
   const fileList: string[] = [];
 
   const files = readdirSync(directory);
@@ -9,14 +9,15 @@ const walk = (directory: string) => {
     const p = path.join(directory, file);
     if ((statSync(p)).isDirectory()) {
       const subFiles: string[] = readdirSync(p);
-      fileList.push(path.join(p, subFiles
+      subFiles
         .sort((a, b) => {
           const dateA:any = new Date(a.split('_')[0])
           const dateB:any = new Date(b.split('_')[0])
           return dateB - dateA
         })
-        .filter(x => x.includes('json'))[0]
-      ));
+        .filter(x => x.includes('json'))
+        .map(f => path.join(p, f))
+        .forEach(f => fileList.push(f));
     }
   }
   return fileList;
