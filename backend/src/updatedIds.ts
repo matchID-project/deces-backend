@@ -13,7 +13,7 @@ const walk = (directory: string): string[]=> {
         .sort((a, b) => {
           const dateA:any = new Date(a.split('_')[0])
           const dateB:any = new Date(b.split('_')[0])
-          return dateB - dateA
+          return dateA - dateB
         })
         .filter(x => x.includes('json'))
         .map(f => path.join(p, f))
