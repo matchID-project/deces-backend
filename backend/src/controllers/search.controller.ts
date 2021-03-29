@@ -2,7 +2,8 @@ import { Controller, Get, Post, Body, Route, Query, Response, Tags, Header, Requ
 import multer from 'multer';
 import forge from 'node-forge';
 import express from 'express';
-import { writeFileSync, existsSync, mkdirSync } from 'fs';
+import { writeFile, access, mkdir, createReadStream } from 'fs';
+import { promisify } from 'util';
 import { resultsHeader, jsonPath, prettyString } from '../processStream';
 import { runRequest } from '../runRequest';
 import { buildRequest } from '../buildRequest';
@@ -12,6 +13,10 @@ import { buildResult, Result, ErrorResponse } from '../models/result';
 import { format } from '@fast-csv/format';
 import { updatedFields } from '../updatedIds';
 // import getDataGouvCatalog from '../getDataGouvCatalog';
+
+const writeFileAsync = promisify(writeFile);
+const mkdirAsync = promisify(mkdir);
+const accessAsync = promisify(access);
 
 /**
  * @swagger
@@ -228,11 +233,13 @@ export class SearchController extends Controller {
     return builtResult
   }
 
+
+
   /**
    * Update by ID
    * @summary Use unique identifier to search for people
    * @param id Person unique identifier
-   * must be authentified (simple, user or admin)
+   * must be authentified (user or admin)
    */
   @Security("jwt", ["user"])
   @Response<ErrorResponse>('400', 'Bad request')
@@ -243,8 +250,8 @@ export class SearchController extends Controller {
     @Body() updateFields: UpdateFields,
     @Request() request: express.Request
   ): Promise<any> {
-    await this.handleFile(request);
     // get user & rights from Security
+    await this.handleFile(request);
     const author = (request as any).user && (request as any).user.user
     const isAdmin = (request as any).user && (request as any).user.scopes && (request as any).user.scopes.includes('admin');
     const requestInput = new RequestInput({id});
@@ -279,11 +286,13 @@ export class SearchController extends Controller {
           auth: 0,
           author,
           fields: updateFields
+        };
+        try {
+          await accessAsync(`./data/proofs/${id}`);
+        } catch(err) {
+          await mkdirAsync(`./data/proofs/${id}`, { recursive: true });
         }
-        if (!existsSync(`./data/proofs/${id}`)){
-          mkdirSync(`./data/proofs/${id}`, { recursive: true });
-        }
-        writeFileSync(`./data/proofs/${id}/${date}_${id}.json`, JSON.stringify(correctionData));
+        await writeFileAsync(`./data/proofs/${id}/${date}_${id}.json`, JSON.stringify(correctionData));
         if (!updatedFields[id]) { updatedFields[id] = [] }
         updatedFields[id].push(correctionData);
         return { msg: "Updated stored" };
@@ -296,19 +305,19 @@ export class SearchController extends Controller {
           const checks = Object.keys(checkedIds).length;
           let validated = 0;
           let rejected = 0;
-          (updatedFields as any)[id].forEach((update: any) => {
+          await Promise.all(updatedFields[id].map(async (update: any) => {
             if (checkedIds[update.id] === 'true') {
               update.auth = 1;
               validated++;
-              writeFileSync(`./data/proofs/${id}/${update.date as string}_${id}.json`, JSON.stringify(update));
+              await writeFileAsync(`./data/proofs/${id}/${update.date as string}_${id}.json`, JSON.stringify(update));
               delete checkedIds[update.id];
             } else if (checkedIds[update.id] === 'false') {
               update.auth = -1;
               rejected++;
-              writeFileSync(`./data/proofs/${id}/${update.date as string}_${id}.json`, JSON.stringify(update));
+              await writeFileAsync(`./data/proofs/${id}/${update.date as string}_${id}.json`, JSON.stringify(update));
               delete checkedIds[update.id];
             }
-          })
+          }));
           if (Object.keys(checkedIds).length === checks) {
             this.setStatus(406)
             return { msg: "Update ids are all invalid"}
@@ -334,19 +343,29 @@ export class SearchController extends Controller {
     }
   }
 
+
+  /**
+   * Get updates list by ID
+   * @summary Use unique identifier to search for people
+   * @param id Person unique identifier
+   * must be authentified (user or admin)
+   */
+  @Security('user')
   @Tags('Simple')
   @Get('/updated')
   public updateList(): any {
     return updatedFields
   }
 
-  private handleFile(request: express.Request): Promise<any> {
+  private async handleFile(request: express.Request): Promise<any> {
     const storage = multer.diskStorage({
-      destination: (req, _, cb) => {
+      destination: async (req, _, cb) => {
         const { id } = req.params
         const dir = `./data/proofs/${id}`
-        if (!existsSync(dir)){
-          mkdirSync(dir, { recursive: true });
+        try {
+          await accessAsync(dir);
+        } catch(err) {
+          await mkdirAsync(dir, { recursive: true });
         }
         cb(null, dir)
       },
