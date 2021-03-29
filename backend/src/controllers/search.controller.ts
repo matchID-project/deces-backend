@@ -385,4 +385,51 @@ export class SearchController extends Controller {
     });
   }
 
+
+  /**
+   * Get update proof by ID
+   * @summary Use unique identifier to search for people
+   * @param id Person unique identifier
+   * @param updateId updateId identifier
+   */
+  @Response<ErrorResponse>('400', 'Bad request')
+  @Tags('Proof')
+  @Get('/updates/proof/{id}')
+  public async getProof(
+    @Request() request: express.Request,
+    @Path() id: string,
+  ): Promise<any> {
+    const [personId, updateId] = id.split("-")
+    if (!updatedFields[personId]) {
+      this.setStatus(404);
+      return { msg: "No such person id" }
+    }
+    let proof;
+    updatedFields[personId].forEach((update: any) => {
+      if (update.id === updateId) {
+        proof = update.proof
+      }
+    })
+    if (!proof) {
+      this.setStatus(404);
+      return { msg: "No such update id" }
+    }
+    if (/^https?:/.test(proof)) {
+      this.setStatus(406);
+      return { msg: "Proof is not a file, but a web reference" }
+    }
+    let start; let end;
+    const stream = createReadStream(proof, {
+      start,
+      end
+    });
+    stream.pipe(request.res);
+    await new Promise((resolve, reject) => {
+        stream.on('end', () => {
+            request.res.end();
+            resolve(true);
+        })
+    })
+  }
+
 }
