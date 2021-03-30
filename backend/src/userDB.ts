@@ -6,4 +6,4 @@ try {
     // eslint-disable-next-line no-console
     console.log('Failed loading wikidata',e);
 }
-export const userDB = rawData.length ? rawData : undefined;
+export const userDB = Object.keys(rawData).length ? rawData : {};
