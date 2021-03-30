@@ -1,8 +1,8 @@
 import { SMTPClient } from 'emailjs';
 
 const client = new SMTPClient({
-    host: '192.168.1.15',
-    port: 9025
+    host: process.env.SMTP_HOST,
+    port: Number(process.env.SMTP_PORT)
 });
 
 const OTP:any = {};

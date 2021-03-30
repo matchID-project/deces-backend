@@ -16,6 +16,7 @@ export DC_FILE=${DC_DIR}/docker-compose
 export DC_BACKEND=${DC} -f $(DC_FILE).yml
 export DC_PREFIX := $(shell echo ${APP} | tr '[:upper:]' '[:lower:]' | tr '_' '-')
 export DC_NETWORK := $(shell echo ${APP} | tr '[:upper:]' '[:lower:]')
+export DC_SMTP=${DC} -f ${DC_DIR}/docker-compose-smtp.yml
 
 # elasticsearch defaut configuration
 export ES_HOST = elasticsearch
@@ -50,6 +51,10 @@ export BULK_TIMEOUT = 600
 export BACKEND_TIMEOUT = 30
 export BACKEND_JOB_CONCURRENCY = 2
 export BACKEND_CHUNK_CONCURRENCY = 4
+export SMTP_HOST=smtp
+export SMTP_PORT=25
+export SMTP_USER?=${API_EMAIL}
+export SMTP_PWD?=$(shell echo $$RANDOM )
 
 # Backupdir
 export BACKUP_DIR = ${APP_PATH}/backup
@@ -330,7 +335,9 @@ backend-dev-test:
 	@echo Testing API parameters
 	@docker exec -i ${USE_TTY} ${APP}-development bash /deces-backend/tests/test_query_params.sh
 
-dev: network backend-dev-stop ${WIKIDATA_LINKS} ${COMMUNES_JSON} ${DB_JSON} ${PROOFS} backend-dev
+dev: network backend-dev-stop ${WIKIDATA_LINKS} ${COMMUNES_JSON} ${DB_JSON} ${PROOFS} smtp backend-dev
+
+dev-stop: backend-dev-stop smtp-stop
 
 # download wikidata test data
 ${WIKIDATA_SRC}:
@@ -385,6 +392,12 @@ ${DB_JSON}:
 	echo '{}' > ${DB_JSON}
 
 db-json: ${DB_JSON}
+
+smtp:
+	${DC_SMTP} up -d
+
+smtp-stop:
+	${DC_SMTP} down
 
 ###########
 #  Start  #
