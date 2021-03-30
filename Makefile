@@ -278,9 +278,9 @@ backend-test:
 	@docker exec -i ${USE_TTY} ${APP} bash /deces-backend/tests/test_query_params.sh
 
 db-json-fake:
-	echo '{"user1@gmail.com": "e8ac896ffdf4f3c76f6c6129584f8c6ff310a8b11691f841851b80101e3f3aa6"}' > ${DB_JSON}
+	echo '{"user1@gmail.com": "7cd61af92058569476e9d91fea601ba85fa02258b6263cfa188c15957f4752f3"}' > ${DB_JSON}
 
-backend-test-mocha: db-json-fake
+backend-test-mocha: db-json-fake smtp
 	@echo Testing API with mocha tests
 	@export EXEC_ENV=development; export BACKEND_LOG_LEVEL=error; \
 		${DC_BACKEND} -f ${DC_FILE}-dev-backend.yml run --rm backend npm run test
