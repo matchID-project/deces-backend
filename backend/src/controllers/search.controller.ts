@@ -350,7 +350,7 @@ export class SearchController extends Controller {
    * @param id Person unique identifier
    * must be authentified (user or admin)
    */
-  @Security('user')
+  @Security('jwt',['user'])
   @Tags('Simple')
   @Get('/updated')
   public updateList(): any {

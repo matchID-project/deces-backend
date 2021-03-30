@@ -1,5 +1,5 @@
 import * as jwt from "jsonwebtoken";
-import {Body, Controller, Post, Route, Tags} from 'tsoa';
+import {Body, Controller, Get, Post, Route, Security, Tags} from 'tsoa';
 import {userDB} from '../userDB';
 import crypto from 'crypto';
 import { validateOTP, sendOTP } from '../mail';
@@ -16,7 +16,7 @@ export class AuthController extends Controller {
    * Registration endpoint
    * @summary Route d'enrôlement
    */
-  @Tags('Register')
+  @Tags('Auth')
   @Post('/register')
   public register(
     @Body() register: Register
@@ -54,6 +54,21 @@ export class AuthController extends Controller {
     }
     this.setStatus(401);
     return { msg: "Wrong username or password"}
+  }
+
+  /**
+   * Authentification confirmation endpoint
+   * Checks if jwt is valid
+   * @summary Route de vérification de validité de session
+   */
+  @Security('jwt',['user'])
+  @Tags('Auth')
+  @Get('/auth')
+  public checkAuth(
+  ): any {
+    // eslint-disable-next-line no-console
+    console.log('icila\n\n\n\n\n\n');
+    return { msg: "jwt is valid"}
   }
 
 }
