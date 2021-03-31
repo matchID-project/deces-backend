@@ -88,6 +88,6 @@ describe('search.controller.ts - POST id', () => {
       body
     } as express.Request
     const res = await controller.updateId('POgzt_2CZT2o', body, req)
-    expect(res.msg).to.equal('OK');
+    expect(res.msg).to.equal('Update stored');
   });
 });
