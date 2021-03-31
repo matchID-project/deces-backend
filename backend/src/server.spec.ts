@@ -53,7 +53,7 @@ describe('server.ts - Express application', () => {
         .field('lastName', 'Aiph7u')
         .attach('pdf', buf, 'file.pdf')
       expect(res).to.have.status(200);
-      expect(res.body.msg).to.equal('OK');
+      expect(res.body.msg).to.equal('Update stored');
     });
   })
 
@@ -97,7 +97,7 @@ describe('server.ts - Express application', () => {
     it('wrong password authentification', async () => {
       const res = await chai.request(app)
         .post(apiPath(`auth`))
-        .send({password: 'wrong_password'})
+        .send({user: 'anyone', password: 'wrong_password'})
       expect(res).to.have.status(401);
       expect(res.body.msg).to.include('Wrong username or password');
     });

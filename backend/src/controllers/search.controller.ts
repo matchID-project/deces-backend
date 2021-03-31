@@ -295,7 +295,7 @@ export class SearchController extends Controller {
         await writeFileAsync(`./data/proofs/${id}/${date}_${id}.json`, JSON.stringify(correctionData));
         if (!updatedFields[id]) { updatedFields[id] = [] }
         updatedFields[id].push(correctionData);
-        return { msg: "Updated stored" };
+        return { msg: "Update stored" };
       } else {
         if (!updatedFields[id]) {
           this.setStatus(406);
