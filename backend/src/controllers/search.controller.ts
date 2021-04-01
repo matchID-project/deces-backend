@@ -373,7 +373,10 @@ export class SearchController extends Controller {
 
   private async handleFile(request: express.Request): Promise<any> {
     const storage = multer.diskStorage({
-      destination: async (req, _, cb) => {
+      destination: async (req, file, cb) => {
+        if (file.mimetype !== 'application/pdf') {
+          cb(new Error('Only PDF upload is allowed'), null)
+        }
         const { id } = req.params
         const dir = `./data/proofs/${id}`
         try {
