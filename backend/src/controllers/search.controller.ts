@@ -265,10 +265,10 @@ export class SearchController extends Controller {
       const bytes = forge.random.getBytesSync(24);
       const randomId = forge.util.bytesToHex(bytes);
       if (!isAdmin) {
+        updateFields = {...await request.body};
         if (request.files && request.files.length > 0) {
           const [ file ]: any = request.files
           proof = file.path
-          updateFields = {...await request.body};
         } else if (updateFields.proof) {
           ({ proof } = updateFields);
           delete updateFields.proof

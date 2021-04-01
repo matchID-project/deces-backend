@@ -107,7 +107,7 @@ endif
 
 config:
 	# this proc relies on matchid/tools and works both local and remote
-	#@sudo apt-get install make
+	@sudo apt-get install make
 	@if [ -z "${TOOLS_PATH}" ];then\
 		git clone ${GIT_ROOT}/${GIT_TOOLS};\
 		make -C ${APP_PATH}/${GIT_TOOLS} config;\
