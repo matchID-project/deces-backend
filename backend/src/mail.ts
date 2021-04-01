@@ -21,11 +21,10 @@ export const sendOTP = async (email: string): Promise<boolean> => {
     try {
         generateOTP(email);
         await client.sendAsync({
-            subject: 'Validez votre identité - deces.matchid.io',
+            subject: `Validez votre identité - ${process.env.APP_DNS}`,
             text: `Votre code, valide 10 minutes: ${OTP[email] as string}`,
-            from: 'matchid.project@gmail.com',
+            from: process.env.API_EMAIL,
             to: `${email}`,
-            // bcc: 'matchid.project@gmail.com'
         } as any);
         return true;
     } catch (err) {
@@ -39,4 +38,39 @@ export const validateOTP = (email:string,otp:string): boolean => {
         return true;
     }
     return false;
+}
+
+export const sendUpdateConfirmation = async (email:string, validation: boolean, rejectMsg: string, id: string): Promise<boolean> => {
+    try {
+        const message: any = {
+            from: process.env.API_EMAIL,
+            to: `${email}`,
+        }
+        if (validation) {
+            message.subject = `Suggestion validée ! - ${process.env.APP_DNS}`;
+            message.attachment = { data: `<html style="font-family:Helvetica;">
+            <h4> Merci de votre contibution !</h4>
+            Votre proposition de correction a été acceptée.<br>
+            Retrouvez <a href="https://${process.env.APP_DNS}/id/${id}"> la fiche modifiée </a>.<br>
+            <br>
+            l'équipe matchID
+            </html>
+            `, alternative: true};
+        } else {
+            message.subject = `Suggestion non retenue - ${process.env.APP_DNS}`;
+            message.attachment = { data: `<html style="font-family:Helvetica;">
+            Nous vous remercions de votre contribution,<br>
+            <br>
+            Néanmoins les éléments fournis ne nous ont pas permis de retenir votre proposition<br>
+            ${rejectMsg ? rejectMsg : ''}<br>
+            <br>
+            l'équipe matchID
+            </html>
+            `, alternative: true};
+        }
+        await client.sendAsync(message);
+        return true;
+    } catch (err) {
+        return false;
+    }
 }

@@ -12,6 +12,7 @@ import { StrAndNumber, UpdateFields } from '../models/entities';
 import { buildResult, Result, ErrorResponse } from '../models/result';
 import { format } from '@fast-csv/format';
 import { updatedFields } from '../updatedIds';
+import { sendUpdateConfirmation } from '../mail';
 // import getDataGouvCatalog from '../getDataGouvCatalog';
 
 const writeFileAsync = promisify(writeFile);
@@ -305,16 +306,27 @@ export class SearchController extends Controller {
           const checks = Object.keys(checkedIds).length;
           let validated = 0;
           let rejected = 0;
+          let noChange = 0;
           await Promise.all(updatedFields[id].map(async (update: any) => {
             if (checkedIds[update.id] === 'true') {
-              update.auth = 1;
-              validated++;
-              await writeFileAsync(`./data/proofs/${id}/${update.date as string}_${id}.json`, JSON.stringify(update));
+              if (update.auth !== 1) {
+                update.auth = 1;
+                validated++;
+                await writeFileAsync(`./data/proofs/${id}/${update.date as string}_${id}.json`, JSON.stringify(update));
+                await sendUpdateConfirmation(update.author, true, undefined, id);
+              } else {
+                noChange++;
+              }
               delete checkedIds[update.id];
-            } else if (checkedIds[update.id] === 'false') {
-              update.auth = -1;
-              rejected++;
-              await writeFileAsync(`./data/proofs/${id}/${update.date as string}_${id}.json`, JSON.stringify(update));
+            } else if (checkedIds[update.id] !== undefined) {
+              if (update.auth !== -1) {
+                update.auth = -1;
+                rejected++;
+                await writeFileAsync(`./data/proofs/${id}/${update.date as string}_${id}.json`, JSON.stringify(update));
+                await sendUpdateConfirmation(update.author, false, checkedIds[update.id] || undefined, id);
+              } else {
+                noChange++;
+              }
               delete checkedIds[update.id];
             }
           }));
@@ -326,13 +338,15 @@ export class SearchController extends Controller {
               msg: "Partial validation could be achieved",
               validated,
               rejected,
+              noChange,
               invalidIds: Object.keys(checkedIds)
             }
           } else {
             return {
               msg: "All validations processed",
               validated,
-              rejected
+              rejected,
+              noChange
             }
           }
         }

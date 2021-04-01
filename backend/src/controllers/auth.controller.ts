@@ -66,8 +66,6 @@ export class AuthController extends Controller {
   @Get('/auth')
   public checkAuth(
   ): any {
-    // eslint-disable-next-line no-console
-    console.log('icila\n\n\n\n\n\n');
     return { msg: "jwt is valid"}
   }
 
