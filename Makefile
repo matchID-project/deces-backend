@@ -2,6 +2,7 @@ SHELL := /bin/bash
 
 export APP = deces-backend
 export APP_PATH := $(shell pwd)
+export APP_DNS?=deces.matchid.io
 export APP_VERSION	:= $(shell git describe --tags )
 export USE_TTY := $(shell test -t 1 && USE_TTY="-t")
 
@@ -16,6 +17,7 @@ export DC_FILE=${DC_DIR}/docker-compose
 export DC_BACKEND=${DC} -f $(DC_FILE).yml
 export DC_PREFIX := $(shell echo ${APP} | tr '[:upper:]' '[:lower:]' | tr '_' '-')
 export DC_NETWORK := $(shell echo ${APP} | tr '[:upper:]' '[:lower:]')
+export DC_SMTP=${DC} -f ${DC_DIR}/docker-compose-smtp.yml
 
 # elasticsearch defaut configuration
 export ES_HOST = elasticsearch
@@ -38,6 +40,7 @@ export BACKEND_HOST=backend
 export API_URL?=localhost:${PORT}
 export API_EMAIL?=matchid.project@gmail.com
 export API_SSL?=1
+export BACKEND_TOKEN_USER?=${API_EMAIL}
 export BACKEND_TOKEN_KEY?=$(shell echo $$RANDOM )
 export BACKEND_TOKEN_PASSWORD?=$(shell echo $$RANDOM )
 export BACKEND_PROXY_PATH=/${API_PATH}/api/v1
@@ -49,6 +52,10 @@ export BULK_TIMEOUT = 600
 export BACKEND_TIMEOUT = 30
 export BACKEND_JOB_CONCURRENCY = 2
 export BACKEND_CHUNK_CONCURRENCY = 4
+export SMTP_HOST=smtp
+export SMTP_PORT=25
+export SMTP_USER?=${API_EMAIL}
+export SMTP_PWD?=$(shell echo $$RANDOM )
 
 # Backupdir
 export BACKUP_DIR = ${APP_PATH}/backup
@@ -71,6 +78,8 @@ export STORAGE_BUCKET=${DATASET}
 export AWS=${APP_PATH}/aws
 
 export COMMUNES_JSON=${BACKEND}/data/communes.json
+export DB_JSON=${BACKEND}/data/userDB.json
+export PROOFS=${BACKEND}/data/proofs
 
 export DATAGOUV_CATALOG_URL = https://www.data.gouv.fr/api/1/datasets/${DATASET}/
 export DATAGOUV_RESOURCES_URL = https://static.data.gouv.fr/resources/${DATASET}
@@ -238,7 +247,7 @@ docker-check:
 #############
 
 # build
-backend-dist: ${WIKIDATA_LINKS} ${COMMUNES_JSON} 
+backend-dist: ${WIKIDATA_LINKS} ${COMMUNES_JSON} ${DB_JSON} ${PROOFS}
 	export EXEC_ENV=development; ${DC_BACKEND} -f $(DC_FILE)-dev-backend.yml run -T --no-deps --rm backend npm run build  && tar czvf ${BACKEND}/${FILE_BACKEND_DIST_APP_VERSION} -C ${BACKEND} dist
 
 backend-build-image: ${BACKEND}/${FILE_BACKEND_DIST_APP_VERSION}
@@ -269,7 +278,10 @@ backend-test:
 	@echo Testing API parameters
 	@docker exec -i ${USE_TTY} ${APP} bash /deces-backend/tests/test_query_params.sh
 
-backend-test-mocha:
+db-json-fake:
+	echo '{"user1@gmail.com": "7cd61af92058569476e9d91fea601ba85fa02258b6263cfa188c15957f4752f3"}' > ${DB_JSON}
+
+backend-test-mocha: db-json-fake smtp
 	@echo Testing API with mocha tests
 	@export EXEC_ENV=development; export BACKEND_LOG_LEVEL=error; \
 		${DC_BACKEND} -f ${DC_FILE}-dev-backend.yml run --rm backend npm run test
@@ -324,7 +336,9 @@ backend-dev-test:
 	@echo Testing API parameters
 	@docker exec -i ${USE_TTY} ${APP}-development bash /deces-backend/tests/test_query_params.sh
 
-dev: network backend-dev-stop ${WIKIDATA_LINKS} ${COMMUNES_JSON} backend-dev
+dev: network backend-dev-stop ${WIKIDATA_LINKS} ${COMMUNES_JSON} ${DB_JSON} ${PROOFS} smtp backend-dev
+
+dev-stop: backend-dev-stop smtp-stop
 
 # download wikidata test data
 ${WIKIDATA_SRC}:
@@ -370,6 +384,21 @@ ${COMMUNES_JSON}:
 	mv communes-1000m.geojson ${BACKEND}/data/communes.json
 
 communes: ${COMMUNES_JSON}
+
+${PROOFS}:
+	mkdir -p ${PROOFS}
+
+${DB_JSON}:
+	@echo "initiating void db";\
+	echo '{}' > ${DB_JSON}
+
+db-json: ${DB_JSON}
+
+smtp:
+	${DC_SMTP} up -d
+
+smtp-stop:
+	${DC_SMTP} down
 
 ###########
 #  Start  #

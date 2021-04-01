@@ -83,6 +83,14 @@ export interface Person {
       wikidata?: string;
       wikimedia?: string;
     };
+    modifications?: {
+      id: string;
+      date: string;
+      auth: number;
+      proof: string;
+      author: string;
+      fields: UpdateFields;
+    };
   };
 
 export interface ScoreParams {
@@ -90,5 +98,28 @@ export interface ScoreParams {
   pruneScore?: number;
   candidateNumber?: number;
 };
+
+/**
+ * Identity modification
+ * @tsoaModel
+ * @example
+ * {
+ *   "firstName": "Paul"
+ * }
+ */
+export interface UpdateFields {
+  firstName?: string;
+  lastName?: string;
+  birthDate?: string;
+  birthCity?: string;
+  birthCountry?: string;
+  birthLocationCode?: string;
+  deathAge?: number;
+  deathDate?: string;
+  deathCity?: string;
+  deathCountry?: string;
+  deathLocationCode?: string;
+  proof?: string;
+}
 
 export type StrAndNumber = string | number;

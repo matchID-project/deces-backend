@@ -1,13 +1,23 @@
-import { Controller, Get, Post, Body, Route, Query, Response, Tags, Header, Request, Path } from 'tsoa';
+import { Controller, Get, Post, Body, Route, Query, Response, Tags, Header, Request, Path, Security } from 'tsoa';
+import multer from 'multer';
+import forge from 'node-forge';
 import express from 'express';
+import { writeFile, access, mkdir, createReadStream } from 'fs';
+import { promisify } from 'util';
 import { resultsHeader, jsonPath, prettyString } from '../processStream';
 import { runRequest } from '../runRequest';
 import { buildRequest } from '../buildRequest';
 import { RequestInput, RequestBody } from '../models/requestInput';
-import { StrAndNumber } from '../models/entities';
+import { StrAndNumber, UpdateFields } from '../models/entities';
 import { buildResult, Result, ErrorResponse } from '../models/result';
 import { format } from '@fast-csv/format';
+import { updatedFields } from '../updatedIds';
+import { sendUpdateConfirmation } from '../mail';
 // import getDataGouvCatalog from '../getDataGouvCatalog';
+
+const writeFileAsync = promisify(writeFile);
+const mkdirAsync = promisify(mkdir);
+const accessAsync = promisify(access);
 
 /**
  * @swagger
@@ -223,4 +233,220 @@ export class SearchController extends Controller {
     const builtResult = buildResult(result.data, requestInput)
     return builtResult
   }
+
+
+
+  /**
+   * Update by ID
+   * @summary Use unique identifier to search for people
+   * @param id Person unique identifier
+   * must be authentified (user or admin)
+   */
+  @Security("jwt", ["user"])
+  @Response<ErrorResponse>('400', 'Bad request')
+  @Tags('Simple')
+  @Post('/id/{id}')
+  public async updateId(
+    @Path() id: string,
+    @Body() updateFields: UpdateFields,
+    @Request() request: express.Request
+  ): Promise<any> {
+    // get user & rights from Security
+    await this.handleFile(request);
+    const author = (request as any).user && (request as any).user.user
+    const isAdmin = (request as any).user && (request as any).user.scopes && (request as any).user.scopes.includes('admin');
+    const requestInput = new RequestInput({id});
+    const requestBuild = buildRequest(requestInput);
+    const result = await runRequest(requestBuild, requestInput.scroll);
+    const builtResult = buildResult(result.data, requestInput)
+    if (builtResult.response.persons.length > 0) {
+      let proof
+      const date = new Date(Date.now()).toISOString()
+      const bytes = forge.random.getBytesSync(24);
+      const randomId = forge.util.bytesToHex(bytes);
+      if (!isAdmin) {
+        updateFields = {...await request.body};
+        if (request.files && request.files.length > 0) {
+          const [ file ]: any = request.files
+          proof = file.path
+        } else if (updateFields.proof) {
+          ({ proof } = updateFields);
+          delete updateFields.proof
+          if (Object.keys(updateFields).length === 0) {
+            this.setStatus(400);
+            return { msg: 'A field at least must be provided' }
+          }
+        } else {
+          this.setStatus(400);
+          return { msg: 'Proof must be provided' }
+        }
+        const correctionData = {
+          id: randomId,
+          date,
+          proof,
+          auth: 0,
+          author,
+          fields: updateFields
+        };
+        try {
+          await accessAsync(`./data/proofs/${id}`);
+        } catch(err) {
+          await mkdirAsync(`./data/proofs/${id}`, { recursive: true });
+        }
+        await writeFileAsync(`./data/proofs/${id}/${date}_${id}.json`, JSON.stringify(correctionData));
+        if (!updatedFields[id]) { updatedFields[id] = [] }
+        updatedFields[id].push(correctionData);
+        return { msg: "Update stored" };
+      } else {
+        if (!updatedFields[id]) {
+          this.setStatus(406);
+          return { msg: "Id exists but no update to validate" }
+        } else {
+          const checkedIds = {...await request.body};
+          const checks = Object.keys(checkedIds).length;
+          let validated = 0;
+          let rejected = 0;
+          let noChange = 0;
+          await Promise.all(updatedFields[id].map(async (update: any) => {
+            if (checkedIds[update.id] === 'true') {
+              if (update.auth !== 1) {
+                update.auth = 1;
+                validated++;
+                await writeFileAsync(`./data/proofs/${id}/${update.date as string}_${id}.json`, JSON.stringify(update));
+                await sendUpdateConfirmation(update.author, true, undefined, id);
+              } else {
+                noChange++;
+              }
+              delete checkedIds[update.id];
+            } else if (checkedIds[update.id] !== undefined) {
+              if (update.auth !== -1) {
+                update.auth = -1;
+                rejected++;
+                await writeFileAsync(`./data/proofs/${id}/${update.date as string}_${id}.json`, JSON.stringify(update));
+                await sendUpdateConfirmation(update.author, false, checkedIds[update.id] || undefined, id);
+              } else {
+                noChange++;
+              }
+              delete checkedIds[update.id];
+            }
+          }));
+          if (Object.keys(checkedIds).length === checks) {
+            this.setStatus(406)
+            return { msg: "Update ids are all invalid"}
+          } else if (Object.keys(checkedIds).length > 0) {
+            return {
+              msg: "Partial validation could be achieved",
+              validated,
+              rejected,
+              noChange,
+              invalidIds: Object.keys(checkedIds)
+            }
+          } else {
+            return {
+              msg: "All validations processed",
+              validated,
+              rejected,
+              noChange
+            }
+          }
+        }
+      }
+    } else {
+      this.setStatus(404)
+      return { msg: "Id not found" }
+    }
+  }
+
+
+  /**
+   * Get updates list by ID
+   * @summary Use unique identifier to search for people
+   * @param id Person unique identifier
+   * must be authentified (user or admin)
+   */
+  @Security('jwt',['user'])
+  @Tags('Simple')
+  @Get('/updated')
+  public updateList(): any {
+    return updatedFields
+  }
+
+  private async handleFile(request: express.Request): Promise<any> {
+    const storage = multer.diskStorage({
+      destination: async (req, file, cb) => {
+        if (file.mimetype !== 'application/pdf') {
+          cb(new Error('Only PDF upload is allowed'), null)
+        }
+        const { id } = req.params
+        const dir = `./data/proofs/${id}`
+        try {
+          await accessAsync(dir);
+        } catch(err) {
+          await mkdirAsync(dir, { recursive: true });
+        }
+        cb(null, dir)
+      },
+      filename: (_, file, cb) => {
+        const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1E9)}`
+        cb(null, `${uniqueSuffix}_${file.originalname}`)
+      }
+    })
+    const multerSingle = multer({storage}).any();
+    return new Promise((resolve, reject) => {
+      multerSingle(request, undefined, (error: any) => {
+        if (error) {
+          reject(error);
+        }
+        resolve(true);
+      });
+    });
+  }
+
+
+  /**
+   * Get update proof by ID
+   * @summary Use unique identifier to search for people
+   * @param id Person unique identifier
+   * @param updateId updateId identifier
+   */
+  @Response<ErrorResponse>('400', 'Bad request')
+  @Tags('Proof')
+  @Get('/updates/proof/{id}')
+  public async getProof(
+    @Request() request: express.Request,
+    @Path() id: string,
+  ): Promise<any> {
+    const [personId, updateId] = id.split("-")
+    if (!updatedFields[personId]) {
+      this.setStatus(404);
+      return { msg: "No such person id" }
+    }
+    let proof;
+    updatedFields[personId].forEach((update: any) => {
+      if (update.id === updateId) {
+        proof = update.proof
+      }
+    })
+    if (!proof) {
+      this.setStatus(404);
+      return { msg: "No such update id" }
+    }
+    if (/^https?:/.test(proof)) {
+      this.setStatus(406);
+      return { msg: "Proof is not a file, but a web reference" }
+    }
+    let start; let end;
+    const stream = createReadStream(proof, {
+      start,
+      end
+    });
+    stream.pipe(request.res);
+    await new Promise((resolve, reject) => {
+        stream.on('end', () => {
+            request.res.end();
+            resolve(true);
+        })
+    })
+  }
+
 }

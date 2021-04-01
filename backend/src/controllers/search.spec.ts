@@ -74,3 +74,20 @@ describe('search.controller.ts - POST request', () => {
   //   expect(result.response.persons[0].birth.location.city).to.include('Elbeuf')
   // });
 });
+
+describe('search.controller.ts - POST id', () => {
+  const controller = new SearchController()
+  it('update id', async () => {
+    const body = {
+      'author_id': 'Ked3oh@oPho3m.com',
+      lastName: 'Aiph7u',
+      proof: 'https://somwhere.in.the.internet',
+    }
+    const req = {
+      headers: {},
+      body
+    } as express.Request
+    const res = await controller.updateId('POgzt_2CZT2o', body, req)
+    expect(res.msg).to.equal('Update stored');
+  });
+});

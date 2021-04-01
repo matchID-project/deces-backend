@@ -40,6 +40,7 @@ export const runRequest = async (body: BodyResponse|ScrolledResponse, scroll: st
   }
 };
 
+// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export const runBulkRequest = async (body: any): Promise<any> => { // TODO definition type
   const response = await axios(`http://elasticsearch:9200/_msearch`, {
     method: 'post',

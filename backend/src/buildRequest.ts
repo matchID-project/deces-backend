@@ -1,7 +1,6 @@
 import { Sort } from './models/entities';
 import { RequestInput } from './models/requestInput';
 import { BodyResponse, ScrolledResponse } from './models/body';
-import { buildRequestFilter } from "./buildRequestFilter";
 import { fuzzyTermQuery, matchQuery, prefixQuery } from './queries';
 import { isDateRange, isDateLimit, sortTransformationMask } from './masks';
 
@@ -44,6 +43,7 @@ const buildAdaptativeBlockMatch = (searchInput: RequestInput) => {
                 fuzzyTermQuery(searchInput.birthDate.field as string, searchInput.birthDate.mask.transform(searchInput.birthDate.value, searchInput.dateFormat) as string, 1, false),
                 prefixQuery(searchInput.birthDate.field as string, (searchInput.birthDate.mask.transform(searchInput.birthDate.value, searchInput.dateFormat) as string).substring(0,4), false, false)
               ],
+              // eslint-disable-next-line camelcase
               minimum_should_match: 1
             }
           }
@@ -65,11 +65,13 @@ const buildAdaptativeBlockMatch = (searchInput: RequestInput) => {
       }
     }
     return {
+        // eslint-disable-next-line camelcase
         function_score : {
           query: {
             bool: {
               must: queryMust,
               should: queryShould,
+              // eslint-disable-next-line camelcase
               minimum_should_match: 1
             }
           }
@@ -100,6 +102,7 @@ const buildSimpleMatch = (searchInput: string) => {
   date = date.length ? [date[0]] : null;
   const names = searchTerm.filter( x => /[a-z]+/i.exec(x)).filter( x => !/^(el|d|le|de|la|los)$/i.exec(x));
 
+  // eslint-disable-next-line camelcase
   const defaultQuery = { match_all: {} }
 
   let namesQuery:any
@@ -111,6 +114,7 @@ const buildSimpleMatch = (searchInput: string) => {
         must: [
           {
             match: {
+              // eslint-disable-next-line camelcase
               PRENOMS_NOM: {
                 query: names.join(" "),
                 fuzziness: "auto"
@@ -121,11 +125,13 @@ const buildSimpleMatch = (searchInput: string) => {
         should: [
           {
             match: {
+              // eslint-disable-next-line camelcase
               PRENOM_NOM: names.join(" "),
             }
           },
           {
             match: {
+              // eslint-disable-next-line camelcase
               PRENOM_NOM: {
                 query: names.join(" "),
                 fuzziness: "auto"
@@ -141,6 +147,7 @@ const buildSimpleMatch = (searchInput: string) => {
       namesQuery.bool.must.push(
         {
           bool: {
+            // eslint-disable-next-line camelcase
             minimum_should_match: 1,
             should: [
               {
@@ -265,10 +272,12 @@ const buildSimpleMatch = (searchInput: string) => {
   if (date) {
     dateQuery = {
       bool: {
+        // eslint-disable-next-line camelcase
         minimum_should_match: 1,
         should: [
           {
             match: {
+              // eslint-disable-next-line camelcase
               DATE_NAISSANCE: {
                 query: date[0],
                 fuzziness: "auto"
@@ -277,6 +286,7 @@ const buildSimpleMatch = (searchInput: string) => {
           },
           {
             match: {
+              // eslint-disable-next-line camelcase
               DATE_DECES: {
                 query: date[0],
                 fuzziness: "auto"
@@ -291,6 +301,7 @@ const buildSimpleMatch = (searchInput: string) => {
   const query = dateQuery
     ? namesQuery
       ? {
+          // eslint-disable-next-line camelcase
           function_score: {
             query: {
               bool: {
@@ -322,6 +333,7 @@ const buildFieldRequest = (key: string, searchInput: RequestInput, must: boolean
 
 const buildAdvancedMatch = (searchInput: RequestInput) => {
   return {
+    // eslint-disable-next-line camelcase
     function_score: {
       query: {
         bool: {
@@ -334,6 +346,7 @@ const buildAdvancedMatch = (searchInput: RequestInput) => {
                         .filter(key => searchInput.block.scope.includes(key))
                         .map(key => buildFieldRequest(key, searchInput, false))
                         .filter(x => x),
+                  // eslint-disable-next-line camelcase
                   minimum_should_match: searchInput.block.minimum_match
                 },
               },
@@ -379,7 +392,7 @@ const referenceSort: any = {
   deathCountry: "PAYS_DECES.raw"
 }
 
-export const buildSort = (inputs?: any): Sort[] => {
+export const buildSort = (inputs?: string|Sort[]): Sort[] => {
   return sortTransformationMask(inputs).map((item: any) => {
     const _myvar = Object.keys(item)[0]
     return {field: referenceSort[_myvar], order: Object.values(item)[0]}
@@ -390,8 +403,10 @@ const buildAggregation = (aggs: string[], aggsSize: number, afterKey: number): a
   const aggregationRequest: any = {};
   if ((aggs.length === 1) && ["birthDate", "deathDate"].includes(aggs[0])) {
     aggregationRequest[aggs[0]] = {
+      // eslint-disable-next-line camelcase
       'date_histogram': {
         field: referenceSort[aggs[0]],
+        // eslint-disable-next-line camelcase
         'calendar_interval': 'month',
         format: 'yyyyMMdd'
       }
@@ -411,8 +426,10 @@ const buildAggregation = (aggs: string[], aggsSize: number, afterKey: number): a
       const aggregation: any = {}
       if (["birthDate", "deathDate"].includes(agg)) {
         aggregation[agg] = {
+          // eslint-disable-next-line camelcase
           'date_histogram': {
             field: referenceSort[agg],
+            // eslint-disable-next-line camelcase
             'calendar_interval': 'month',
             format: 'yyyyMMdd'
           }
@@ -448,7 +465,7 @@ const buildAggregation = (aggs: string[], aggsSize: number, afterKey: number): a
 }
 
 export const buildRequest = (requestInput: RequestInput): BodyResponse|ScrolledResponse => {
-  const sort = buildSort(requestInput.sort.value);
+  const sort = buildSort(requestInput.sort.value as Sort[]);
   const match = buildMatch(requestInput);
   const transformedAggs = (requestInput.aggs && requestInput.aggs.value) ? requestInput.aggs.mask.transform(requestInput.aggs.value) : []
   const aggregations = buildAggregation(transformedAggs, requestInput.aggsSize, requestInput.afterKey);
@@ -460,6 +477,7 @@ export const buildRequest = (requestInput: RequestInput): BodyResponse|ScrolledR
   if (requestInput.scrollId && requestInput.scroll) {
     body = {
       scroll: requestInput.scroll,
+      // eslint-disable-next-line camelcase
       scroll_id: requestInput.scrollId
     }
   } else {
@@ -467,7 +485,9 @@ export const buildRequest = (requestInput: RequestInput): BodyResponse|ScrolledR
       // Static query Configuration
       // --------------------------
       // https://www.elastic.co/guide/en/elasticsearch/reference/7.x/search-request-highlighting.html
+      // eslint-disable-next-line camelcase
       min_score: ((requestInput.fullText && requestInput.fullText.value) ? 5: 0),
+      // eslint-disable-next-line camelcase
       track_total_hits: requestInput.block ? false : true,
       // highlight: {
       //   fragment_size: 200,

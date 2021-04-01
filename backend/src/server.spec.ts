@@ -27,24 +27,41 @@ describe('server.ts - Express application', () => {
     expect(res.body.msg).to.eql("OK");
   });
 
-  it('/id/{id}', async () => {
-    let res = await chai.request(app)
-      .get(apiPath('search'))
-      .query({q: 'Georges Duboeuf'})
-    const { id }: { id: string } = res.body.response.persons[0];
-    res = await chai.request(app)
-      .get(apiPath(`id/${id}`))
-    expect(res).to.have.status(200);
-    expect(res.body.response.persons[0].name.first).to.include('Georges');
-    expect(res.body.response.persons[0].id).to.eql('VhfumwT3QnUq');
-    expect(res.body.response.persons[0].links.wikidata).to.include('Q3102639');
-  });
+  describe('/id/{id}', () => {
+    it('search', async () => {
+      let res = await chai.request(app)
+        .get(apiPath('search'))
+        .query({q: 'Georges Duboeuf'})
+      const { id }: { id: string } = res.body.response.persons[0];
+      res = await chai.request(app)
+        .get(apiPath(`id/${id}`))
+      expect(res).to.have.status(200);
+      expect(res.body.response.persons[0].name.first).to.include('Georges');
+      expect(res.body.response.persons[0].id).to.eql('VhfumwT3QnUq');
+      expect(res.body.response.persons[0].links.wikidata).to.include('Q3102639');
+    });
+
+    it('update', async () => {
+      const token = await chai.request(app)
+        .post(apiPath(`auth`))
+        .send({user:'user1@gmail.com', password: 'magicPass'})
+      const buf = Buffer.from('weird pdf', 'base64')
+      const res = await chai.request(app)
+        .post(apiPath(`id/VhfumwT3QnUq`))
+        .set('Authorization', `Bearer ${token.body.access_token as string}`)
+        .field('author_id', 'Ked3oh@oPho3m.com')
+        .field('lastName', 'Aiph7u')
+        .attach('pdf', buf, 'file.pdf')
+      expect(res).to.have.status(200);
+      expect(res.body.msg).to.equal('Update stored');
+    });
+  })
 
   describe('/queue', () => {
     it('/queue/jobs with good token', async () => {
       const token = await chai.request(app)
         .post(apiPath(`auth`))
-        .send({password: process.env.BACKEND_TOKEN_PASSWORD})
+        .send({user: process.env.BACKEND_TOKEN_USER, password: process.env.BACKEND_TOKEN_PASSWORD})
       const res = await chai.request(app)
         .get(apiPath('queue/jobs/delayed'))
         .set('Authorization', `Bearer ${token.body.access_token as string}`)
@@ -55,7 +72,7 @@ describe('server.ts - Express application', () => {
     it('/queue/jobs with wrong token', async () => {
       const res = await chai.request(app)
         .get(apiPath(`queue/jobs/stalled`))
-        .set('Authorization', 'wrong password')
+        .set('Authorization', 'Wrong username or password')
       expect(res).to.have.status(422);
       expect(res.body.message).to.eql("jwt malformed");
     });
@@ -72,7 +89,7 @@ describe('server.ts - Express application', () => {
     it('good password authentification', async () => {
       const token = await chai.request(app)
         .post(apiPath(`auth`))
-        .send({password: process.env.BACKEND_TOKEN_PASSWORD})
+        .send({user: process.env.BACKEND_TOKEN_USER, password: process.env.BACKEND_TOKEN_PASSWORD})
       expect(token).to.have.status(200);
       expect(token.body).to.include.all.keys('access_token');
     });
@@ -80,9 +97,9 @@ describe('server.ts - Express application', () => {
     it('wrong password authentification', async () => {
       const res = await chai.request(app)
         .post(apiPath(`auth`))
-        .send({password: 'wrong_password'})
-      expect(res).to.have.status(400);
-      expect(res.body.msg).to.include('Wrong password');
+        .send({user: 'anyone', password: 'wrong_password'})
+      expect(res).to.have.status(401);
+      expect(res.body.msg).to.include('Wrong username or password');
     });
   })
 

@@ -15,7 +15,7 @@ const dataGouvRewrite = {
     url: [process.env.DATAGOUV_RESOURCES_URL, process.env.DATAGOUV_PROXY_PATH]
 };
 
-const getDataGouvCatalog = async () => {
+const getDataGouvCatalog = async (): Promise<any> => {
   const response: DatagouvCatalog = await axios.get(process.env.DATAGOUV_CATALOG_URL);
   const resources = await response.data.resources;
   if (resources) {
@@ -31,8 +31,10 @@ const getDataGouvCatalog = async () => {
   }
 }
 
+export let catalogData: any;
+
 getDataGouvCatalog().then(response => {
-  const catalogData = response
+  catalogData = response
 })
 
 export default getDataGouvCatalog
