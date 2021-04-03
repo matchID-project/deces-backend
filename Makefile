@@ -52,10 +52,10 @@ export BULK_TIMEOUT = 600
 export BACKEND_TIMEOUT = 30
 export BACKEND_JOB_CONCURRENCY = 2
 export BACKEND_CHUNK_CONCURRENCY = 4
-export SMTP_HOST=smtp
-export SMTP_PORT=25
+export SMTP_HOST?=smtp
+export SMTP_PORT?=25
 export SMTP_USER?=${API_EMAIL}
-export SMTP_PWD?=$(shell echo $$RANDOM )
+export SMTP_PWD?=
 
 # Backupdir
 export BACKUP_DIR = ${APP_PATH}/backup
