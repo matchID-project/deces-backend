@@ -26,7 +26,7 @@ import { GeoPoint, RequestField, Sort } from './entities';
 
 export interface Block {
   scope: string[],
-  minimum_match: number,
+  'minimum_match': number,
   should?: boolean
 }
 

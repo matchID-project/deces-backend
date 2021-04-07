@@ -11,7 +11,7 @@ export const normalize = (token: string|string[]): string|string[] => {
   }
 }
 
-export const applyRegex = (a: string|string[], reTable: any): string|string[] => {
+export const applyRegex = (a: string|string[], reTable: (string|RegExp)[][] ): string|string[] => {
   if (typeof(a) === 'string') {
       let b = normalize(a) as string;
       reTable.map((r:any) => b = b.replace(r[0], r[1]));

@@ -30,6 +30,7 @@ const getTermFilter = (filter: Filter) => { // TODO preciser
             term: getTermFilterValue(filter.field, filterValue)
           }))
         ],
+        // eslint-disable-next-line camelcase
         minimum_should_match: 1
       }
     };
@@ -60,6 +61,7 @@ const getRangeFilter = (filter: Filter) => {
             }
           }))
         ],
+        // eslint-disable-next-line camelcase
         minimum_should_match: 1
       }
     };
@@ -81,7 +83,7 @@ const getRangeFilter = (filter: Filter) => {
   }
 }
 
-export const buildRequestFilter = (filters: any[]) => {
+export const buildRequestFilter = (filters: any[]): any => {
   if (!filters) return;
 
   filters = filters.reduce((acc, filter) => {

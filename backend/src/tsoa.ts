@@ -10,6 +10,16 @@ import { generateRoutes, generateSpec, ExtendedRoutesConfig, ExtendedSpecConfig 
     outputDirectory: './src/api',
     noImplicitAdditionalProperties: "silently-remove-extras",
     controllerPathGlobs: ['./src/controllers/**/*controller.ts'],
+    securityDefinitions: {
+      jwt: {
+        type: "oauth2",
+        flow: "password",
+        tokenUrl: "/deces/api/v1/auth",
+        scopes: {
+          admin: "administration access"
+        }
+      },
+    }
   };
 
   const routeOptions: ExtendedRoutesConfig = {
@@ -18,6 +28,7 @@ import { generateRoutes, generateSpec, ExtendedRoutesConfig, ExtendedSpecConfig 
     routesDir: './src/routes',
     middleware: 'express',
     noImplicitAdditionalProperties: "silently-remove-extras",
+    authenticationModule: "./src/authentification.ts"
   };
 
   await generateSpec(specOptions);

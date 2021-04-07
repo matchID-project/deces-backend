@@ -1,6 +1,6 @@
+import { Request, Response } from 'express';
 import { Readable, Transform, pipeline, finished } from 'stream';
 import fs from 'fs';
-import forge from 'node-forge';
 import Queue from 'bee-queue';
 import { RequestInput } from './models/requestInput';
 import { buildRequest } from './buildRequest';
@@ -95,7 +95,7 @@ const ToJsonStream = () => {
 const JsonStringifyStream = () => {
   return new Transform({
     objectMode: true,
-    transform(row: any, encoding: string, callback: any) {
+    transform(row: any, encoding: string, callback: (e?: any) => void) {
         try {
           this.push(JSON.stringify(row) + '\n');
           callback();
@@ -109,7 +109,7 @@ const JsonStringifyStream = () => {
 const JsonParseStream = () => {
   return new Transform({
     objectMode: true,
-    transform(row: any, encoding: string, callback: any) {
+    transform(row: any, encoding: string, callback: (e?: any) => void) {
         try {
           // loggerStream.write(`jsonParse ${row}\n`);
           this.push(JSON.parse(row));
@@ -128,14 +128,16 @@ const pbkdf2 = (key: string) => {
   // return crypto.pbkdf2Sync(key, salt, 16, 16, 'sha256');
 };
 
-export const processCsv =  async (job: Queue.Job<any>, jobFile: any): Promise<any> => {
+interface MapField {
+  [Key: string]: string;
+}
+
+export const processCsv =  async (job: Queue.Job<any>, jobFile: JobInput): Promise<any> => {
   try {
     // const inputHeaders: string[] = [];
     // let outputHeaders: any;
-    const mapField:any = {};
-    const md = forge.md.sha256.create();
-    md.update(job.data.randomKey);
-    const jobId = md.digest().toHex();
+    const mapField:MapField = {};
+    const jobId = crypto.createHash('sha256').update(job.data.randomKey).digest('hex');
 
     validFields.forEach(key => mapField[job.data[key] || key] = key );
 
@@ -180,7 +182,7 @@ export const processCsv =  async (job: Queue.Job<any>, jobFile: any): Promise<an
       .pipe(writeStream)
       .on('error', (e: any) => log({writeProcessingError: e.toString(), jobId}));
     setTimeout(() => {
-        // lazily removes inputfile index as soon as pipline begins
+        // lazily removes inputfile index as soon as pipeline begins
         fs.unlink(jobFile.file, (e: any) => { if (e) log({unlinkInputProcessingError: e, jobId}) });
     }, 1000);
     await finishedAsync(writeStream);
@@ -194,7 +196,7 @@ export const processCsv =  async (job: Queue.Job<any>, jobFile: any): Promise<an
   }
 }
 
-export const processChunk = async (chunk: any, candidateNumber: number, params: ScoreParams) => {
+export const processChunk = async (chunk: any[], candidateNumber: number, params: ScoreParams): Promise<any[]> => {
   const bulkRequest = chunk.map((row: any) => { // TODO: type
     const requestInput = new RequestInput({...row, dateFormat: params.dateFormat});
     return [JSON.stringify({index: "deces"}), JSON.stringify(buildRequest(requestInput))];
@@ -235,12 +237,15 @@ jobQueue.process(Number(process.env.BACKEND_JOB_CONCURRENCY), (job: Queue.Job<an
 
 const jsonFields: string[] = ['birthGeoPoint','deathGeoPoint','block'];
 
+interface Record {
+  [Key: string]: any
+}
 
-export class ProcessStream<I extends any, O extends any> extends Transform {
+export class ProcessStream extends Transform {
   job: any;
   inputHeaders: string[];
   outputHeaders: any;
-  mapField: any;
+  mapField: MapField;
   batch: any[];
   batchSize: number;
   batchNumber: number;
@@ -252,7 +257,7 @@ export class ProcessStream<I extends any, O extends any> extends Transform {
   candidateNumber: number;
   pruneScore: number;
 
-  constructor(job: any, mapField: any, options: any = {}) {
+  constructor(job: Queue.Job<any>, mapField: MapField, options: any = {}) {
     // init Transform
     options.objectMode = true; // forcing object mode
     super({ objectMode: true, ...(options || {}) });
@@ -270,7 +275,7 @@ export class ProcessStream<I extends any, O extends any> extends Transform {
     this.jobs = [];
   }
 
-  _transform(record: any, encoding: string, callback: any) {
+  _transform(record: Record, encoding: string, callback: (e?: any) => void): void {
     if (stopJob.includes(this.job.id)) {
       this.push(null);
       return;
@@ -295,7 +300,7 @@ export class ProcessStream<I extends any, O extends any> extends Transform {
     callback();
   }
 
-  _flush(callback: any) {
+  _flush(callback: (e?: any) => void): void {
       if (this.batch.length) {
           this.processRecords(this.batchNumber)
               .then(() => callback())
@@ -305,29 +310,29 @@ export class ProcessStream<I extends any, O extends any> extends Transform {
       callback();
   }
 
-  pushRecords(records: any) {
+  pushRecords(records: Record[]): void {
     if (this.outputHeaders !== undefined) {
       // add header to stream
       this.push(this.outputHeaders);
       this.outputHeaders = undefined;
     }
-    records.flat(1).forEach((r: any) => {
+    (records as any).flat(1).forEach((r: any) => {
       this.processedRows = r && r.metadata && r.metadata.sourceLineNumber || this.processedRows;
       this.push(r);
     });
     this.job.reportProgress({rows: this.processedRows, percentage: this.processedRows / this.totalRows * 100})
   }
 
-  get shouldProcessBatch() {
+  get shouldProcessBatch(): boolean {
       return this.batch.length >= this.batchSize;
   }
 
-  async processRecords(batchNumber: number) {
+  async processRecords(batchNumber: number): Promise<void> {
     await this.processBatch();
     await this.flushRecords(batchNumber);
   }
 
-  async flushRecords(batchNumber: number) {
+  async flushRecords(batchNumber: number): Promise<void> {
     while((this.jobs.length > 0) && (Number(this.jobs[0].id) <= batchNumber)) {
       const job = this.jobs.shift();
       const records = await job.result;
@@ -335,7 +340,7 @@ export class ProcessStream<I extends any, O extends any> extends Transform {
     }
   }
 
-  async processBatch() {
+  async processBatch(): Promise<void> {
     const jobId = `${this.batchNumber++}`;
     const job = await chunkQueue
       .createJob({
@@ -347,14 +352,14 @@ export class ProcessStream<I extends any, O extends any> extends Transform {
       .timeout(30000)
       .retries(2)
       .save();
-    const jobResult = new Promise((resolve, reject) => {
+    const jobResult = new Promise((resolve) => {
       job.on('succeeded', (result: any) => { resolve(result) });
     });
     this.jobs.push({id: jobId, result: jobResult})
     this.batch = [];
   }
 
-  toRequest(record: any) {
+  toRequest(record: Record): any {
     const request: any = {
       metadata: {
         source: {},
@@ -373,21 +378,24 @@ export class ProcessStream<I extends any, O extends any> extends Transform {
       ? JSON.parse(this.job.data.block)
       : {
         scope: ['name', 'birthDate'],
-        minimum_match: 1,
+        'minimum_match': 1,
         should: true
       };
     return request;
   }
 }
 
-export const csvHandle = async (request: any, options: any) => {
+interface Options {
+  [Key: string]: any;
+}
+
+export const csvHandle = async (request: Request, options: Options): Promise<any> => {
   // Use hash key index
-  const md = forge.md.sha256.create();
-  md.update(options.randomKey);
+  const jobId = crypto.createHash('sha256').update(options.randomKey).digest('hex');
   const gzipStream =  createGzip();
   const encryptStream =  crypto.createCipheriv('aes-256-cbc', pbkdf2(options.randomKey), encryptioniv);
-  const writeStream: any = fs.createWriteStream(`${md.digest().toHex()}.in.enc`)
-  const readStream = new Readable().on('data', function(buffer: any) {
+  const writeStream: any = fs.createWriteStream(`${jobId}.in.enc`)
+  const readStream = new Readable().on('data', (buffer: any) => {
     // count lines from buffer without duplicating it
     let idx = -1;
     options.totalRows--; // Because the loop will run once for idx=-1
@@ -396,16 +404,16 @@ export const csvHandle = async (request: any, options: any) => {
       options.totalRows++;
     } while (idx !== -1);
   });
-  const pipelineStream = pipelineAsync(readStream, gzipStream, encryptStream, writeStream);
-  readStream.push(request.files[0].buffer);
+  pipelineAsync(readStream, gzipStream, encryptStream, writeStream);
+  readStream.push((request.files as any)[0].buffer);
   readStream.push(null);
   await finishedAsync(writeStream);
-  inputsArray.push({id: md.digest().toHex(), file: `${md.digest().toHex()}.in.enc`, size: options.totalRows}) // Use key hash as job identifier
+  inputsArray.push({id: jobId, file: `${jobId}.in.enc`, size: options.totalRows}) // Use key hash as job identifier
   const job = await jobQueue
     .createJob({...options})
-    .setId(md.digest().toHex())
+    .setId(jobId)
     .save()
-  job.on('succeeded', (result: any) => {
+  job.on('succeeded', () => {
     if (!stopJob.includes(job.id)) {
       setTimeout(() => {
         fs.unlink(`${job.id}.out.enc`, (err: any) => {if (err) log({unlinkOutputDeleteError: err, id: options.randomKey});});
@@ -416,10 +424,8 @@ export const csvHandle = async (request: any, options: any) => {
   return {msg: 'started', id: options.randomKey};
 }
 
-export const returnBulkResults = async (response: any, id: string, outputFormat: string, order: string) => {
-  const md = forge.md.sha256.create();
-  md.update(id);
-  const jobId = md.digest().toHex();
+export const returnBulkResults = async (response: Response, id: string, outputFormat: string, order: string): Promise<void> => {
+  const jobId = crypto.createHash('sha256').update(id).digest('hex');
   const job: Queue.Job<any>|any = await jobQueue.getJob(jobId);
   const jobsActive = await jobQueue.getJobs('active', {start: 0, end: 25})
   if (job && job.status === 'succeeded') {
@@ -551,10 +557,8 @@ export const returnBulkResults = async (response: any, id: string, outputFormat:
   }
 }
 
-export const deleteThreadJob = async (response: any, id: string) => {
-  const md = forge.md.sha256.create();
-  md.update(id);
-  const jobId = md.digest().toHex()
+export const deleteThreadJob = async (response: Response, id: string): Promise<void> => {
+  const jobId = crypto.createHash('sha256').update(id).digest('hex');
   const job: Queue.Job<any>|any= await jobQueue.getJob(jobId)
   if (job && job.status === 'created') {
     stopJob.push(job.id);
@@ -594,7 +598,11 @@ interface StopJobReason {
   msg: string;
 }
 
-export const jsonPath = (json: any, path: string): any => {
+interface Json {
+  [Key: string]: any;
+}
+
+export const jsonPath = (json: Json, path: string): any => {
   if (!json || !path) { return undefined }
   if (!path.includes('.')) {
     return json[path];
@@ -606,7 +614,7 @@ export const jsonPath = (json: any, path: string): any => {
   }
 }
 
-export const prettyString = (json: any): string => {
+export const prettyString = (json: Json|Json[]|number|string): string => {
   if ((json === undefined) || (json === null)) {
     return '';
   }

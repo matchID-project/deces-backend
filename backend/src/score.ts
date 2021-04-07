@@ -97,9 +97,9 @@ const fuzzballTokenSetRatio = (a: string, b: string) => {
     return 0.01 * fuzz.token_set_ratio(a,b);
 }
 
-const fuzzballRatio = (a: string, b: string) => {
-    return 0.01 * fuzz.ratio(a,b);
-}
+// const fuzzballRatio = (a: string, b: string) => {
+//     return 0.01 * fuzz.ratio(a,b);
+// }
 
 const fuzzMixRatio = (a: string, b: string) => {
     if (Array.isArray(tokenize(a)) || Array.isArray(tokenize(b))) {
@@ -518,7 +518,7 @@ let scoreLocation = (locA: Location, locB: Location): any => {
     return score;
 }
 
-const emptyDate = /^\s*$/;
+// const emptyDate = /^\s*$/;
 
 const parseYMD = (dateString: string): Date => {
     return new Date(+dateString.substr(0,4),+dateString.substr(4,2) - 1,+dateString.substr(6,2));

@@ -1,0 +1,16 @@
+version: '3.4'
+
+# fake smtp for dev and test usage
+
+services:
+  smtp:
+    image: maildev/maildev
+    container_name: deces-smtp-fake
+    ports:
+      - 1080:80
+    restart: always
+
+networks:
+  default:
+    external:
+      name: ${DC_NETWORK}

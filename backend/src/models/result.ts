@@ -2,6 +2,7 @@ import { Person } from './entities';
 import { RequestInput } from './requestInput';
 import { scoreResults } from '../score';
 import { wikidata } from '../wikidata';
+import { updatedFields } from '../updatedIds';
 
 interface RequestType {
   [key: string]: any; // Index signature
@@ -147,8 +148,8 @@ export interface ResultRawES {
     hits:  ResultRawHit[]
   };
   aggregations?: {
-    doc_count_error_upper_bound: number;
-    sum_other_doc_count: number;
+    'doc_count_error_upper_bound': number;
+    'sum_other_doc_count': number;
     buckets: any[];
   }
 }
@@ -286,6 +287,18 @@ export const buildResultSingle = (item: ResultRawHit): Person => {
     if (wd.wikimedia) { result.links.wikimedia = wd.wikimedia }
     if (wd.wikipedia) { result.links.wikipedia = wd.wikipedia }
     if (wd.label) { result.links.label = wd.label }
+  }
+  const updatedData = updatedFields[result.id];
+  if (updatedData) {
+    result.modifications = updatedData.map((u: any) => {
+      const update: any = {...u};
+      // WIP quick n dirty anonymization
+      const author: string = u.author as string;
+      update.author = author.substring(0,2)
+        + '...' + author.replace(/@.*/,'').substring(author.replace(/@.*/,'').length-2)
+        + '@' + author.replace(/.*@/,'');
+      return update;
+    });
   }
   return result;
 }

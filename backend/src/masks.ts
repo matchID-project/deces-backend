@@ -1,12 +1,11 @@
 import { Sort } from './models/entities';
 import moment from 'moment';
 
-export const ageValidationMask = (ageString: string) => {
+export const ageValidationMask = (ageString: string): boolean => {
     return /^(|[0-9]|[1-9]([0-9]|[0-3][0-9]))$/.test(ageString);
 }
 
-
-export const ageRangeValidationMask = (ageRangeString: string) => {
+export const ageRangeValidationMask = (ageRangeString: string): boolean => {
     if (/[0-9\/]+\-[0-9\/]+/.test(ageRangeString)) {
         const ages = ageRangeString.split('-');
         return ages.every(d => ageValidationMask(d)) && (Number(ages[0])<Number(ages[1]));
@@ -15,7 +14,7 @@ export const ageRangeValidationMask = (ageRangeString: string) => {
     }
 }
 
-export const ageRangeTransformMask = (ageRangeString: string|number) => {
+export const ageRangeTransformMask = (ageRangeString: string|number): number|string|string[] => {
     if ((typeof(ageRangeString) === 'string') && (/[0-9\/]+\-[0-9\/]+/.test(ageRangeString))) {
         return ageRangeString.split('-').map(d => d);
     } else {
@@ -23,11 +22,11 @@ export const ageRangeTransformMask = (ageRangeString: string|number) => {
     }
 }
 
-export const dateValidationMask = (dateString: string) => {
+export const dateValidationMask = (dateString: string): boolean => {
     return /^(|0000|1([8-9]\d{2})|2(0\d{2})|[0-3](\d(\/([0-1](\d(\/(1([8-9]\d{2})|2(0\d{2}))))))))$/.test(dateString);
 }
 
-export const dateRangeValidationMask = (dateRangeString: string) => {
+export const dateRangeValidationMask = (dateRangeString: string): boolean => {
     if (isDateRange(dateRangeString)) {
         return dateRangeString.toString().split('-').every(d => dateValidationMask(d));
     } else if (isDateLimit(dateRangeString)) {
@@ -39,15 +38,15 @@ export const dateRangeValidationMask = (dateRangeString: string) => {
 
 const dateRangeRegexp = /^(\d{4}|\d{4}.?\d{2}.?\d{2}|\d{2}.?\d{2}.?\d{4})\-(\d{4}|\d{4}.?\d{2}.?\d{2}|\d{2}.?\d{2}.?\d{4})$/;
 
-export const isDateRange = (dateRangeString: string) => {
+export const isDateRange = (dateRangeString: string): string[] => {
   const l = dateRangeString.length;
-  return (((l === 9) || (l > 10)) && dateRangeString.indexOf('-'))  ? (dateRangeRegexp.exec(dateRangeString)) : false;
+  return (((l === 9) || (l > 10)) && dateRangeString.indexOf('-'))  ? (dateRangeRegexp.exec(dateRangeString)) : undefined;
 }
 
-const dateLimitRegexp = /^([\<\>])(\d{4}|\d{4}.?\d{2}.?\d{2}|\d{2}.?\d{2}.?\d{4})$/;
+// const dateLimitRegexp = /^([\<\>])(\d{4}|\d{4}.?\d{2}.?\d{2}|\d{2}.?\d{2}.?\d{4})$/;
 
-export const isDateLimit = (dateRangeString: string) => {
-  return ['<','>'].indexOf(dateRangeString[0]) >= 0 ? [null,dateRangeString[0],dateRangeString.substring(1)] : false;
+export const isDateLimit = (dateRangeString: string): string[] => {
+  return ['<','>'].indexOf(dateRangeString[0]) >= 0 ? [null,dateRangeString[0],dateRangeString.substring(1)] : undefined;
 }
 
 export const dateTransform = (dateString: string|number, dateFormatInput: string, dateFormatOutput?: string): string => {
@@ -64,7 +63,7 @@ export const dateTransformMask = (dateString: string|number): string => {
   }
 }
 
-export const dateRangeTransformMask = (dateRangeString: string) => {
+export const dateRangeTransformMask = (dateRangeString: string): string|string[] => {
   if (/[0-9\/]+\-[0-9\/]+/.test(dateRangeString) && dateRangeString.toString().split('-').length === 2) {
     return dateRangeString.toString().split('-').map(d => dateTransformMask(d));
   } else if (/\>[0-9\/]+/.test(dateRangeString)) {
@@ -76,11 +75,11 @@ export const dateRangeTransformMask = (dateRangeString: string) => {
   }
 }
 
-export const sexValidationMask = (sex: string) => {
+export const sexValidationMask = (sex: string): boolean => {
     return /^(F|M|H)?$/.test(sex);
 }
 
-export const sexTransformMask = (sex: string) => {
+export const sexTransformMask = (sex: string): string => {
     return sex.replace(/^(H).*$/,'M').replace(/^(F|M).*$/,'$1');
 }
 
