@@ -416,7 +416,7 @@ export class SearchController extends Controller {
     @Request() request: express.Request,
     @Path() id: string,
   ): Promise<any> {
-    const [personId, updateId] = id.split("-")
+    const [_, personId, updateId] = /^(.*)-([a-f0-9]+)$/.exec(id);
     if (!updatedFields[personId]) {
       this.setStatus(404);
       return { msg: "No such person id" }
