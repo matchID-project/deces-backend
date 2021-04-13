@@ -5,7 +5,6 @@ import { Person } from './models/entities';
 import { promisify } from 'util';
 import { parseString } from '@fast-csv/parse';
 import { writeToBuffer } from '@fast-csv/format';
-import * as jwt from "jsonwebtoken";
 import fs from "fs";
 import chai from 'chai';
 import chaiHttp = require('chai-http');
@@ -63,7 +62,7 @@ describe('server.ts - Express application', () => {
         .post(apiPath(`auth`))
         .send({user: process.env.BACKEND_TOKEN_USER, password: process.env.BACKEND_TOKEN_PASSWORD})
       const res = await chai.request(app)
-        .get(apiPath('queue/jobs/delayed'))
+        .get(apiPath('queue/jobs?jobsType=delayed'))
         .set('Authorization', `Bearer ${token.body.access_token as string}`)
       expect(res).to.have.status(200);
       expect(res.body.jobs.length).to.eql(0);
@@ -71,7 +70,7 @@ describe('server.ts - Express application', () => {
 
     it('/queue/jobs with wrong token', async () => {
       const res = await chai.request(app)
-        .get(apiPath(`queue/jobs/stalled`))
+        .get(apiPath(`queue/jobs?jobsType=stalled`))
         .set('Authorization', 'Wrong username or password')
       expect(res).to.have.status(422);
       expect(res.body.message).to.eql("jwt malformed");
@@ -79,7 +78,7 @@ describe('server.ts - Express application', () => {
 
     it('/queue/jobs query missing token', async () => {
       const res = await chai.request(app)
-        .get(apiPath(`queue/jobs/failed`))
+        .get(apiPath(`queue/jobs?jobsType=failed`))
       expect(res).to.have.status(422);
       expect(res.body.message).to.eql("No token provided");
     });
@@ -343,7 +342,7 @@ describe('server.ts - Express application', () => {
       const nrows = 5000;
       const readStream: any = fs.createReadStream('/deces-backend/tests/clients_test.csv',  {encoding: 'utf8'})
       readStream
-        .on('data', function (chunk: string) {
+        .on('data', (chunk: string) => {
           index = chunk.indexOf('\n');
           data += chunk;
           if (index > 10) {
