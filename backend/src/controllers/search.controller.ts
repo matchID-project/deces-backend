@@ -367,8 +367,21 @@ export class SearchController extends Controller {
   @Security('jwt',['user'])
   @Tags('Simple')
   @Get('/updated')
-  public updateList(): any {
-    return updatedFields
+  public updateList(@Request() request: express.Request): any {
+    const author = (request as any).user && (request as any).user.user
+    const isAdmin = (request as any).user && (request as any).user.scopes && (request as any).user.scopes.includes('admin');
+    if (isAdmin) {
+      return updatedFields
+    } else {
+      const filteredUpdates:any = {};
+      Object.keys(updatedFields).forEach((id:any) => {
+        const modifications = updatedFields[id].filter((m:any) => m.author === author);
+        if (modifications.length) {
+          filteredUpdates[id] = modifications;
+        }
+      })
+      return filteredUpdates;
+    }
   }
 
   private async handleFile(request: express.Request): Promise<any> {
