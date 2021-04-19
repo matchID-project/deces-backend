@@ -5,11 +5,11 @@ import express from 'express';
 import { writeFile, access, mkdir, createReadStream } from 'fs';
 import { promisify } from 'util';
 import { resultsHeader, jsonPath, prettyString } from '../processStream';
-import { runRequest } from '../runRequest';
+import { runRequest, runBulkRequest } from '../runRequest';
 import { buildRequest } from '../buildRequest';
 import { RequestInput, RequestBody } from '../models/requestInput';
 import { StrAndNumber, UpdateFields } from '../models/entities';
-import { buildResult, Result, ErrorResponse } from '../models/result';
+import { buildResult, buildResultSingle, Result, ErrorResponse } from '../models/result';
 import { format } from '@fast-csv/format';
 import { updatedFields } from '../updatedIds';
 import { sendUpdateConfirmation } from '../mail';
@@ -367,21 +367,32 @@ export class SearchController extends Controller {
   @Security('jwt',['user'])
   @Tags('Simple')
   @Get('/updated')
-  public updateList(@Request() request: express.Request): any {
+  public async updateList(@Request() request: express.Request): Promise<any>  {
     const author = (request as any).user && (request as any).user.user
     const isAdmin = (request as any).user && (request as any).user.scopes && (request as any).user.scopes.includes('admin');
+    let updates:any = {};
     if (isAdmin) {
-      return updatedFields
+      updates = {...updatedFields};
     } else {
-      const filteredUpdates:any = {};
       Object.keys(updatedFields).forEach((id:any) => {
         const modifications = updatedFields[id].filter((m:any) => m.author === author);
         if (modifications.length) {
-          filteredUpdates[id] = modifications;
+          updates[id] = modifications;
         }
       })
-      return filteredUpdates;
     }
+    const bulkRequest = Object.keys(updates).map((id: any) =>
+      [JSON.stringify({index: "deces"}), JSON.stringify(buildRequest(new RequestInput({id})))]
+    );
+    const msearchRequest = bulkRequest.map((x: any) => x.join('\n\r')).join('\n\r') + '\n';
+    const result =  await runBulkRequest(msearchRequest);
+    return result.data.responses.map((r:any) => buildResultSingle(r.hits.hits[0]))
+      .map((r:any) => {
+        delete r.score;
+        delete r.scores;
+        r.modifications = updates[r.id];
+        return r;
+      });
   }
 
   private async handleFile(request: express.Request): Promise<any> {
