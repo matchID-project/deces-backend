@@ -559,7 +559,10 @@ export const returnBulkResults = async (response: Response, id: string, outputFo
 
 export const deleteThreadJob = async (response: Response, id: string): Promise<void> => {
   const jobId = crypto.createHash('sha256').update(id).digest('hex');
-  const job: Queue.Job<any>|any= await jobQueue.getJob(jobId)
+  let job: Queue.Job<any>|any= await jobQueue.getJob(jobId)
+  if (!job) {
+    job = await jobQueue.getJob(id)
+  }
   if (job && job.status === 'created') {
     stopJob.push(job.id);
     setTimeout(() => {
