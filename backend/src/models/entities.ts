@@ -59,6 +59,43 @@ export interface Location {
     longitude?: number;
   };
 
+/**
+ * Identity modification
+ * @tsoaModel
+ * @example
+ * {
+ *   "firstName": "Paul"
+ * }
+ */
+export interface UpdateFields {
+  firstName?: string;
+  lastName?: string;
+  birthDate?: string;
+  birthCity?: string;
+  birthCountry?: string;
+  birthLocationCode?: string;
+  deathAge?: number;
+  deathDate?: string;
+  deathCity?: string;
+  deathCountry?: string;
+  deathLocationCode?: string;
+}
+
+export interface UpdateUserRequest extends UpdateFields {
+  proof: string;
+  message?: string;
+};
+
+export interface Modification {
+  id: string;
+  date: string;
+  author: string;
+  fields: UpdateFields;
+  proof: string;
+  auth: -2|-1|0|1|2|3;
+  message?: string;
+};
+
 export interface Person {
     score: number;
     source: string;
@@ -83,14 +120,7 @@ export interface Person {
       wikidata?: string;
       wikimedia?: string;
     };
-    modifications?: {
-      id: string;
-      date: string;
-      auth: number;
-      proof: string;
-      author: string;
-      fields: UpdateFields;
-    };
+    modifications?: [Modification];
   };
 
 export interface ScoreParams {
@@ -98,28 +128,5 @@ export interface ScoreParams {
   pruneScore?: number;
   candidateNumber?: number;
 };
-
-/**
- * Identity modification
- * @tsoaModel
- * @example
- * {
- *   "firstName": "Paul"
- * }
- */
-export interface UpdateFields {
-  firstName?: string;
-  lastName?: string;
-  birthDate?: string;
-  birthCity?: string;
-  birthCountry?: string;
-  birthLocationCode?: string;
-  deathAge?: number;
-  deathDate?: string;
-  deathCity?: string;
-  deathCountry?: string;
-  deathLocationCode?: string;
-  proof?: string;
-}
 
 export type StrAndNumber = string | number;
