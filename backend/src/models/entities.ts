@@ -86,14 +86,49 @@ export interface UpdateUserRequest extends UpdateFields {
   message?: string;
 };
 
+export type ReviewStatus = "rejected"|"validated"|"closed";
+
+export const statusAuthMap = {
+  rejected: -1,
+  validated: 1,
+  closed: -2,
+};
+
+export type ProofType = "french death certificate"|"french birth certificate"|"other french document"|"foreign document"|"grave"|"other";
+
+export type ProofScript = "manuscript"|"typed"|"numerical";
+
+export type ProofQuality = "poor"|"good";
+
+export interface Review {
+  status: ReviewStatus;
+  date?: string;
+  message?: string;
+  silent?: boolean;
+  proofType?: ProofType;
+  proofScrupt?: ProofScript;
+  proofQuality?: ProofQuality;
+};
+
+export interface Reviews {
+  [key: string]: Review;
+};
+
+export interface ReviewsStringified {
+  [key: string]: string;
+};
+
+export type UpdateRequest = UpdateUserRequest | ReviewsStringified ;
+
 export interface Modification {
   id: string;
   date: string;
   author: string;
   fields: UpdateFields;
   proof: string;
-  auth: -2|-1|0|1|2|3;
+  auth: number;
   message?: string;
+  review?: Review;
 };
 
 export interface Person {
@@ -120,7 +155,7 @@ export interface Person {
       wikidata?: string;
       wikimedia?: string;
     };
-    modifications?: [Modification];
+    modifications?: Modification[];
   };
 
 export interface ScoreParams {
