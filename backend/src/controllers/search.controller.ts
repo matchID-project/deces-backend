@@ -8,7 +8,7 @@ import { resultsHeader, jsonPath, prettyString } from '../processStream';
 import { runRequest, runBulkRequest } from '../runRequest';
 import { buildRequest } from '../buildRequest';
 import { RequestInput, RequestBody } from '../models/requestInput';
-import { StrAndNumber, UpdateFields } from '../models/entities';
+import { StrAndNumber, Modification, UpdateRequest, UpdateUserRequest, Review, ReviewsStringified, statusAuthMap } from '../models/entities';
 import { buildResult, buildResultSingle, Result, ErrorResponse } from '../models/result';
 import { format } from '@fast-csv/format';
 import { updatedFields } from '../updatedIds';
@@ -248,7 +248,7 @@ export class SearchController extends Controller {
   @Post('/id/{id}')
   public async updateId(
     @Path() id: string,
-    @Body() updateFields: UpdateFields,
+    @Body() updateRequest: UpdateRequest,
     @Request() request: express.Request
   ): Promise<any> {
     // get user & rights from Security
@@ -260,19 +260,20 @@ export class SearchController extends Controller {
     const result = await runRequest(requestBuild, requestInput.scroll);
     const builtResult = buildResult(result.data, requestInput)
     if (builtResult.response.persons.length > 0) {
-      let proof
       const date = new Date(Date.now()).toISOString()
       const bytes = forge.random.getBytesSync(24);
       const randomId = forge.util.bytesToHex(bytes);
       if (!isAdmin) {
-        updateFields = {...await request.body};
+        updateRequest = {...await request.body} as UpdateUserRequest;
+        let proof;
+        const message = updateRequest.message;
+        delete updateRequest.message;
         if (request.files && request.files.length > 0) {
           const [ file ]: any = request.files
           proof = file.path
-        } else if (updateFields.proof) {
-          ({ proof } = updateFields);
-          delete updateFields.proof
-          if (Object.keys(updateFields).length === 0) {
+        } else if (updateRequest.proof) {
+          ({ proof } = updateRequest);
+          if (Object.keys(updateRequest).length === 0) {
             this.setStatus(400);
             return { msg: 'A field at least must be provided' }
           }
@@ -280,14 +281,18 @@ export class SearchController extends Controller {
           this.setStatus(400);
           return { msg: 'Proof must be provided' }
         }
-        const correctionData = {
+        delete updateRequest.proof;
+        const correctionData: Modification = {
           id: randomId,
           date,
           proof,
           auth: 0,
           author,
-          fields: updateFields
+          fields: updateRequest
         };
+        if (message) {
+          correctionData.message = message;
+        }
         try {
           await accessAsync(`./data/proofs/${id}`);
         } catch(err) {
@@ -302,30 +307,31 @@ export class SearchController extends Controller {
           this.setStatus(406);
           return { msg: "Id exists but no update to validate" }
         } else {
-          const checkedIds = {...await request.body};
+          const checkedIds = {...await request.body} as ReviewsStringified;
           const checks = Object.keys(checkedIds).length;
-          let validated = 0;
-          let rejected = 0;
-          let noChange = 0;
+          const count:any = {
+            rejected: 0,
+            validated: 0,
+            closed: 0,
+            noChange: 0
+          };
           await Promise.all(updatedFields[id].map(async (update: any) => {
-            if (checkedIds[update.id] === 'true') {
-              if (update.auth !== 1) {
-                update.auth = 1;
-                validated++;
+            const review: Review = JSON.parse(checkedIds[update.id]);
+            review.date = date;
+            if (review.status) {
+              const auth = statusAuthMap[review.status];
+              const reviewChange = update.review &&
+                ['proofQuality','proofScript','proofType','silent','message'].some(k => (review as any)[k] !== update.review[k])
+              if ((update.auth !== auth) || reviewChange) {
+                update.auth = auth;
+                count[review.status]++;
+                update.review = review;
                 await writeFileAsync(`./data/proofs/${id}/${update.date as string}_${id}.json`, JSON.stringify(update));
-                await sendUpdateConfirmation(update.author, true, undefined, id);
+                if (!review.silent) {
+                  await sendUpdateConfirmation(update.author, review.status, review.message, id);
+                }
               } else {
-                noChange++;
-              }
-              delete checkedIds[update.id];
-            } else if (checkedIds[update.id] !== undefined) {
-              if (update.auth !== -1) {
-                update.auth = -1;
-                rejected++;
-                await writeFileAsync(`./data/proofs/${id}/${update.date as string}_${id}.json`, JSON.stringify(update));
-                await sendUpdateConfirmation(update.author, false, checkedIds[update.id] || undefined, id);
-              } else {
-                noChange++;
+                count.noChange++;
               }
               delete checkedIds[update.id];
             }
@@ -336,17 +342,13 @@ export class SearchController extends Controller {
           } else if (Object.keys(checkedIds).length > 0) {
             return {
               msg: "Partial validation could be achieved",
-              validated,
-              rejected,
-              noChange,
+              ...count,
               invalidIds: Object.keys(checkedIds)
             }
           } else {
             return {
               msg: "All validations processed",
-              validated,
-              rejected,
-              noChange
+              ...count
             }
           }
         }
@@ -375,8 +377,21 @@ export class SearchController extends Controller {
       updates = {...updatedFields};
     } else {
       Object.keys(updatedFields).forEach((id:any) => {
-        const modifications = updatedFields[id].filter((m:any) => m.author === author);
-        if (modifications.length) {
+        let filter = false;
+        const modifications = updatedFields[id].map((m:any) => {
+          const modif:any = {...m}
+          if (modif.author !== author) {
+            modif.author = modif.author.substring(0,2)
+              + '...' + modif.author.replace(/@.*/,'').substring(modif.author.replace(/@.*/,'').length-2)
+              + '@' + modif.author.replace(/.*@/,'');
+            modif.message = undefined;
+            modif.review = undefined;
+          } else {
+            filter=true
+          }
+          return modif;
+        });
+        if (filter) {
           updates[id] = modifications;
         }
       })
@@ -465,7 +480,7 @@ export class SearchController extends Controller {
       end
     });
     stream.pipe(request.res);
-    await new Promise((resolve, reject) => {
+    await new Promise((resolve) => {
         stream.on('end', () => {
             request.res.end();
             resolve(true);
