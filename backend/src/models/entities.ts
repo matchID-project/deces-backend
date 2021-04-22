@@ -59,6 +59,78 @@ export interface Location {
     longitude?: number;
   };
 
+/**
+ * Identity modification
+ * @tsoaModel
+ * @example
+ * {
+ *   "firstName": "Paul"
+ * }
+ */
+export interface UpdateFields {
+  firstName?: string;
+  lastName?: string;
+  birthDate?: string;
+  birthCity?: string;
+  birthCountry?: string;
+  birthLocationCode?: string;
+  deathAge?: number;
+  deathDate?: string;
+  deathCity?: string;
+  deathCountry?: string;
+  deathLocationCode?: string;
+}
+
+export interface UpdateUserRequest extends UpdateFields {
+  proof: string;
+  message?: string;
+};
+
+export type ReviewStatus = "rejected"|"validated"|"closed";
+
+export const statusAuthMap = {
+  rejected: -1,
+  validated: 1,
+  closed: -2,
+};
+
+export type ProofType = "french death certificate"|"french birth certificate"|"other french document"|"foreign document"|"grave"|"other";
+
+export type ProofScript = "manuscript"|"typed"|"numerical";
+
+export type ProofQuality = "poor"|"good";
+
+export interface Review {
+  status: ReviewStatus;
+  date?: string;
+  message?: string;
+  silent?: boolean;
+  proofType?: ProofType;
+  proofScrupt?: ProofScript;
+  proofQuality?: ProofQuality;
+};
+
+export interface Reviews {
+  [key: string]: Review;
+};
+
+export interface ReviewsStringified {
+  [key: string]: string;
+};
+
+export type UpdateRequest = UpdateUserRequest | ReviewsStringified ;
+
+export interface Modification {
+  id: string;
+  date: string;
+  author: string;
+  fields: UpdateFields;
+  proof: string;
+  auth: number;
+  message?: string;
+  review?: Review;
+};
+
 export interface Person {
     score: number;
     source: string;
@@ -83,14 +155,7 @@ export interface Person {
       wikidata?: string;
       wikimedia?: string;
     };
-    modifications?: {
-      id: string;
-      date: string;
-      auth: number;
-      proof: string;
-      author: string;
-      fields: UpdateFields;
-    };
+    modifications?: Modification[];
   };
 
 export interface ScoreParams {
@@ -98,28 +163,5 @@ export interface ScoreParams {
   pruneScore?: number;
   candidateNumber?: number;
 };
-
-/**
- * Identity modification
- * @tsoaModel
- * @example
- * {
- *   "firstName": "Paul"
- * }
- */
-export interface UpdateFields {
-  firstName?: string;
-  lastName?: string;
-  birthDate?: string;
-  birthCity?: string;
-  birthCountry?: string;
-  birthLocationCode?: string;
-  deathAge?: number;
-  deathDate?: string;
-  deathCity?: string;
-  deathCountry?: string;
-  deathLocationCode?: string;
-  proof?: string;
-}
 
 export type StrAndNumber = string | number;
