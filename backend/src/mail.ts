@@ -1,4 +1,5 @@
 import { SMTPClient } from 'emailjs';
+import { ReviewStatus } from './models/entities';
 
 const client = new SMTPClient({
     host: process.env.SMTP_HOST,
@@ -40,29 +41,32 @@ export const validateOTP = (email:string,otp:string): boolean => {
     return false;
 }
 
-export const sendUpdateConfirmation = async (email:string, validation: boolean, rejectMsg: string, id: string): Promise<boolean> => {
+export const sendUpdateConfirmation = async (email:string, status: ReviewStatus, rejectMsg: string, id: string): Promise<boolean> => {
     try {
         const message: any = {
             from: process.env.API_EMAIL,
             to: `${email}`,
         }
-        if (validation) {
+        if (status === 'validated') {
             message.subject = `Suggestion validée ! - ${process.env.APP_DNS}`;
             message.attachment = { data: `<html style="font-family:Helvetica;">
             <h4> Merci de votre contibution !</h4>
             Votre proposition de correction a été acceptée.<br>
             Retrouvez <a href="https://${process.env.APP_DNS}/id/${id}"> la fiche modifiée </a>.<br>
             <br>
+            Vous pouvez à tout moment <a href="https://${process.env.APP_DNS}/edits">revenir sur vos contributions</a>.<br>
+            <br>
             l'équipe matchID
             </html>
             `, alternative: true};
-        } else {
-            message.subject = `Suggestion non retenue - ${process.env.APP_DNS}`;
+        } else if (status === 'rejected') {
+            message.subject = `Suggestion incomplète - ${process.env.APP_DNS}`;
             message.attachment = { data: `<html style="font-family:Helvetica;">
             Nous vous remercions de votre contribution,<br>
             <br>
-            Néanmoins les éléments fournis ne nous ont pas permis de retenir votre proposition<br>
-            ${rejectMsg ? rejectMsg : ''}<br>
+            Néanmoins les éléments fournis ne nous ont pas permis de retenir votre proposition à ce stade.<br>
+            ${rejectMsg ? '<br>' + rejectMsg + '<br>' : ''}<br>
+            Vous pourrez de nouveau soumettre une nouvelle proposition sur la fiche: <a href="https://${process.env.APP_DNS}/edits#${id}"></a>.<br>
             <br>
             l'équipe matchID
             </html>
