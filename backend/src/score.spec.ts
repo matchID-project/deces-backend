@@ -47,8 +47,8 @@ describe('score.ts - Score function', () => {
         }
       }
     });
-    expect(score).to.contain.all.keys(['score', 'birthDate', 'birthLocation', 'name'])
-    expect(score.score).to.equal(0.73);
+    expect(score.scores).to.contain.all.keys(['score', 'birthDate', 'birthLocation', 'name'])
+    expect(score.scores.score).to.equal(0.73);
   });
 
 
@@ -96,8 +96,8 @@ describe('score.ts - Score function', () => {
         }
       }
     });
-    expect(score).to.contain.all.keys(['score', 'birthLocation', 'name'])
-    expect(score.birthLocation).to.contain.all.keys(['score', 'city', 'code'])
+    expect(score.scores).to.contain.all.keys(['score', 'birthLocation', 'name'])
+    expect(score.scores.birthLocation).to.contain.all.keys(['score', 'city', 'code'])
 
   });
 

@@ -131,6 +131,31 @@ export interface Modification {
   review?: Review;
 };
 
+export interface Score {
+    score?: number;
+    birthDate?: number
+    deathDate?: number
+    name?: number;
+    sex?: number;
+    birthLocation?: number;
+    deathLocation?: number;
+}
+
+export interface Explain {
+  name: {
+    particles: boolean;
+    nameSwap: boolean;
+    first: {
+      levenshteinScore: number;
+      soundexScore: number;
+    }
+    last: {
+      levenshteinScore: number;
+      soundexScore: number;
+    }
+  }
+}
+
 export interface Person {
     score: number;
     source: string;
@@ -138,7 +163,7 @@ export interface Person {
     id: string;
     name: Name;
     sex: 'M'|'F';
-    scores: ScoreResult;
+    scores: Score;
     birth: {
       date: string;
       location: Location;
