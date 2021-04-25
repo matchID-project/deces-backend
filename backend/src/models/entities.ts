@@ -142,7 +142,7 @@ export interface Score {
 }
 
 export interface Explain {
-  name: {
+  name?: {
     particles: boolean;
     nameSwap: boolean;
     first: {

@@ -182,9 +182,10 @@ const firstNameSexMismatch = (firstNameA: string, firstNameB: string): boolean =
     return /^.?(e|a)$/.test(firstA.replace(firstB, '')) || /^.?(e|a)$/.test(firstB.replace(firstA, ''));
 }
 
-let scoreName = (nameA: Name, nameB: Name, sex: string): any => {
+let scoreName = (nameA: Name, nameB: Name, sex: string, explainScore: boolean): any => {
     if ((!nameA.first && !nameA.last) || (!nameB.first && !nameB.last)) { return blindNameScore }
     let score:any;
+    let explain:any;
     const firstA = firstNameNorm(nameA.first as string|string[]);
     const lastA = lastNameNorm(nameA.last as string|string[]);
     const firstB = firstNameNorm(nameB.first as string|string[]);
@@ -197,6 +198,14 @@ let scoreName = (nameA: Name, nameB: Name, sex: string): any => {
     let firstFirstA; let firstFirstB; let scoreFirstALastB; let fuzzScore;
     const scoreFirst = round(scoreToken(firstA, firstB));
     const scoreLast = round(scoreToken(lastA, lastB));
+    explain = {
+      first: {
+        levenshtein: scoreFirst
+      },
+      last: {
+        levenshtein: scoreLast
+      }
+    }
     score = round(Math.max(
                 scoreFirst * (scoreLast ** thisLastNamePenalty),
                 Math.max(
@@ -261,7 +270,11 @@ let scoreName = (nameA: Name, nameB: Name, sex: string): any => {
             score.particleScore = particleScore;
         }
     }
-    return score;
+    if (explainScore) {
+      return {score, explain};
+    } else {
+      return {score};
+    }
 }
 
 const scoreToken = (tokenA: string|string[], tokenB: string|string[], option?: any): number => {
@@ -637,6 +650,10 @@ export class ScoreResult {
     constructor(request: RequestBody, result: Person, params: ScoreParams = {}) {
       this.scores = {}
       const pruneScore = params.pruneScore !== undefined ? params.pruneScore : defaultPruneScore
+      // TODO: use input parameter
+      // const explainScore = params.explainScore !== undefined ? params.explainScore : false;
+      const explainScore = true;
+      if (explainScore) this.explain = {}
       if (request.birthDate) {
         this.scores.birthDate = scoreDate(request.birthDate, result.birth.date, params.dateFormat,
           result.birth && result.birth.location && result.birth.location.countryCode && (result.birth.location.countryCode !== 'FRA')
@@ -646,12 +663,18 @@ export class ScoreResult {
         if ((pruneScore < scoreReduce(this.scores, true)) || !this.scores.birthDate) {
           if (result.sex && result.sex === 'F') {
               if (request.legalName) {
-                  this.scores.name = scoreName({first: request.firstName, last: [request.lastName, request.legalName]}, result.name, 'F');
+                  const scoreNameResult = scoreName({first: request.firstName, last: [request.lastName, request.legalName]}, result.name, 'F', explainScore);
+                  this.scores.name = scoreNameResult.score
+                  if (explainScore) this.explain.name = scoreNameResult.explain
               } else {
-                  this.scores.name = scoreName({first: request.firstName, last: request.lastName}, result.name, 'F');
+                  const scoreNameResult = scoreName({first: request.firstName, last: request.lastName}, result.name, 'M', explainScore);
+                  this.scores.name = scoreNameResult.score
+                  if (explainScore) this.explain.name = scoreNameResult.explain
               }
           } else {
-            this.scores.name = scoreName({first: request.firstName, last: request.lastName}, result.name, 'M');
+            const scoreNameResult = scoreName({first: request.firstName, last: request.lastName}, result.name, 'M', explainScore);
+            this.scores.name = scoreNameResult.score
+            if (explainScore) this.explain.name = scoreNameResult.explain
           }
         } else {
           this.scores.score = 0
@@ -710,6 +733,9 @@ export class ScoreResult {
 
 export const scoreResults = (request: RequestBody, results: Person[], params: ScoreParams): Person[] => {
     const pruneScore = params.pruneScore !== undefined ? params.pruneScore : defaultPruneScore
+    // TODO: use input parameter
+    // const explainScore = params.explainScore !== undefined ? params.explainScore : false;
+    const explainScore = true;
     const candidateNumber = params.candidateNumber || 1;
     let maxScore = 0;
     let perfectScoreNumber = 0;
@@ -726,7 +752,7 @@ export const scoreResults = (request: RequestBody, results: Person[], params: Sc
                 try {
                     const scoreResult = new ScoreResult(request, result, params);
                     result.scores = scoreResult.scores
-                    result.explain = scoreResult.explain
+                    if (explainScore) result.explain = scoreResult.explain
                     const perfectScores =
                         ((result.scores.name && result.scores.name.score >= perfectScoreThreshold) ? 1 : 0) +
                         ((result.scores.birtDate && result.scores.birthDate.score === 1) ? 1 : 0) +
