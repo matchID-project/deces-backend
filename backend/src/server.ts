@@ -19,7 +19,7 @@ import "./controllers/status.controller";
 import "./controllers/job.controller";
 import "./controllers/auth.controller";
 
-const log = (json:any) => {
+export const log = (json:any) => {
   loggerStream.write(JSON.stringify({
     "backend": {
       "server-date": new Date(Date.now()).toISOString(),
@@ -27,6 +27,7 @@ const log = (json:any) => {
     }
   }));
 }
+
 
 export const app = express();
 
@@ -122,3 +123,7 @@ app.use((
 
 // app.use(`${process.env.BACKEND_PROXY_PATH}/search`, bulk);
 app.use(`${process.env.BACKEND_PROXY_PATH}/docs`, documentation);
+
+import { initUpdateIndex } from './updatedIds';
+
+initUpdateIndex();
