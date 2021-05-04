@@ -2,7 +2,7 @@ import { Controller, Get, Post, Body, Route, Query, Response, Tags, Header, Requ
 import multer from 'multer';
 import forge from 'node-forge';
 import express from 'express';
-import { writeFile, access, mkdir, createReadStream } from 'fs';
+import { writeFile, createReadStream } from 'fs';
 import { promisify } from 'util';
 import { resultsHeader, jsonPath, prettyString, returnBulkResults } from '../processStream';
 import { runRequest } from '../runRequest';
@@ -11,13 +11,11 @@ import { RequestInput, RequestBody } from '../models/requestInput';
 import { StrAndNumber, Modification, UpdateRequest, UpdateUserRequest, Review, ReviewsStringified, statusAuthMap } from '../models/entities';
 import { buildResult, Result, ErrorResponse } from '../models/result';
 import { format } from '@fast-csv/format';
-import { getAllUpdates, getAuthorUpdates, updatedFields, resultsFromUpdates } from '../updatedIds';
+import { getAllUpdates, getAuthorUpdates, updatedFields, resultsFromUpdates, addModification, proofDirectory, proofFilename } from '../updatedIds';
 import { sendUpdateConfirmation } from '../mail';
 // import getDataGouvCatalog from '../getDataGouvCatalog';
 
 const writeFileAsync = promisify(writeFile);
-const mkdirAsync = promisify(mkdir);
-const accessAsync = promisify(access);
 
 /**
  * @swagger
@@ -251,8 +249,9 @@ export class SearchController extends Controller {
     @Body() updateRequest: UpdateRequest,
     @Request() request: express.Request
   ): Promise<any> {
+    const date = new Date(Date.now()).toISOString()
+    await this.storeProof(request, date);
     // get user & rights from Security
-    await this.handleFile(request);
     const author = (request as any).user && (request as any).user.user
     const isAdmin = (request as any).user && (request as any).user.scopes && (request as any).user.scopes.includes('admin');
     const requestInput = new RequestInput({id});
@@ -260,7 +259,6 @@ export class SearchController extends Controller {
     const result = await runRequest(requestBuild, requestInput.scroll);
     const builtResult = buildResult(result.data, requestInput)
     if (builtResult.response.persons.length > 0) {
-      const date = new Date(Date.now()).toISOString()
       const bytes = forge.random.getBytesSync(24);
       const randomId = forge.util.bytesToHex(bytes);
       if (!isAdmin) {
@@ -282,7 +280,7 @@ export class SearchController extends Controller {
           return { msg: 'Proof must be provided' }
         }
         delete updateRequest.proof;
-        const correctionData: Modification = {
+        const modification: Modification = {
           id: randomId,
           date,
           proof,
@@ -291,17 +289,15 @@ export class SearchController extends Controller {
           fields: updateRequest
         };
         if (message) {
-          correctionData.message = message;
+          modification.message = message;
         }
-        try {
-          await accessAsync(`./data/proofs/${id}`);
-        } catch(err) {
-          await mkdirAsync(`./data/proofs/${id}`, { recursive: true });
+        const success = await addModification(id, modification, date);
+        if (success) {
+          return { msg: "Update stored" };
+        } else {
+          this.setStatus(500);
+          return { msg: "Update failed" };
         }
-        await writeFileAsync(`./data/proofs/${id}/${date}_${id}.json`, JSON.stringify(correctionData));
-        if (!updatedFields[id]) { updatedFields[id] = [] }
-        updatedFields[id].push(correctionData);
-        return { msg: "Update stored" };
       } else {
         if (!updatedFields[id]) {
           this.setStatus(406);
@@ -376,24 +372,16 @@ export class SearchController extends Controller {
     return await resultsFromUpdates(updates);
   }
 
-  private async handleFile(request: express.Request): Promise<any> {
+  private async storeProof(request: express.Request, date: string): Promise<any> {
     const storage = multer.diskStorage({
-      destination: async (req, file, cb) => {
+      destination: async (req: any, file: any, cb:any) => {
         if (file.mimetype !== 'application/pdf') {
           cb(new Error('Only PDF upload is allowed'), null)
         }
-        const { id } = req.params
-        const dir = `./data/proofs/${id}`
-        try {
-          await accessAsync(dir);
-        } catch(err) {
-          await mkdirAsync(dir, { recursive: true });
-        }
-        cb(null, dir)
+        cb(null, await proofDirectory(req.parms));
       },
-      filename: (_, file, cb) => {
-        const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1E9)}`
-        cb(null, `${uniqueSuffix}_${file.originalname}`)
+      filename: (_:any , file:any , cb: any) => {
+        cb(null, proofFilename(date, file.originalname));
       }
     })
     const multerSingle = multer({storage}).any();
