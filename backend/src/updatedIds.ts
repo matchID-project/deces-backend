@@ -6,6 +6,13 @@ import { runBulkRequest } from './runRequest';
 import { buildRequest } from './buildRequest';
 import { buildResultSingle, Result } from './models/result';
 import { RequestInput } from './models/requestInput';
+import { Modification } from './models/entities';
+import { promisify } from 'util';
+import { writeFile, access, mkdir } from 'fs';
+
+const writeFileAsync = promisify(writeFile);
+const mkdirAsync = promisify(mkdir);
+const accessAsync = promisify(access);
 
 const updateIndex = 'deces-updates';
 const modelIndex = 'deces';
@@ -44,7 +51,7 @@ export const initUpdateIndex =  async (): Promise<boolean> => {
       return false;
     };
     try {
-      const createIndexResponse = await axios(`http://elasticsearch:9200/${updateIndex}/`, {
+      await axios(`http://elasticsearch:9200/${updateIndex}/`, {
         method: 'PUT',
         data: {
           settings: { index: { analysis}},
@@ -144,4 +151,35 @@ export const resultsFromUpdates = async (updates: any): Promise<Result> => {
       r.modifications = updates[r.id];
       return r;
     });
+}
+
+export const addModification = async (id: string, modification: Modification, date: string): Promise<boolean> => {
+  try {
+    await accessAsync(`./data/proofs/${id}`);
+  } catch(err) {
+    await mkdirAsync(`./data/proofs/${id}`, { recursive: true });
+  }
+  try {
+    await writeFileAsync(`./data/proofs/${id}/${date}_${id}.json`, JSON.stringify(modification));
+    if (!updatedFields[id]) { updatedFields[id] = [] }
+    updatedFields[id].push(modification);
+    return true;
+  } catch(e) {
+    log({ msg: "Update failed", error: e.message, id, modification });
+    return false;
+  }
+}
+
+export const proofDirectory = async (id: string): Promise<string> => {
+  const dir = `./data/proofs/${id}`
+  try {
+    await accessAsync(dir);
+  } catch(err) {
+    await mkdirAsync(dir, { recursive: true });
+  }
+  return dir;
+}
+
+export const proofFilename = (date: string, filename: string): any => {
+  return `${date}-${Math.round(Math.random() * 1E9)}_${filename}`;
 }
