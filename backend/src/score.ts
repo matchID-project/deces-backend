@@ -585,10 +585,10 @@ let scoreDate = (dateRangeA: any, dateStringB: string, dateFormat: string, forei
         const dr = isDateRange(dateRangeA);
         if (!dr) {
           const dl = isDateLimit(dateRangeA);
-          dateRangeATransformed = dl ? `${dl[1]}${dateTransform(dl[2], dateFormat, "YYYYMMDD")}`
-            : dateTransform(dateRangeA, dateFormat, "YYYYMMDD");
+          dateRangeATransformed = dl ? `${dl[1]}${dateTransform(dl[2], dateFormat, "yyyyMMdd")}`
+            : dateTransform(dateRangeA, dateFormat, "yyyyMMdd");
         } else {
-            dateRangeATransformed = `${dateTransform(dr[1], dateFormat, "YYYYMMDD")}-${dateTransform(dr[2], dateFormat, "YYYYMMDD")}`;
+            dateRangeATransformed = `${dateTransform(dr[1], dateFormat, "yyyyMMdd")}-${dateTransform(dr[2], dateFormat, "yyyyMMdd")}`;
         }
     }
     return 0.01 * Math.round((scoreDateRaw(dateRangeATransformed, dateStringB, foreignDate) ** datePenalty) * 100);
