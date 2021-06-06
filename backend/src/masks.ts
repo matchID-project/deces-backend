@@ -1,5 +1,6 @@
 import { Sort } from './models/entities';
-import moment from 'moment';
+import format from 'date-fns/format';
+import parse from 'date-fns/parse';
 
 export const ageValidationMask = (ageString: string): boolean => {
     return /^(|[0-9]|[1-9]([0-9]|[0-3][0-9]))$/.test(ageString);
@@ -52,7 +53,9 @@ export const isDateLimit = (dateRangeString: string): string[] => {
 export const dateTransform = (dateString: string|number, dateFormatInput: string, dateFormatOutput?: string): string => {
   if (!dateString) { return '' }
   if (dateFormatInput === dateFormatOutput) { return dateString.toString() }
-  return moment(dateString.toString(), dateFormatInput).format(dateFormatOutput);
+  const inputDate = parse(dateString.toString(), dateFormatInput, new Date());
+  return format(inputDate, dateFormatOutput);
+
 }
 
 export const dateTransformMask = (dateString: string|number): string => {
