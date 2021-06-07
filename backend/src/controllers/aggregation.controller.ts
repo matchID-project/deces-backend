@@ -25,10 +25,12 @@ export class AggregationController extends Controller {
    * @param sex Sexe
    * @param birthDate Date de naissance au format\: JJ/MM/AAAA<br>  <li> Pour une date inconnue les valeurs sont 0000 pour AAAA; 00 pour MM et JJ</li><br> <li> Une recherche par tranche de date est également possible sous la forme: JJ/MM/AAAA - JJ/MM/AAAA</li>
    * @param birthCity Localité\: de naissance en claire (pour les personnes nées en France ou dans les DOM/TOM/COM)
+   * @param birthPostalCode Code postal du lieu de naissance
    * @param birthDepartment Code département du lieu de naissance
    * @param birthCountry Libellé de pays de naissance en clair (pour les personnes nées à l'étranger)
    * @param deathDate Date de décès au format\: JJ/MM/AAAA. <br> <li> Pour une date inconnue les valeurs sont 0000 pour AAAA; 00 pour MM et JJ</li>.<br> <li> Une recherche par tranche de date est également possible sous la forme: JJ/MM/AAAA - JJ/MM/AAAA</li>
    * @param deathCity Localité de décès en claire** (pour les personnes nées en France ou dans les DOM/TOM/COM)
+   * @param deathPostalCode Code postal du lieu de décès
    * @param deathDepartment Code département du lieu de décès
    * @param deathCountry Pays du lieu de décès
    * @param deathAge Age du décès
@@ -47,11 +49,13 @@ export class AggregationController extends Controller {
     @Query() sex?: 'M'|'F'|'H',
     @Query() birthDate?: StrAndNumber,
     @Query() birthCity?: string,
+    @Query() birthPostalCode?: string,
     @Query() birthDepartment?: string,
     @Query() birthCountry?: string,
     @Query() deathDate?: StrAndNumber,
     @Query() deathCity?: string,
     @Query() deathDepartment?: string,
+    @Query() deathPostalCode?: string,
     @Query() deathCountry?: string,
     @Query() deathAge?: StrAndNumber,
     @Query() fuzzy?: 'true'|'false',
@@ -63,12 +67,12 @@ export class AggregationController extends Controller {
       this.setStatus(400);
       return  { msg: "error - missing aggs parameter" };
     }
-    const requestInput = new RequestInput({q, firstName, lastName, legalName, sex, birthDate, birthCity, birthDepartment, birthCountry, deathDate, deathCity, deathDepartment, deathCountry, deathAge, fuzzy, size: 0, aggs, aggsSize});
+    const requestInput = new RequestInput({q, firstName, lastName, legalName, sex, birthDate, birthCity, birthPostalCode, birthDepartment, birthCountry, deathDate, deathCity, deathPostalCode, deathDepartment, deathCountry, deathAge, fuzzy, size: 0, aggs, aggsSize});
     if (requestInput.errors.length) {
       this.setStatus(400);
       return  { msg: requestInput.errors };
     }
-    if ((firstName || lastName || legalName || sex || birthDate || birthCity || birthDepartment || birthCountry || deathDate || deathCity || deathDepartment || deathCountry || deathAge) && q) {
+    if ((firstName || lastName || legalName || sex || birthDate || birthCity || birthPostalCode || birthDepartment || birthCountry || deathDate || deathCity || deathPostalCode || deathDepartment || deathCountry || deathAge) && q) {
       this.setStatus(400);
       return  { msg: "error - simple and complex request at the same time" };
     }
@@ -83,7 +87,7 @@ export class AggregationController extends Controller {
   @Tags('Aggregations')
   @Post('/agg')
   public async aggregationPost(@Body() requestBody: RequestBody, @Request() request: express.Request, @Header('Accept') accept?: string): Promise<ResultAgg> {
-    const validFields = ['q', 'firstName', 'lastName', 'legalName', 'sex', 'birthDate', 'birthCity', 'birthDepartment', 'birthCountry', 'deathDate', 'deathCity', 'deathDepartment', 'deathCountry', 'deathAge', 'fuzzy', 'aggs', 'aggsSize']
+    const validFields = ['q', 'firstName', 'lastName', 'legalName', 'sex', 'birthDate', 'birthCity', 'birthPostalCode', 'birthDepartment', 'birthCountry', 'deathDate', 'deathCity', 'deathPostalCode', 'deathDepartment', 'deathCountry', 'deathAge', 'fuzzy', 'aggs', 'aggsSize']
     const notValidFields = Object.keys(requestBody).filter((item: string) => !validFields.includes(item))
     if (notValidFields.length > 0) {
       this.setStatus(400);
@@ -93,7 +97,7 @@ export class AggregationController extends Controller {
       this.setStatus(400);
       return  { msg: "error - missing aggs parameter" };
     }
-    if ((requestBody.firstName || requestBody.lastName || requestBody.legalName || requestBody.birthDate || requestBody.birthCity || requestBody.birthDepartment || requestBody.birthCountry || requestBody.birthGeoPoint || requestBody.deathDate || requestBody.deathCity || requestBody.deathDepartment || requestBody.deathCountry || requestBody.deathAge || requestBody.deathGeoPoint ) && requestBody.q) {
+    if ((requestBody.firstName || requestBody.lastName || requestBody.legalName || requestBody.birthDate || requestBody.birthCity || requestBody.birthPostalCode || requestBody.birthDepartment || requestBody.birthCountry || requestBody.birthGeoPoint || requestBody.deathDate || requestBody.deathCity || requestBody.deathPostalCode || requestBody.deathDepartment || requestBody.deathCountry || requestBody.deathAge || requestBody.deathGeoPoint ) && requestBody.q) {
       this.setStatus(400);
       return  { msg: "error - simple and complex request at the same time" };
     }

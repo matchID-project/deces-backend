@@ -80,6 +80,13 @@ export const birthCityWithQuery = (value: string, fuzzy: boolean): WithQuery => 
     fuzzy: fuzzy ? "auto" : false
 };
 
+export const birthPostalCodeWithQuery = (value: string): WithQuery => value && {
+    value,
+    field: "CODE_POSTAL_NAISSANCE",
+    query: matchQuery,
+    fuzzy: false
+};
+
 export const birthLocationCodeWithQuery = (value: string): WithQuery => value && {
     value,
     field: "CODE_INSEE_NAISSANCE_HISTORIQUE",
@@ -135,6 +142,13 @@ export const deathCityWithQuery = (value: string, fuzzy: boolean): WithQuery => 
     field: "COMMUNE_DECES",
     query: fuzzyShouldTermQuery,
     fuzzy: fuzzy ? "auto" : false
+};
+
+export const deathPostalCodeWithQuery = (value: string): WithQuery => value && {
+    value,
+    field: "CODE_POSTAL_DECES",
+    query: matchQuery,
+    fuzzy: false
 };
 
 export const deathLocationCodeWithQuery = (value: string): WithQuery => value && {

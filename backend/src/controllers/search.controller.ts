@@ -69,11 +69,13 @@ export class SearchController extends Controller {
     @Query() birthDate?: StrAndNumber,
     @Query() birthCity?: string,
     @Query() birthLocationCode?: string,
+    @Query() birthPostalCode?: string,
     @Query() birthDepartment?: StrAndNumber,
     @Query() birthCountry?: string,
     @Query() deathDate?: StrAndNumber,
     @Query() deathCity?: string,
     @Query() deathLocationCode?: string,
+    @Query() deathPostalCode?: string,
     @Query() deathDepartment?: StrAndNumber,
     @Query() deathCountry?: string,
     @Query() deathAge?: StrAndNumber,
@@ -86,8 +88,8 @@ export class SearchController extends Controller {
     @Query() fuzzy?: 'true'|'false',
     @Query() sort?: string
   ): Promise<Result> {
-    if (q || firstName || lastName || legalName || sex || birthDate || birthCity || birthLocationCode || birthDepartment || birthCountry || deathDate || deathCity || deathLocationCode || deathDepartment || deathCountry || deathAge || lastSeenAliveDate || source || scroll) {
-      const requestInput = new RequestInput({q, firstName, lastName, legalName, sex, birthDate, birthCity, birthLocationCode, birthDepartment, birthCountry, deathDate, deathCity, deathLocationCode, deathDepartment, deathCountry, deathAge, lastSeenAliveDate, source, scroll, scrollId, size, page, fuzzy, sort});
+    if (q || firstName || lastName || legalName || sex || birthDate || birthCity || birthLocationCode || birthPostalCode || birthDepartment || birthCountry || deathDate || deathCity || deathLocationCode || deathPostalCode || deathDepartment || deathCountry || deathAge || lastSeenAliveDate || source || scroll) {
+      const requestInput = new RequestInput({q, firstName, lastName, legalName, sex, birthDate, birthCity, birthPostalCode, birthLocationCode, birthDepartment, birthCountry, deathDate, deathCity, deathPostalCode, deathLocationCode, deathDepartment, deathCountry, deathAge, lastSeenAliveDate, source, scroll, scrollId, size, page, fuzzy, sort});
       if (requestInput.errors.length) {
         this.setStatus(400);
         return  { msg: requestInput.errors };

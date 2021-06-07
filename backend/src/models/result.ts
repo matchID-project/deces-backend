@@ -166,6 +166,7 @@ export interface ResultRawHit {
     UID: string;
     DATE_NAISSANCE: string;
     COMMUNE_NAISSANCE: string;
+    CODE_POSTAL_NAISSANCE: string[];
     CODE_INSEE_NAISSANCE: string;
     CODE_INSEE_NAISSANCE_HISTORIQUE: string|string[];
     DEPARTEMENT_NAISSANCE: string;
@@ -177,6 +178,7 @@ export interface ResultRawHit {
     NUM_DECES: string;
     AGE_DECES: number;
     COMMUNE_DECES: string;
+    CODE_POSTAL_DECES: string[];
     CODE_INSEE_DECES: string;
     CODE_INSEE_DECES_HISTORIQUE: string|string[];
     DEPARTEMENT_DECES: string;
@@ -257,6 +259,7 @@ export const buildResultSingle = (item: ResultRawHit): Person => {
       location: {
         city: item._source.COMMUNE_NAISSANCE,
         code: item._source.CODE_INSEE_NAISSANCE,
+        codePostal: item._source.CODE_POSTAL_NAISSANCE,
         codeHistory: item._source.CODE_INSEE_NAISSANCE_HISTORIQUE,
         departmentCode: item._source.DEPARTEMENT_NAISSANCE,
         country: item._source.PAYS_NAISSANCE,
@@ -272,6 +275,7 @@ export const buildResultSingle = (item: ResultRawHit): Person => {
       location: {
         city: item._source.COMMUNE_DECES, // str|str[]
         code: item._source.CODE_INSEE_DECES,
+        codePostal: item._source.CODE_POSTAL_DECES,
         codeHistory: item._source.CODE_INSEE_DECES_HISTORIQUE,
         departmentCode: item._source.DEPARTEMENT_DECES,
         country: item._source.PAYS_DECES,

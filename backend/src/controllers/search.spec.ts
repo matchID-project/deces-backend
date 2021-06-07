@@ -16,18 +16,18 @@ describe('search.controller.ts - GET request', () => {
   });
 
   it('Birth country parameter', async () => {
-    const result = await controller.search(null, null, null, null, null, null, null, null, null, 'France')
+    const result = await controller.search(null, null, null, null, null, null, null, null, null, null, 'France')
     expect(result.response.persons[0].death.location.country).to.equal('France');
   });
 
   it('Query by lastSeenAliveDate', async () => {
-    const result = await controller.search(null, 'jean', null, null, null, null, null, null, null, null, null, null, null, null, null, null, '20/01/2020')
+    const result = await controller.search(null, 'jean', null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, '20/01/2020')
     expect(result.response.persons.every(x => parseInt(x.death.date, 10) >= 20200120)).to.equal(true);
     expect(result.response.persons.length).to.greaterThan(0);
   });
 
   it('Query by source', async () => {
-    const result = await controller.search(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, '2020-m01')
+    const result = await controller.search(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, '2020-m01')
     expect(result.response.persons.length).to.greaterThan(0);
   });
 
