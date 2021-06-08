@@ -382,12 +382,14 @@ const referenceSort: any = {
   birthDate: "DATE_NAISSANCE_NORM",
   birthCity: "COMMUNE_NAISSANCE.raw",
   birthLocationCode: "CODE_INSEE_NAISSANCE",
+  birthPostalCode: "CODE_POSTAL_NAISSANCE",
   birthDepartment: "DEPARTEMENT_NAISSANCE",
   birthCountry: "PAYS_NAISSANCE.raw",
   deathDate: "DATE_DECES_NORM",
   deathAge: "AGE_DECES",
   deathCity: "COMMUNE_DECES.raw",
   deathLocationCode: "CODE_INSEE_DECES",
+  deathPostalCode: "CODE_POSTAL_DECES",
   deathDepartment: "DEPARTEMENT_DECES",
   deathCountry: "PAYS_DECES.raw"
 }
@@ -500,6 +502,7 @@ export const buildRequest = (requestInput: RequestInput): BodyResponse|ScrolledR
       // https://www.elastic.co/guide/en/elasticsearch/reference/7.x/search-request-source-filtering.html#search-request-source-filtering
       _source: [
         "CODE_INSEE_DECES","CODE_INSEE_DECES_HISTORIQUE","CODE_INSEE_NAISSANCE","CODE_INSEE_NAISSANCE_HISTORIQUE",
+        "CODE_POSTAL_NAISSANCE", "CODE_POSTAL_DECES",
         "COMMUNE_DECES","COMMUNE_NAISSANCE",
         "DATE_DECES", "DATE_DECES_NORM","DATE_NAISSANCE", "DATE_DECES_NORM",
         "AGE_DECES", "DEPARTEMENT_DECES","DEPARTEMENT_NAISSANCE",

@@ -116,7 +116,7 @@ describe('server.ts - Express application', () => {
       expect(res.body.response.persons[0].death.location.country).to.equal('Argentine');
     }},
     {params: {deathDate: 2020, birthDate: '23/01/1928'}, testFunc: (res: any) => {
-      expect(res.body.response.persons[0].birth.date).to.equal('19280123');
+      expect('19280123').to.be.oneOf([res.body.response.persons[0].birth.date, res.body.response.persons[1].birth.date]);
     }},
     {params: {deathDate: '22/01/2020'}, testFunc: (res: any) => {
       expect(res.body.response.persons[0].death.date).to.equal('20200122');
