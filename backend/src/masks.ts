@@ -1,6 +1,4 @@
 import { Sort } from './models/entities';
-import format from 'date-fns/format';
-import parse from 'date-fns/parse';
 
 export const ageValidationMask = (ageString: string): boolean => {
     return /^(|[0-9]|[1-9]([0-9]|[0-3][0-9]))$/.test(ageString);
