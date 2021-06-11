@@ -1,6 +1,4 @@
 import { Sort } from './models/entities';
-import format from 'date-fns/format';
-import parse from 'date-fns/parse';
 
 export const ageValidationMask = (ageString: string): boolean => {
     return /^(|[0-9]|[1-9]([0-9]|[0-3][0-9]))$/.test(ageString);
@@ -51,11 +49,36 @@ export const isDateLimit = (dateRangeString: string): string[] => {
 }
 
 export const dateTransform = (dateString: string|number, dateFormatInput: string, dateFormatOutput?: string): string => {
-  if (!dateString) { return '' }
+  if (!dateString || dateString.toString().trim().length === 0) { return '' }
   if (dateFormatInput === dateFormatOutput) { return dateString.toString() }
-  const inputDate = parse(dateString.toString(), dateFormatInput, new Date());
-  return format(inputDate, dateFormatOutput);
+  // input format
+  let yyyy;
+  const yyyyIdx = dateFormatInput.indexOf("yyyy")
+  if (yyyyIdx > -1) {
+    yyyy = dateString.toString().slice(yyyyIdx, yyyyIdx + 4)
+  }
+  let MM;
+  const MMIdx = dateFormatInput.indexOf("MM")
+  if (MMIdx > -1) {
+    MM = dateString.toString().slice(MMIdx, MMIdx + 2)
+  }
+  let dd;
+  const ddIdx = dateFormatInput.indexOf("dd")
+  if (ddIdx > -1) {
+    dd = dateString.toString().slice(ddIdx, ddIdx + 2)
+  }
 
+  // output format
+  if (dateFormatOutput.indexOf("yyyy") > -1) {
+    dateFormatOutput = dateFormatOutput.replace("yyyy", yyyy)
+  }
+  if (dateFormatOutput.indexOf("MM") > -1) {
+    dateFormatOutput = dateFormatOutput.replace("MM", MM)
+  }
+  if (dateFormatOutput.indexOf("dd") > -1) {
+    dateFormatOutput = dateFormatOutput.replace("dd", dd)
+  }
+  return dateFormatOutput
 }
 
 export const dateTransformMask = (dateString: string|number): string => {

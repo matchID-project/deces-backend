@@ -19,8 +19,8 @@ import timer from './timer';
 
 const timerRunBulkRequest = timer(runBulkRequest, 'runBulkRequest', 1);
 
-export const validFields: string[] = ['q', 'firstName', 'lastName', 'legalName', 'sex', 'birthDate', 'birthCity', 'birthLocationCode', 'birthDepartment', 'birthCountry',
-'birthGeoPoint', 'deathDate', 'deathCity', 'deathLocationCode', 'deathDepartment', 'deathCountry', 'deathGeoPoint', 'deathAge', 'lastSeenAliveDate', 'source',
+export const validFields: string[] = ['q', 'firstName', 'lastName', 'legalName', 'sex', 'birthDate', 'birthCity', 'birthLocationCode', 'birthPostalCode', 'birthDepartment', 'birthCountry',
+'birthGeoPoint', 'deathDate', 'deathCity', 'deathLocationCode', 'deathPostalCode', 'deathDepartment', 'deathCountry', 'deathGeoPoint', 'deathAge', 'lastSeenAliveDate', 'source',
 'size', 'fuzzy', 'block'];
 
 const log = (json:any) => {
@@ -642,6 +642,7 @@ export const resultsHeader = [
   {label: 'birth.date', labelFr: 'date_naissance', id: 'birthDate'},
   {label: 'birth.location.city', labelFr: 'commune_naissance', id: 'birthCity'},
   {label: 'birth.location.code', labelFr: 'code_INSEE_naissance', id: 'birthLocationCode'},
+  {label: 'birth.location.codePostal', labelFr: 'code_postal_naissance', id: 'birthPostalCode'},
   {label: 'birth.location.departmentCode', labelFr: 'département_naissance', id: 'birthDepartment'},
   {label: 'birth.location.country', labelFr: 'pays_naissance', id: 'birthCountry'},
   {label: 'birth.location.countryCode', labelFr: 'pays_ISO_naissance'},
@@ -652,6 +653,7 @@ export const resultsHeader = [
   {label: 'death.date', id: 'deathDate', labelFr: 'date_décès'},
   {label: 'death.location.city', id: 'deathCity', labelFr: 'commune_décès'},
   {label: 'death.location.code', labelFr: 'code_INSEE_décès', id: 'deathLocationCode'},
+  {label: 'death.location.codePostal', labelFr: 'code_postal_décès', id: 'deathPostalCode'},
   {label: 'death.location.departmentCode', id: 'deathDepartment', labelFr: 'département_décès'},
   {label: 'death.location.country', labelFr: 'pays_décès', id: 'deathCountry'},
   {label: 'death.location.countryCode', labelFr: 'pays_ISO_décès'},
