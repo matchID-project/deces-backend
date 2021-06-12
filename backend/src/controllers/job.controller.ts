@@ -95,7 +95,10 @@ export class JobsController extends Controller {
       const mylist = ['waiting', 'active', 'delayed', 'succeeded', 'failed']
       for (const jobType of mylist) {
         const jobsTmp = await jobQueue.getJobs(jobType, page)
-        jobsTmp.forEach(j => delete j.queue);
+        jobsTmp.forEach(j => {
+          delete j.queue
+          delete j.data.randomKey
+        });
         jobs = [...jobs, ...jobsTmp]
       }
       return { jobs };

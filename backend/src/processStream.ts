@@ -14,13 +14,14 @@ import crypto from 'crypto';
 import { promisify } from 'util';
 import { parse } from '@fast-csv/parse';
 import { format } from '@fast-csv/format';
+import iconv from 'iconv-lite';
 
 import timer from './timer';
 
 const timerRunBulkRequest = timer(runBulkRequest, 'runBulkRequest', 1);
 
-export const validFields: string[] = ['q', 'firstName', 'lastName', 'legalName', 'sex', 'birthDate', 'birthCity', 'birthLocationCode', 'birthDepartment', 'birthCountry',
-'birthGeoPoint', 'deathDate', 'deathCity', 'deathLocationCode', 'deathDepartment', 'deathCountry', 'deathGeoPoint', 'deathAge', 'lastSeenAliveDate', 'source',
+export const validFields: string[] = ['q', 'firstName', 'lastName', 'legalName', 'sex', 'birthDate', 'birthCity', 'birthLocationCode', 'birthPostalCode', 'birthDepartment', 'birthCountry',
+'birthGeoPoint', 'deathDate', 'deathCity', 'deathLocationCode', 'deathPostalCode', 'deathDepartment', 'deathCountry', 'deathGeoPoint', 'deathAge', 'lastSeenAliveDate', 'source',
 'size', 'fuzzy', 'block'];
 
 const log = (json:any) => {
@@ -146,7 +147,7 @@ export const processCsv =  async (job: Queue.Job<any>, jobFile: JobInput): Promi
       delimiter: job.data.sep,
       headers: true,
       ignoreEmpty: true,
-      encoding: job.data.encoding,
+      encoding: 'utf8',
       escape: job.data.escape,
       quote: job.data.quote,
       skipLines: job.data.skipLines
@@ -155,6 +156,7 @@ export const processCsv =  async (job: Queue.Job<any>, jobFile: JobInput): Promi
     const gzipStream =  createGzip();
     const encryptStream = crypto.createCipheriv('aes-256-cbc', pbkdf2(job.data.randomKey), encryptioniv);
     const jsonStringStream: any = JsonStringifyStream();
+    const converterStream = iconv.decodeStream(job.data.encoding.replace('windows-','win'));
     const processStream: any = new ProcessStream(job, mapField, {});
     const csvStream: any = parse(csvOptions);
     const gunzipStream: any = createGunzip();
@@ -164,6 +166,8 @@ export const processCsv =  async (job: Queue.Job<any>, jobFile: JobInput): Promi
       .on('error', (e: any) => log({decryptProcessingError: e.toString(), jobId}))
       .pipe(gunzipStream)
       .on('error', (e: any) => log({gunzipProcessingError: e.toString(), jobId}))
+      .pipe(converterStream)
+      .on('error', (e: any) => log({decodingProcessingError: e.toString(), jobId}))
       .pipe(csvStream)
       .on('error', (e: any) => {
         log({csvProcessingError: e.toString(), jobId})
@@ -642,6 +646,7 @@ export const resultsHeader = [
   {label: 'birth.date', labelFr: 'date_naissance', id: 'birthDate'},
   {label: 'birth.location.city', labelFr: 'commune_naissance', id: 'birthCity'},
   {label: 'birth.location.code', labelFr: 'code_INSEE_naissance', id: 'birthLocationCode'},
+  {label: 'birth.location.codePostal', labelFr: 'code_postal_naissance', id: 'birthPostalCode'},
   {label: 'birth.location.departmentCode', labelFr: 'département_naissance', id: 'birthDepartment'},
   {label: 'birth.location.country', labelFr: 'pays_naissance', id: 'birthCountry'},
   {label: 'birth.location.countryCode', labelFr: 'pays_ISO_naissance'},
@@ -652,6 +657,7 @@ export const resultsHeader = [
   {label: 'death.date', id: 'deathDate', labelFr: 'date_décès'},
   {label: 'death.location.city', id: 'deathCity', labelFr: 'commune_décès'},
   {label: 'death.location.code', labelFr: 'code_INSEE_décès', id: 'deathLocationCode'},
+  {label: 'death.location.codePostal', labelFr: 'code_postal_décès', id: 'deathPostalCode'},
   {label: 'death.location.departmentCode', id: 'deathDepartment', labelFr: 'département_décès'},
   {label: 'death.location.country', labelFr: 'pays_décès', id: 'deathCountry'},
   {label: 'death.location.countryCode', labelFr: 'pays_ISO_décès'},
