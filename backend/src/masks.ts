@@ -53,31 +53,53 @@ export const dateTransform = (dateString: string|number, dateFormatInput: string
   if (dateFormatInput === dateFormatOutput) { return dateString.toString() }
   // input format
   let yyyy;
-  const yyyyIdx = dateFormatInput.indexOf("yyyy")
+  let yyyyIdx = dateFormatInput.indexOf("yyyy")
   if (yyyyIdx > -1) {
     yyyy = dateString.toString().slice(yyyyIdx, yyyyIdx + 4)
+  } else {
+    yyyyIdx = dateFormatInput.indexOf("YYYY")
+    if (yyyyIdx > -1) {
+      yyyy = dateString.toString().slice(yyyyIdx, yyyyIdx + 4)
+    }
   }
   let MM;
-  const MMIdx = dateFormatInput.indexOf("MM")
+  let MMIdx = dateFormatInput.indexOf("MM")
   if (MMIdx > -1) {
     MM = dateString.toString().slice(MMIdx, MMIdx + 2)
+  } else {
+    MMIdx = dateFormatInput.indexOf("mm")
+    if (MMIdx > -1) {
+      MM = dateString.toString().slice(MMIdx, MMIdx + 2)
+    }
   }
   let dd;
-  const ddIdx = dateFormatInput.indexOf("dd")
+  let ddIdx = dateFormatInput.indexOf("dd")
   if (ddIdx > -1) {
     dd = dateString.toString().slice(ddIdx, ddIdx + 2)
+  } else {
+    ddIdx = dateFormatInput.indexOf("DD")
+    if (ddIdx > -1) {
+      dd = dateString.toString().slice(ddIdx, ddIdx + 2)
+    }
   }
 
   // output format
-  if (dateFormatOutput.indexOf("yyyy") > -1) {
+  if (yyyyIdx > -1) {
     dateFormatOutput = dateFormatOutput.replace("yyyy", yyyy)
+    dateFormatOutput = dateFormatOutput.replace("YYYY", yyyy)
   }
-  if (dateFormatOutput.indexOf("MM") > -1) {
+  if (MMIdx > -1) {
     dateFormatOutput = dateFormatOutput.replace("MM", MM)
+    dateFormatOutput = dateFormatOutput.replace("mm", MM)
   }
-  if (dateFormatOutput.indexOf("dd") > -1) {
+  if (ddIdx > -1) {
     dateFormatOutput = dateFormatOutput.replace("dd", dd)
+    dateFormatOutput = dateFormatOutput.replace("DD", dd)
   }
+  // remove default output format alphanumerical characters
+  dateFormatOutput = dateFormatOutput.replace("dd/", "00/")
+  dateFormatOutput = dateFormatOutput.replace("MM/", "00/")
+  dateFormatOutput = dateFormatOutput.replace("yyyy/", "0000/")
   return dateFormatOutput
 }
 

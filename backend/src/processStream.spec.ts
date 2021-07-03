@@ -79,4 +79,31 @@ describe('processStream.ts - Process chunk', () => {
     expect(result[0][0].scores.name.last).to.above(0.65)
   });
 
+  it('Wrong date format: DD/MM/YYYY instead of dd/MM/yyyy', async () => {
+    const result = await processChunk(
+      [{firstName: 'jean', lastName: 'pierre', birthDate: '04/08/1933'}],
+      1,
+      {
+        dateFormat: 'DD/MM/YYYY'
+      }
+    )
+    expect(result.length).to.equal(1)
+    expect(result[0][0].name.first).to.contain('Jean')
+    expect(result[0][0].name.last).to.equal('Pierre')
+  });
+
+  it('Wrong date format: missing day dd', async () => {
+    const result = await processChunk(
+      [{firstName: 'jean', lastName: 'pierre', birthDate: '08/1933'}],
+      1,
+      {
+        dateFormat: 'MM/YYYY',
+        pruneScore: 0.01
+      }
+    )
+    expect(result.length).to.equal(1)
+    expect(result[0][0].name.first).to.contain('Jean')
+    expect(result[0][0].name.last).to.equal('Pierre')
+  });
+
 });
