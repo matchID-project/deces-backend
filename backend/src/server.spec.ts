@@ -337,7 +337,6 @@ describe('server.ts - Express application', () => {
     it('delete job', async () => {
       let res;
       let data = '';
-      let pos = 0;
       let index: number;
       const nrows = 5000;
       const readStream: any = fs.createReadStream('/deces-backend/tests/clients_test.csv',  {encoding: 'utf8'})
@@ -347,8 +346,6 @@ describe('server.ts - Express application', () => {
           data += chunk;
           if (index > 10) {
             readStream.close()
-          } else {
-            pos += chunk.length;
           }
         })
       await finishedAsync(readStream, {}).catch(() => {
@@ -389,7 +386,6 @@ describe('server.ts - Express application', () => {
     it('run bulk job', async () => {
       let res;
       let data = '';
-      let pos = 0;
       const nrows = 100;
       let index: number;
       const readStream: any = fs.createReadStream('/deces-backend/tests/clients_test.csv',  {encoding: 'utf8'})
@@ -399,8 +395,6 @@ describe('server.ts - Express application', () => {
           data += chunk;
           if (index > 10) {
             readStream.close()
-          } else {
-            pos += chunk.length;
           }
         })
       await finishedAsync(readStream, {}).catch(() => {
