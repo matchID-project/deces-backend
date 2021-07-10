@@ -442,6 +442,9 @@ let scoreLocation = (locA: Location, locB: Location): any => {
     if (locA.code && locB.code) {
         score.code = scoreLocationCode(locA.code, locB.codeHistory as string|string[]);
     }
+    if (locA.codePostal && locB.codePostal) {
+        score.codePostal = scoreLocationCode(locA.codePostal, locB.codePostal as string|string[]);
+    }
     if (locA.latitude && locA.longitude) {
       score.geo = scoreGeo(locA.latitude, locA.longitude, locB.latitude, locB.longitude)
     }
@@ -675,6 +678,7 @@ export class ScoreResult {
           this.birthLocation = scoreLocation({
               city: request.birthCity,
               code: request.birthLocationCode,
+              codePostal: request.birthPostalCode,
               departmentCode: request.birthDepartment,
               country: request.birthCountry,
               latitude: request.birthGeoPoint?.latitude,
@@ -697,6 +701,7 @@ export class ScoreResult {
               this.deathLocation = scoreLocation({
                   city: request.deathLocation,
                   code: request.deathLocationCode,
+                  codePostal: request.deathPostalCode,
                   departmentCode: request.deathDepartment,
                   country: request.deathCountry,
                   latitude: request.deathGeoPoint?.latitude,
