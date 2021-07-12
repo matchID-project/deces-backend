@@ -40,7 +40,7 @@ describe('server.ts - Express application', () => {
       expect(res.body.response.persons[0].links.wikidata).to.include('Q3102639');
     });
 
-    it('update', async () => {
+    it('update submit', async () => {
       const token = await chai.request(app)
         .post(apiPath(`auth`))
         .send({user:'user1@gmail.com', password: 'magicPass'})
@@ -54,6 +54,18 @@ describe('server.ts - Express application', () => {
       expect(res).to.have.status(200);
       expect(res.body.msg).to.equal('Update stored');
     });
+
+    it('update get all updates (admin)', async () => {
+      const token = await chai.request(app)
+        .post(apiPath(`auth`))
+        .send({user:process.env.BACKEND_TOKEN_USER, password: process.env.BACKEND_TOKEN_PASSWORD})
+      const res = await chai.request(app)
+        .get(apiPath('updated'))
+        .set('Authorization', `Bearer ${token.body.access_token as string}`)
+      expect(res).to.have.status(200);
+      expect(res.body.length).to.above(0);
+    });
+
   })
 
   describe('/queue', () => {
