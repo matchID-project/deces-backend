@@ -131,7 +131,3 @@ app.use((
 
 // app.use(`${process.env.BACKEND_PROXY_PATH}/search`, bulk);
 app.use(`${process.env.BACKEND_PROXY_PATH}/docs`, documentation);
-
-import { initUpdateIndex } from './updatedIds';
-
-initUpdateIndex();
