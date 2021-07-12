@@ -144,7 +144,7 @@ export const resultsFromUpdates = async (updates: any): Promise<Result> => {
   );
   const msearchRequest = bulkRequest.map((x: any) => x.join('\n\r')).join('\n\r') + '\n';
   const result =  await runBulkRequest(msearchRequest);
-  return result.data.responses.map((r:any) => buildResultSingle(r.hits.hits[0]))
+  return result.data.responses.filter((r:any) => r.hits.hits[0]).map((r:any) => buildResultSingle(r.hits.hits[0]))
     .map((r:any) => {
       delete r.score;
       delete r.scores;
