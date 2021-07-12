@@ -298,9 +298,9 @@ export const buildResultSingle = (item: ResultRawHit): Person => {
       const update: any = {...u};
       // WIP quick n dirty anonymization
       const { author } = u;
-      update.author = author && author.substring(0,2)
+      update.author = author ? author.substring(0,2)
         + '...' + author.replace(/@.*/,'').substring(author.replace(/@.*/,'').length-2)
-        + '@' + author.replace(/.*@/,'');
+        + '@' + author.replace(/.*@/,'') : "";
       return update;
     });
   }
