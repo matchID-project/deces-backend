@@ -112,10 +112,10 @@ app.use((
   }
   if (err instanceof Error) {
     log({
-      error: err.toString()
+      error: err.stack
     });
     return res.status(500).json({
-      message: err.toString(),
+      message: err.stack
     });
   }
   next();
