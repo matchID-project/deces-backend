@@ -121,9 +121,9 @@ export const getAuthorUpdates = (author: string):any => {
     const modifications = updatedFields[id].map((m:any) => {
       const modif:any = {...m}
       if (modif.author !== author) {
-        modif.author = modif.author.substring(0,2)
+        modif.author = modif.author ? modif.author.substring(0,2)
           + '...' + modif.author.replace(/@.*/,'').substring(modif.author.replace(/@.*/,'').length-2)
-          + '@' + modif.author.replace(/.*@/,'');
+          + '@' + modif.author.replace(/.*@/,'') : '';
         modif.message = undefined;
         modif.review = undefined;
       } else {
