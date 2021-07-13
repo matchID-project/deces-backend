@@ -66,6 +66,17 @@ describe('server.ts - Express application', () => {
       expect(res.body.length).to.above(0);
     });
 
+    it('update get author updates', async () => {
+      const token = await chai.request(app)
+        .post(apiPath(`auth`))
+        .send({user:'user1@gmail.com', password: 'magicPass'})
+      const res = await chai.request(app)
+        .get(apiPath('updated'))
+        .set('Authorization', `Bearer ${token.body.access_token as string}`)
+      expect(res).to.have.status(200);
+      expect(res.body.length).to.above(0);
+    });
+
   })
 
   describe('/queue', () => {
