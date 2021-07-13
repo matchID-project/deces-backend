@@ -367,8 +367,7 @@ export class SearchController extends Controller {
 
   /**
    * Get updates list by ID
-   * @summary Use unique identifier to search for people
-   * @param id Person unique identifier
+   * @summary Obtenir une liste des identités modifiées
    * must be authentified (user or admin)
    */
   @Security('jwt',['user'])
