@@ -5,6 +5,7 @@ import { Person } from './models/entities';
 import { promisify } from 'util';
 import { parseString } from '@fast-csv/parse';
 import { writeToBuffer } from '@fast-csv/format';
+import { initUpdateIndex } from './updatedIds';
 import fs from "fs";
 import chai from 'chai';
 import chaiHttp = require('chai-http');
@@ -12,8 +13,12 @@ import 'mocha';
 
 chai.use(chaiHttp);
 const finishedAsync:any = promisify(finished);
-
 describe('server.ts - Express application', () => {
+
+  before(async () => {
+    await initUpdateIndex();
+  })
+  
   let totalPersons: number;
   const apiPath = (api: string): string => {
     return `${process.env.BACKEND_PROXY_PATH}/${api}`
