@@ -28,7 +28,7 @@ jobs:
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
       - name: 🐋 Save docker image
         run: make docker-save
-      - name: Upload docker image
+      - name: ⬆ Upload docker image
         uses: actions/upload-artifact@v2
         with:
           name: deces-backend
@@ -40,11 +40,11 @@ jobs:
 
     steps:
       - uses: actions/checkout@v1
-      - name: Download docker image
+      - name: ⬇ Download docker image
         uses: actions/download-artifact@v2
         with:
           name: deces-backend
-      - name: Build the dev docker image
+      - name: 🐳 Load docker image
         run: make docker-load
       - name: Make deploy local
         run: make deploy-dependencies backend-perf-clinic
@@ -55,7 +55,10 @@ jobs:
       - name: ⚗ Run artillery tests
         run: |
           docker cp backend/tests/clients_test.csv `docker ps -l --format "{{.Names}}" --filter name=deces-backend`:/deces-backend/tests/clients_test.csv
-          make test-perf-v1 backend-perf-clinic-stop
+          make test-perf-v1
+      - name: ⚕ Save doctor.js results
+        run: |
+          make backend-perf-clinic-stop
       - name: 📦 Upload results as job artifact
         uses: actions/upload-artifact@v2
         with:

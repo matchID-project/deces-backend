@@ -319,6 +319,7 @@ backend-perf-clinic-stop:
 	@docker exec `docker ps -l --format "{{.Names}}" --filter name=deces-backend` /bin/bash -c "kill -INT \`pidof node\`"
 	@docker logs --tail 5 `docker ps -l --format "{{.Names}}" --filter name=deces-backend`
 	@docker restart `docker ps -l --format "{{.Names}}" --filter name=deces-backend`
+	@ls ${BACKEND}/clinic/*
 	@docker exec `docker ps -l --format "{{.Names}}" --filter name=deces-backend` /bin/bash -c "/${APP}/node_modules/.bin/clinic doctor --no-insight --visualize-only clinic/\`ls /${APP}/clinic/ |head -n 1 \`"
 
 # development mode
