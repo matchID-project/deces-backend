@@ -10,6 +10,7 @@ describe('score.ts - Score function', () => {
       lastName: 'pompidous',
       birthDate: "19691101"
     }, {
+      index: 'deces',
       score: 0.7,
       scores: {score: 0},
       source: '',
@@ -58,6 +59,7 @@ describe('score.ts - Score function', () => {
       lastName: 'pompidous',
       birthCity: 'Paris'
     }, {
+      index: 'deces',
       score: 0.7,
       scores: {score: 0},
       source: '',
@@ -108,6 +110,7 @@ describe('score.ts - Score function', () => {
       lastName: 'pompidous',
       birthPostalCode: '75001'
     }, {
+      index: 'deces',
       score: 0.7,
       scores: {score: 0},
       source: '',

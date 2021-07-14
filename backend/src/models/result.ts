@@ -155,6 +155,7 @@ export interface ResultRawES {
 }
 
 export interface ResultRawHit {
+  _index: 'deces'|'deces-updates';
   _score: number;
   _id: string;
   _source: {
@@ -215,6 +216,11 @@ export const buildResult = (result: ResultRawES, requestInput: RequestInput): Re
     }
   })
   let filteredResults = result.hits.hits.map(buildResultSingle)
+  filteredResults.forEach((item: any) => {
+    if (item.index === 'deces-updates' && (filteredResults.map(x => x.id).indexOf(item.id) > -1)) {
+          filteredResults.splice(filteredResults.map(x => x.id).indexOf(item.id), 1);
+    }
+  })
   scoreResults(filteredRequest, filteredResults, {dateFormat: filteredRequest.dateFormat})
   if (requestInput.sort && Object.values(requestInput.sort.value).map(x => Object.keys(x))[0].includes('score')) {
     if (Object.values(requestInput.sort.value).find(x => x.score).score === 'asc') {
@@ -243,6 +249,7 @@ export const buildResult = (result: ResultRawES, requestInput: RequestInput): Re
 
 export const buildResultSingle = (item: ResultRawHit): Person => {
   const result: Person = {
+    index: item._index,
     score: item._score,
     // source: dataCatalog[item._source.SOURCE],
     source: item._source.SOURCE,
@@ -298,9 +305,9 @@ export const buildResultSingle = (item: ResultRawHit): Person => {
       const update: any = {...u};
       // WIP quick n dirty anonymization
       const author: string = u.author as string;
-      update.author = author.substring(0,2)
+      update.author = author ? author.substring(0,2)
         + '...' + author.replace(/@.*/,'').substring(author.replace(/@.*/,'').length-2)
-        + '@' + author.replace(/.*@/,'');
+        + '@' + author.replace(/.*@/,'') : "";
       return update;
     });
   }

@@ -19,7 +19,7 @@ import "./controllers/status.controller";
 import "./controllers/job.controller";
 import "./controllers/auth.controller";
 
-const log = (json:any) => {
+export const log = (json:any) => {
   loggerStream.write(JSON.stringify({
     "backend": {
       "server-date": new Date(Date.now()).toISOString(),
@@ -27,6 +27,7 @@ const log = (json:any) => {
     }
   }));
 }
+
 
 export const app = express();
 
@@ -111,10 +112,10 @@ app.use((
   }
   if (err instanceof Error) {
     log({
-      error: err.toString()
+      error: err.stack
     });
     return res.status(500).json({
-      message: err.toString(),
+      message: err.stack
     });
   }
   next();
