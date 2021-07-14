@@ -241,6 +241,11 @@ docker-check:
 		|| (echo no previous build found for ${DOCKER_USERNAME}/${DC_IMAGE_NAME}:${APP_VERSION} && exit 1);\
 	fi;
 
+docker-save:
+	@docker save -o deces-backend.tar ${DOCKER_USERNAME}/deces-backend:${APP_VERSION}
+
+docker-load:
+	@docker load -i deces-backend.tar
 
 #############
 #  Backend  #
@@ -314,6 +319,7 @@ backend-perf-clinic-stop:
 	@docker exec `docker ps -l --format "{{.Names}}" --filter name=deces-backend` /bin/bash -c "kill -INT \`pidof node\`"
 	@docker logs --tail 5 `docker ps -l --format "{{.Names}}" --filter name=deces-backend`
 	@docker restart `docker ps -l --format "{{.Names}}" --filter name=deces-backend`
+	@ls ${BACKEND}/clinic/*
 	@docker exec `docker ps -l --format "{{.Names}}" --filter name=deces-backend` /bin/bash -c "/${APP}/node_modules/.bin/clinic doctor --no-insight --visualize-only clinic/\`ls /${APP}/clinic/ |head -n 1 \`"
 
 # development mode
