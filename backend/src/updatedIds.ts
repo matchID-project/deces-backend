@@ -9,6 +9,7 @@ import { RequestInput } from './models/requestInput';
 import { Modification } from './models/entities';
 import { promisify } from 'util';
 import { writeFile, access, mkdir } from 'fs';
+import { referenceSort } from './buildRequest';
 
 const writeFileAsync = promisify(writeFile);
 const mkdirAsync = promisify(mkdir);
@@ -69,6 +70,36 @@ export const initUpdateIndex =  async (): Promise<boolean> => {
       log({msg: 'failed initiating missing update index', error: err.message});
       return false;
     }
+  }
+}
+
+export const updateFieldsToIndex =  async (): Promise<boolean> => {
+  const updates:any = getAllUpdates();
+  const updateList: any = await resultsFromUpdates(updates)
+  const bulkRequest = updateList.map((row: any) => { // TODO: type
+    const correctedUpdate = row.hits.hits[0]
+    const lastModif = updates[row.hits.hits[0]._id][updates[row.hits.hits[0]._id].length -1];
+    Object.keys(lastModif.fields).forEach((f: any) => {
+      if (referenceSort[f]) {
+        correctedUpdate._source[referenceSort[f].split('.')[0]] = lastModif.fields[f]
+      }
+    })
+    return [JSON.stringify({index: {_id: correctedUpdate._id}}), JSON.stringify(correctedUpdate._source)];
+  })
+  const updateRequest = bulkRequest.map((x: any) => x.join('\n\r')).join('\n\r') + '\n';
+  const response = await axios(`http://elasticsearch:9200/${updateIndex}/_doc/_bulk`, {
+    method: 'POST',
+    data: updateRequest,
+    headers: {
+      'Content-Type': 'application/x-ndjson',
+      'Cache-Control': 'no-cache'
+    }
+  });
+  if (response.status === 200 && !response.data.errors) {
+    return true
+  } else {
+    log({msg: `Error adding documents to ${updateIndex}`, stack: JSON.stringify(response.data)});
+    return false
   }
 }
 
@@ -144,7 +175,11 @@ export const resultsFromUpdates = async (updates: any): Promise<Result> => {
   );
   const msearchRequest = bulkRequest.map((x: any) => x.join('\n\r')).join('\n\r') + '\n';
   const result =  await runBulkRequest(msearchRequest);
-  return result.data.responses.filter((r:any) => r.hits.hits[0]).map((r:any) => buildResultSingle(r.hits.hits[0]))
+  return result.data.responses
+}
+
+export const cleanRawUpdates = (rawUpdates: any, updates: any): Promise<Result> => {
+  return rawUpdates.filter((r:any) => r.hits.hits[0]).map((r:any) => buildResultSingle(r.hits.hits[0]))
     .map((r:any) => {
       delete r.score;
       delete r.scores;

@@ -4,14 +4,14 @@ import forge from 'node-forge';
 import express from 'express';
 import { writeFile, createReadStream } from 'fs';
 import { promisify } from 'util';
-import { resultsHeader, jsonPath, prettyString, returnBulkResults } from '../processStream';
+import { resultsHeader, jsonPath, prettyString } from '../processStream';
 import { runRequest } from '../runRequest';
 import { buildRequest } from '../buildRequest';
 import { RequestInput, RequestBody } from '../models/requestInput';
 import { StrAndNumber, Modification, UpdateRequest, UpdateUserRequest, Review, ReviewsStringified, statusAuthMap, PersonCompare } from '../models/entities';
 import { buildResult, Result, ErrorResponse } from '../models/result';
 import { format } from '@fast-csv/format';
-import { getAllUpdates, getAuthorUpdates, updatedFields, resultsFromUpdates, addModification } from '../updatedIds';
+import { getAllUpdates, getAuthorUpdates, updatedFields, resultsFromUpdates, cleanRawUpdates, addModification, proofDirectory, proofFilename } from '../updatedIds';
 import { ScoreResult, personFromRequest } from '../score';
 import { sendUpdateConfirmation } from '../mail';
 // import getDataGouvCatalog from '../getDataGouvCatalog';
@@ -377,7 +377,8 @@ export class SearchController extends Controller {
     const author = (request as any).user && (request as any).user.user
     const isAdmin = (request as any).user && (request as any).user.scopes && (request as any).user.scopes.includes('admin');
     const updates:any = isAdmin ? getAllUpdates() : getAuthorUpdates(author);
-    return await resultsFromUpdates(updates);
+    const rawUpdates = await resultsFromUpdates(updates);
+    return await cleanRawUpdates(rawUpdates, updates);
   }
 
   private async storeProof(request: express.Request, date: string): Promise<any> {
