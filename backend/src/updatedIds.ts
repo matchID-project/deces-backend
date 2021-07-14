@@ -75,6 +75,7 @@ export const initUpdateIndex =  async (): Promise<boolean> => {
 
 export const updateFieldsToIndex =  async (): Promise<boolean> => {
   const updates:any = getAllUpdates();
+  if (Object.keys(updates).length === 0) return
   const updateList: any = await resultsFromUpdates(updates)
   const bulkRequest = updateList.map((row: any) => { // TODO: type
     const correctedUpdate = row.hits.hits[0]
