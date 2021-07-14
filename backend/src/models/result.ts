@@ -155,6 +155,7 @@ export interface ResultRawES {
 }
 
 export interface ResultRawHit {
+  _index: 'deces'|'deces-updates';
   _score: number;
   _id: string;
   _source: {
@@ -215,7 +216,12 @@ export const buildResult = (result: ResultRawES, requestInput: RequestInput): Re
     }
   })
   let filteredResults = result.hits.hits.map(buildResultSingle)
-  scoreResults(filteredRequest, filteredResults, {dateFormatA: filteredRequest.dateFormat})
+  filteredResults.forEach((item: any) => {
+    if (item.index === 'deces-updates' && (filteredResults.map(x => x.id).indexOf(item.id) > -1)) {
+          filteredResults.splice(filteredResults.map(x => x.id).indexOf(item.id), 1);
+    }
+  })
+  scoreResults(filteredRequest, filteredResults, {dateFormat: filteredRequest.dateFormat})
   if (requestInput.sort && Object.values(requestInput.sort.value).map(x => Object.keys(x))[0].includes('score')) {
     if (Object.values(requestInput.sort.value).find(x => x.score).score === 'asc') {
       filteredResults = filteredResults.sort((a: Person, b: Person) => a.score - b.score)
@@ -243,6 +249,7 @@ export const buildResult = (result: ResultRawES, requestInput: RequestInput): Re
 
 export const buildResultSingle = (item: ResultRawHit): Person => {
   const result: Person = {
+    index: item._index,
     score: item._score,
     // source: dataCatalog[item._source.SOURCE],
     source: item._source.SOURCE,
