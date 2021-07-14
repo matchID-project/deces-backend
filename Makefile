@@ -241,6 +241,11 @@ docker-check:
 		|| (echo no previous build found for ${DOCKER_USERNAME}/${DC_IMAGE_NAME}:${APP_VERSION} && exit 1);\
 	fi;
 
+docker-save:
+	@docker save -o deces-backend.tar ${DOCKER_USERNAME}/deces-backend:${APP_VERSION}
+
+docker-load:
+	@docker load -i deces-backend.tar
 
 #############
 #  Backend  #
