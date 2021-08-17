@@ -301,7 +301,7 @@ test-perf-v1:
 backend-perf-clinic:
 	@echo Start API in clinic mode
 	@export EXEC_ENV=production; export BACKEND_LOG_LEVEL=debug; \
-		${DC_BACKEND} run -v ${BACKEND}/clinic:/${APP}/clinic/ -d --rm --name deces-backend --use-aliases backend /bin/bash -c "npm install clinic && ./node_modules/.bin/clinic doctor --no-insight --collect-only -- node dist/index.js && mkdir -p clinic && cp -r /${APP}/.clinic/* /${APP}/clinic"
+		${DC_BACKEND} run -v ${BACKEND}/clinic:/${APP}/clinic/ -d --rm --name deces-backend --use-aliases backend /bin/sh -c "apk --no-cache add npm && npm install clinic && ./node_modules/.bin/clinic doctor --no-insight --collect-only -- node dist/index.js && mkdir -p clinic && cp -r /${APP}/.clinic/* /${APP}/clinic"
 	@timeout=${BULK_TIMEOUT} ; ret=1 ;\
 		until [ "$$timeout" -le 0 -o "$$ret" -eq "0"  ] ; do\
 			(docker exec -i ${USE_TTY} `docker ps -l --format "{{.Names}}" --filter name=deces-backend` curl -s --fail -X GET http://localhost:${BACKEND_PORT}/deces/api/v1/version > /dev/null) ;\
@@ -315,11 +315,11 @@ backend-perf-clinic:
 
 backend-perf-clinic-stop:
 	@echo Stop backend development container
-	@docker exec `docker ps -l --format "{{.Names}}" --filter name=deces-backend` /bin/bash -c "kill -INT \`pidof node\`"
+	@docker exec `docker ps -l --format "{{.Names}}" --filter name=deces-backend` /bin/sh -c "kill -INT \`pidof node\`"
 	@docker logs --tail 5 `docker ps -l --format "{{.Names}}" --filter name=deces-backend`
 	@docker restart `docker ps -l --format "{{.Names}}" --filter name=deces-backend`
 	@ls ${BACKEND}/clinic/*
-	@docker exec `docker ps -l --format "{{.Names}}" --filter name=deces-backend` /bin/bash -c "/${APP}/node_modules/.bin/clinic doctor --no-insight --visualize-only clinic/\`ls /${APP}/clinic/ |head -n 1 \`"
+	@docker exec `docker ps -l --format "{{.Names}}" --filter name=deces-backend` /bin/sh -c "/${APP}/node_modules/.bin/clinic doctor --no-insight --visualize-only clinic/\`ls /${APP}/clinic/ |head -n 1 \`"
 
 # development mode
 backend-dev:
