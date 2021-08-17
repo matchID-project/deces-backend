@@ -44,7 +44,6 @@ export BACKEND_TOKEN_USER?=${API_EMAIL}
 export BACKEND_TOKEN_KEY?=$(shell echo $$RANDOM )
 export BACKEND_TOKEN_PASSWORD?=$(shell echo $$RANDOM )
 export BACKEND_PROXY_PATH=/${API_PATH}/api/v1
-export FILE_BACKEND_DIST_APP_VERSION = $(APP)-$(APP_VERSION)-backend-dist.tar.gz
 export NPM_REGISTRY = $(shell echo $$NPM_REGISTRY )
 export NPM_VERBOSE ?= 1
 export REDIS_DATA=${APP_PATH}/redisdata
@@ -252,13 +251,10 @@ docker-load:
 #############
 
 # build
-backend-dist: ${WIKIDATA_LINKS} ${COMMUNES_JSON} ${DB_JSON} ${PROOFS}
-	export EXEC_ENV=development; ${DC_BACKEND} -f $(DC_FILE)-dev-backend.yml run -T --no-deps --rm backend npm run build  && tar czvf ${BACKEND}/${FILE_BACKEND_DIST_APP_VERSION} -C ${BACKEND} dist
-
-backend-build-image: ${BACKEND}/${FILE_BACKEND_DIST_APP_VERSION}
+backend-build-image: ${WIKIDATA_LINKS} ${COMMUNES_JSON} ${DB_JSON} ${PROOFS}
 	export EXEC_ENV=production; ${DC_BACKEND} build backend
 
-backend-build-all: network backend-dist backend-build-image
+backend-build-all: network backend-build-image
 
 # production mode
 backend-start:
