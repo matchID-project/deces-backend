@@ -284,6 +284,9 @@ db-json-fake:
 
 backend-test-mocha: db-json-fake smtp
 	@echo Testing API with mocha tests
+	@if [ ! -f "${BACKEND}/src/routes/routes.ts" ]; then export EXEC_ENV=development; \
+		export BACKEND_LOG_LEVEL=error; \
+		${DC_BACKEND} -f ${DC_FILE}-dev-backend.yml run --rm backend npm run tsoa;fi
 	@export EXEC_ENV=development; export BACKEND_LOG_LEVEL=error; \
 		${DC_BACKEND} -f ${DC_FILE}-dev-backend.yml run --rm backend npm run test
 
