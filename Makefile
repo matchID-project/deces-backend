@@ -44,7 +44,6 @@ export BACKEND_TOKEN_USER?=${API_EMAIL}
 export BACKEND_TOKEN_KEY?=$(shell echo $$RANDOM )
 export BACKEND_TOKEN_PASSWORD?=$(shell echo $$RANDOM )
 export BACKEND_PROXY_PATH=/${API_PATH}/api/v1
-export FILE_BACKEND_DIST_APP_VERSION = $(APP)-$(APP_VERSION)-backend-dist.tar.gz
 export NPM_REGISTRY = $(shell echo $$NPM_REGISTRY )
 export NPM_VERBOSE ?= 1
 export REDIS_DATA=${APP_PATH}/redisdata
@@ -252,13 +251,10 @@ docker-load:
 #############
 
 # build
-backend-dist: ${WIKIDATA_LINKS} ${COMMUNES_JSON} ${DB_JSON} ${PROOFS}
-	export EXEC_ENV=development; ${DC_BACKEND} -f $(DC_FILE)-dev-backend.yml run -T --no-deps --rm backend npm run build  && tar czvf ${BACKEND}/${FILE_BACKEND_DIST_APP_VERSION} -C ${BACKEND} dist
-
-backend-build-image: ${BACKEND}/${FILE_BACKEND_DIST_APP_VERSION}
+backend-build-image: ${WIKIDATA_LINKS} ${COMMUNES_JSON} ${DB_JSON} ${PROOFS}
 	export EXEC_ENV=production; ${DC_BACKEND} build backend
 
-backend-build-all: network backend-dist backend-build-image
+backend-build-all: network backend-build-image
 
 # production mode
 backend-start:
@@ -288,6 +284,9 @@ db-json-fake:
 
 backend-test-mocha: db-json-fake smtp
 	@echo Testing API with mocha tests
+	@if [ ! -f "${BACKEND}/src/routes/routes.ts" ]; then export EXEC_ENV=development; \
+		export BACKEND_LOG_LEVEL=error; \
+		${DC_BACKEND} -f ${DC_FILE}-dev-backend.yml run --rm backend npm run tsoa;fi
 	@export EXEC_ENV=development; export BACKEND_LOG_LEVEL=error; \
 		${DC_BACKEND} -f ${DC_FILE}-dev-backend.yml run --rm backend npm run test
 
@@ -302,7 +301,7 @@ test-perf-v1:
 backend-perf-clinic:
 	@echo Start API in clinic mode
 	@export EXEC_ENV=production; export BACKEND_LOG_LEVEL=debug; \
-		${DC_BACKEND} run -v ${BACKEND}/clinic:/${APP}/clinic/ -d --rm --name deces-backend --use-aliases backend /bin/bash -c "npm install clinic && ./node_modules/.bin/clinic doctor --no-insight --collect-only -- node dist/index.js && mkdir -p clinic && cp -r /${APP}/.clinic/* /${APP}/clinic"
+		${DC_BACKEND} run -v ${BACKEND}/clinic:/${APP}/clinic/ -d --rm --name deces-backend --use-aliases backend /bin/sh -c "apk --no-cache add npm && npm install clinic && ./node_modules/.bin/clinic doctor --no-insight --collect-only -- node dist/index.js && mkdir -p clinic && cp -r /${APP}/.clinic/* /${APP}/clinic"
 	@timeout=${BULK_TIMEOUT} ; ret=1 ;\
 		until [ "$$timeout" -le 0 -o "$$ret" -eq "0"  ] ; do\
 			(docker exec -i ${USE_TTY} `docker ps -l --format "{{.Names}}" --filter name=deces-backend` curl -s --fail -X GET http://localhost:${BACKEND_PORT}/deces/api/v1/version > /dev/null) ;\
@@ -316,11 +315,11 @@ backend-perf-clinic:
 
 backend-perf-clinic-stop:
 	@echo Stop backend development container
-	@docker exec `docker ps -l --format "{{.Names}}" --filter name=deces-backend` /bin/bash -c "kill -INT \`pidof node\`"
+	@docker exec `docker ps -l --format "{{.Names}}" --filter name=deces-backend` /bin/sh -c "kill -INT \`pidof node\`"
 	@docker logs --tail 5 `docker ps -l --format "{{.Names}}" --filter name=deces-backend`
 	@docker restart `docker ps -l --format "{{.Names}}" --filter name=deces-backend`
 	@ls ${BACKEND}/clinic/*
-	@docker exec `docker ps -l --format "{{.Names}}" --filter name=deces-backend` /bin/bash -c "/${APP}/node_modules/.bin/clinic doctor --no-insight --visualize-only clinic/\`ls /${APP}/clinic/ |head -n 1 \`"
+	@docker exec `docker ps -l --format "{{.Names}}" --filter name=deces-backend` /bin/sh -c "/${APP}/node_modules/.bin/clinic doctor --no-insight --visualize-only clinic/\`ls /${APP}/clinic/ |head -n 1 \`"
 
 # development mode
 backend-dev:
