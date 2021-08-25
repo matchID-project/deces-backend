@@ -1,5 +1,6 @@
 import { Controller, Get, Route, Response, Tags  } from 'tsoa';
 import { HealthcheckResponse } from '../models/result';
+import { processChunk } from '../processStream';
 
 /**
  * @swagger
@@ -17,8 +18,19 @@ export class StatusController extends Controller {
   @Response<HealthcheckResponse>('200', 'OK')
   @Tags('Check')
   @Get('/healthcheck')
-  public msg(): HealthcheckResponse {
-    return { msg: 'OK' };
+  public async msg(): Promise<HealthcheckResponse> {
+    const result = await processChunk(
+      [{firstName: 'jean', lastName: 'pierre', birthDate: '04/08/1933'}],
+      5,
+      {
+        dateFormat: 'dd/MM/yyyy',
+      }
+    )
+    if (result.length > 0 && result[0].length > 0 && result[0][0].sex ) {
+      return { msg: 'OK' };
+    } else {
+      return { msg: 'KO' };
+    }
   }
 
   /**
