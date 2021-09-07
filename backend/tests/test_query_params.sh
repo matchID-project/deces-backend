@@ -288,7 +288,7 @@ else
     echo -e "\e[31minconnu: KO!\e[0m"
     exit 1
 fi
-scrollId=$(curl -s -X POST -H "Content-Type: application/json" -d '{"firstName": "Jean", "scroll": "1m"}' http://localhost:${BACKEND_PORT}/deces/api/v1/search | grep -Po 'scrollId":"\K.*?(?=")')
+scrollId=$(curl -s -X POST -H "Content-Type: application/json" -d '{"firstName": "Jean", "scroll": "1m"}' http://localhost:${BACKEND_PORT}/deces/api/v1/search | grep -Eo 'scrollId":"(.+)"' |  sed -En "s/scrollId\":\"(.*)\"/\1/p")
 if [ ! -z "$scrollId" ]; then \
     #    while [ -n "$scrollId" ]; do
     #        scrollId=$(curl -s -X POST -H "Content-Type: application/json" -d '{"scroll": "1m", "scrollId": "$scrollId"}' http://localhost:${BACKEND_PORT}/deces/api/v1/search | grep -Po 'scrollId":"\K.*?(?=")')
