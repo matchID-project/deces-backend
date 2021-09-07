@@ -277,7 +277,7 @@ backend-stop:
 
 backend-test:
 	@echo Testing API parameters
-	@docker exec -i ${USE_TTY} ${APP} bash /deces-backend/tests/test_query_params.sh
+	@docker exec -i ${USE_TTY} ${APP} /bin/sh /deces-backend/tests/test_query_params.sh
 
 db-json-fake:
 	echo '{"user1@gmail.com": "7cd61af92058569476e9d91fea601ba85fa02258b6263cfa188c15957f4752f3"}' > ${DB_JSON}
