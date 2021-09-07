@@ -108,21 +108,20 @@ else
     echo -e "\e[31mDeathAge: KO!\e[0m"
     exit 1
 fi
-if curl -s -XGET http://localhost:${BACKEND_PORT}/deces/api/v1/search?deathDate=2020\&sex=M | grep -q --invert-match 'sex":"F"'; then
+if curl -s -XGET http://localhost:${BACKEND_PORT}/deces/api/v1/search?deathDate=2020\&sex=M | grep -q -v 'sex":"F"'; then
     echo "sex: OK"
 else
     echo -e "\e[31msex: KO!\e[0m"
     exit 1
 fi
-if curl -s -g -XGET http://localhost:${BACKEND_PORT}/deces/api/v1/search?deathDate=2020\&sort=[{\"sex\":\"asc\"}] | grep -q --invert-match 'sex":"M"'; then
+if curl -s -g -XGET http://localhost:${BACKEND_PORT}/deces/api/v1/search?deathDate=2020\&sort=[{\"sex\":\"asc\"}] | grep -q -v 'sex":"M"'; then
     echo "sort: OK"
 else
     echo -e "\e[31msort: KO!\e[0m"
     exit 1
 fi
-scrollId=$(curl -s -XGET http://localhost:${BACKEND_PORT}/deces/api/v1/search?firstName=Jean\&scroll=1m | grep -Po 'scrollId":"\K.*?(?=")')
+scrollId=$(curl -s -XGET http://localhost:${BACKEND_PORT}/deces/api/v1/search?firstName=Jean\&scroll=1m | grep -Eo 'scrollId":"(.+)"' |  sed -En "s/scrollId\":\"(.*)\"/\1/p")
 echo First scrollId is $scrollId
-curl -s -XGET http://localhost:${BACKEND_PORT}/deces/api/v1/search?scrollId=$scrollId\&scroll=1m | grep -Po 'scrollId":"\K.*?(?=")'
 if [ ! -z "$scrollId" ]; then \
     #while [ -n "$scrollId" ]; do
     #    scrollId=$(curl -s -XGET http://localhost:${BACKEND_PORT}/deces/api/v1/search?scrollId=$scrollId\&scroll=1m | grep -Po 'scrollId":"\K.*?(?=")')
@@ -217,7 +216,7 @@ else
     echo -e "\e[31mDeathAge: KO!\e[0m"
     exit 1
 fi
-if curl -s -X POST -H "Content-Type: text/plain" -d '{"deathDate": "2020", "sex": "M"}' http://localhost:${BACKEND_PORT}/deces/api/v1/search | grep -q --invert-match 'sex":"F"'; then
+if curl -s -X POST -H "Content-Type: text/plain" -d '{"deathDate": "2020", "sex": "M"}' http://localhost:${BACKEND_PORT}/deces/api/v1/search | grep -q -v 'sex":"F"'; then
     echo "sex: OK"
 else
     echo -e "\e[31msex: KO!\e[0m"
