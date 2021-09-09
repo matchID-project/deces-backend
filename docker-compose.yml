@@ -60,7 +60,11 @@ services:
     container_name: ${APP}-redis
     volumes:
       - ${REDIS_DATA}:/data
-
+    healthcheck:
+       test: ["CMD", "redis-cli","ping"]
+       interval: 1m
+       timeout: 10s
+       retries: 3
 
 networks:
   default:
