@@ -77,7 +77,8 @@ try {
       dic[cityNorm(feature.properties.nom) as string] = {
         lat,
         lon,
-        code: feature.properties.code
+        code: feature.properties.insee
+        // TODO: surf_ha dispo to use for ML
       }});
 } catch(e) {
     // eslint-disable-next-line no-console
