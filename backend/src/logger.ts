@@ -1,7 +1,7 @@
 import { createLogger, format, transports, Logger } from 'winston';
 const { printf } = format
 
-const level = process.env.BACKEND_LOG_LEVEL ? process.env.BACKEND_LOG_LEVEL : process.env.NODE_ENV === 'production' ? 'info' : 'debug'
+const level = process.env.BACKEND_LOG_LEVEL ? process.env.BACKEND_LOG_LEVEL : process.env.NODE_ENV === 'production' ? 'info' : 'verbose'
 
 const options = {
   console: {
