@@ -376,10 +376,11 @@ wikidata-src: ${WIKIDATA_SRC}
 wikidata-links: ${WIKIDATA_LINKS}
 
 ${COMMUNES_JSON}:
-	@echo "downloading communes geo data";\
-	curl -s -l 'http://etalab-datasets.geo.data.gouv.fr/contours-administratifs/2019/geojson/communes-1000m.geojson.gz' -O
-	gzip -d communes-1000m.geojson.gz
-	mv communes-1000m.geojson ${BACKEND}/data/communes.json
+	@echo "downloading communes geo data";
+	@curl -s -l 'https://static.data.gouv.fr/resources/decoupage-administratif-communal-francais-issu-d-openstreetmap/20190103-150534/communes-20190101.zip' -O
+	@unzip -o communes-20190101.zip communes-20190101.json
+	@rm communes-20190101.zip
+	@mv communes-20190101.json ${BACKEND}/data/communes.json
 
 communes: ${COMMUNES_JSON}
 
