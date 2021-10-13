@@ -32,6 +32,7 @@
     "morgan": "^1.10.0",
     "multer": "^1.4.3",
     "node-forge": "^0.10.0",
+    "redis": "^3.1.2",
     "streamifier": "^0.1.1",
     "swagger-jsdoc": "^6.0.0",
     "swagger-ui-express": "^4.1.6",
