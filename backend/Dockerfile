@@ -101,7 +101,7 @@ ADD data ./data
 
 # Install production dependencies and clean cache
 RUN npm install --production && \
-    npm config set audit-level moderate && \
+    npm config set audit-level high && \
     npm audit --json --registry=https://registry.npmjs.org || ${NPM_AUDIT_DRY_RUN:-false} && \
     npm cache clean --force
 

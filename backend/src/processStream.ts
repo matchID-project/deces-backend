@@ -420,7 +420,7 @@ export const csvHandle = async (request: Request, options: Options): Promise<any
   job.on('succeeded', () => {
     if (!stopJob.includes(job.id)) {
       setTimeout(() => {
-        fs.unlink(`${job.id}.out.enc`, (err: any) => {if (err) log({unlinkOutputDeleteError: err, id: options.randomKey});});
+        fs.unlink(`${job.id}.out.enc`, (err: Error) => {if (err) log({unlinkOutputDeleteError: err, id: options.randomKey});});
       }, 3600000) // Delete results after 1 hour
     }
   });
