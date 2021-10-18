@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { Readable, Transform, pipeline, finished } from 'stream';
 import fs from 'fs';
-import Queue from 'bee-queue';
+import { Queue, Worker, Job, QueueEvents } from 'bullmq';
 import { RequestInput } from './models/requestInput';
 import { buildRequest } from './buildRequest';
 import { runBulkRequest } from './runRequest';
@@ -44,17 +44,22 @@ const stopJobReason: StopJobReason[] = [];
 const stopJobError = 'job has been stopped';
 const inputsArray: JobInput[]= []
 const jobQueue = new Queue('jobs',  {
-  redis: {
+  connection: {
+    host: 'redis'
+  }
+});
+
+const jobEvents = new QueueEvents('jobs', {
+  connection: {
     host: 'redis'
   }
 });
 
 const chunkQueue = new Queue('chunks',  {
-  redis: {
+  connection: {
     host: 'redis'
   }
 });
-
 
 const ToLinesStream = () => {
   let soFar: string;
@@ -133,7 +138,7 @@ interface MapField {
   [Key: string]: string;
 }
 
-export const processCsv =  async (job: Queue.Job<any>, jobFile: JobInput): Promise<any> => {
+export const processCsv =  async (job: Job<any>, jobFile: JobInput): Promise<any> => {
   try {
     // const inputHeaders: string[] = [];
     // let outputHeaders: any;
@@ -228,15 +233,33 @@ export const processChunk = async (chunk: any[], candidateNumber: number, params
   }
 }
 
-chunkQueue.process(Number(process.env.BACKEND_CHUNK_CONCURRENCY), async (chunkJob: Queue.Job<any>) => {
+const workerChunks = new Worker('chunks', async (chunkJob: Job) => {
   return await processChunk(chunkJob.data.chunk, chunkJob.data.candidateNumber, {dateFormat: chunkJob.data.dateFormat, pruneScore: chunkJob.data.pruneScore, candidateNumber: chunkJob.data.candidateNumber});
+}, {
+  connection: {
+    host: 'redis'
+  },
+  concurrency: Number(process.env.BACKEND_CHUNK_CONCURRENCY)
 })
 
-jobQueue.process(Number(process.env.BACKEND_JOB_CONCURRENCY), (job: Queue.Job<any>) => {
+const workerJobs = new Worker('jobs', async (job: Job) => {
   const jobIndex = inputsArray.findIndex(x => x.id === job.id);
   const jobFile = inputsArray.splice(jobIndex, 1).pop();
-  return processCsv(job, jobFile);
+  return await processCsv(job, jobFile);
+}, {
+  connection: {
+    host: 'redis'
+  },
+  concurrency: Number(process.env.BACKEND_JOB_CONCURRENCY)
 })
+
+// workerChunks.on('progress', (job: Job) => {
+//   console.log("progress chunks");
+// })
+//
+// workerJobs.on('progress', (job: Job) => {
+//   console.log("progress job");
+// })
 
 
 const jsonFields: string[] = ['birthGeoPoint','deathGeoPoint','block'];
@@ -246,7 +269,7 @@ interface Record {
 }
 
 export class ProcessStream extends Transform {
-  job: any;
+  job: Job;
   inputHeaders: string[];
   outputHeaders: any;
   mapField: MapField;
@@ -261,7 +284,7 @@ export class ProcessStream extends Transform {
   candidateNumber: number;
   pruneScore: number;
 
-  constructor(job: Queue.Job<any>, mapField: MapField, options: any = {}) {
+  constructor(job: Job<any>, mapField: MapField, options: any = {}) {
     // init Transform
     options.objectMode = true; // forcing object mode
     super({ objectMode: true, ...(options || {}) });
@@ -324,7 +347,7 @@ export class ProcessStream extends Transform {
       this.processedRows = r && r.metadata && r.metadata.sourceLineNumber || this.processedRows;
       this.push(r);
     });
-    this.job.reportProgress({rows: this.processedRows, percentage: this.processedRows / this.totalRows * 100})
+    this.job.updateProgress({rows: this.processedRows, percentage: this.processedRows / this.totalRows * 100})
   }
 
   get shouldProcessBatch(): boolean {
@@ -347,19 +370,19 @@ export class ProcessStream extends Transform {
   async processBatch(): Promise<void> {
     const jobId = `${this.batchNumber++}`;
     const job = await chunkQueue
-      .createJob({
+      .add(jobId, {
         chunk: this.batch.map((r: any) => this.toRequest(r)),
         dateFormat: this.dateFormat,
         pruneScore: this.pruneScore,
         candidateNumber: this.candidateNumber
+      }, {
+        timeout: 30000,
+        attempts: 2,
+        jobId
       })
-      .timeout(30000)
-      .retries(2)
-      .save();
-    const jobResult = new Promise((resolve) => {
-      job.on('succeeded', (result: any) => { resolve(result) });
-    });
-    this.jobs.push({id: jobId, result: jobResult})
+    await job.waitUntilFinished(jobEvents)
+    const jobResult = await Job.fromId(chunkQueue, job.id)
+    this.jobs.push({id: jobId, result: jobResult.returnvalue})
     this.batch = [];
   }
 
@@ -393,6 +416,14 @@ interface Options {
   [Key: string]: any;
 }
 
+workerChunks.on('completed', (job: Job) => {
+    if (!stopJob.includes(job.id)) {
+      setTimeout(() => {
+        fs.unlink(`${job.id}.out.enc`, (err: Error) => {if (err) log({unlinkOutputDeleteError: err});});
+      }, 3600000) // Delete results after 1 hour
+    }
+});
+
 export const csvHandle = async (request: Request, options: Options): Promise<any> => {
   // Use hash key index
   const jobId = crypto.createHash('sha256').update(options.randomKey).digest('hex');
@@ -413,25 +444,18 @@ export const csvHandle = async (request: Request, options: Options): Promise<any
   readStream.push(null);
   await finishedAsync(writeStream);
   inputsArray.push({id: jobId, file: `${jobId}.in.enc`, size: options.totalRows}) // Use key hash as job identifier
-  const job = await jobQueue
-    .createJob({...options})
-    .setId(jobId)
-    .save()
-  job.on('succeeded', () => {
-    if (!stopJob.includes(job.id)) {
-      setTimeout(() => {
-        fs.unlink(`${job.id}.out.enc`, (err: Error) => {if (err) log({unlinkOutputDeleteError: err, id: options.randomKey});});
-      }, 3600000) // Delete results after 1 hour
-    }
-  });
+  await jobQueue.add(jobId,
+    {...options},
+    {jobId}
+  )
   // res.send({msg: 'started', id: randomKey});
   return {msg: 'started', id: options.randomKey};
 }
 
 export const returnBulkResults = async (response: Response, id: string, outputFormat: string, order: string): Promise<void> => {
   const jobId = crypto.createHash('sha256').update(id).digest('hex');
-  const job: Queue.Job<any>|any = await jobQueue.getJob(jobId);
-  const jobsActive = await jobQueue.getJobs('active', {start: 0, end: 25})
+  const job: Job<any>|any = await jobQueue.getJob(jobId);
+  const jobsActive = await jobQueue.getJobs(['active', 'failed'], 0, 100, true);
   if (job && job.status === 'succeeded') {
     try {
       if (stopJob.includes(job.id)) {
@@ -535,7 +559,7 @@ export const returnBulkResults = async (response: Response, id: string, outputFo
     // return {status: 'active', id, progress: job.progress};
     response.send({status: 'active', id, progress: job.progress});
   } else if (job) {
-    const jobsWaiting = await jobQueue.getJobs('waiting', {start: 0, end: 25})
+    const jobsWaiting = await jobQueue.getJobs(['wait'], 0, 100, true);
     const remainingRowsActive = jobsActive.reduce((acc: number, val: any) => {
       return Math.round(acc + ((100.0 - val.progress.percentage) * val.progress.rows) / val.progress.percentage)
     }, 0)
@@ -563,7 +587,7 @@ export const returnBulkResults = async (response: Response, id: string, outputFo
 
 export const deleteThreadJob = async (response: Response, id: string): Promise<void> => {
   const jobId = crypto.createHash('sha256').update(id).digest('hex');
-  let job: Queue.Job<any>|any= await jobQueue.getJob(jobId)
+  let job: Job<any>|any= await jobQueue.getJob(jobId)
   if (!job) {
     job = await jobQueue.getJob(id)
   }
