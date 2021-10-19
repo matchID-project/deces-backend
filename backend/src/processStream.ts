@@ -49,7 +49,7 @@ const jobQueue = new Queue('jobs',  {
   }
 });
 
-const jobEvents = new QueueEvents('jobs', {
+const chunkEvents = new QueueEvents('chunks', {
   connection: {
     host: 'redis'
   }
@@ -380,7 +380,7 @@ export class ProcessStream extends Transform {
         attempts: 2,
         jobId
       })
-    await job.waitUntilFinished(jobEvents)
+    await job.waitUntilFinished(chunkEvents)
     const jobResult = await Job.fromId(chunkQueue, job.id)
     this.jobs.push({id: jobId, result: jobResult.returnvalue})
     this.batch = [];
@@ -456,7 +456,8 @@ export const returnBulkResults = async (response: Response, id: string, outputFo
   const jobId = crypto.createHash('sha256').update(id).digest('hex');
   const job: Job<any>|any = await jobQueue.getJob(jobId);
   const jobsActive = await jobQueue.getJobs(['active', 'failed'], 0, 100, true);
-  if (job && job.status === 'succeeded') {
+  const jobStatus = await job.getState();
+  if (job && jobStatus === 'completed') {
     try {
       if (stopJob.includes(job.id)) {
         if (stopJobReason.map(reason => reason.id).includes(job.id)) {
@@ -551,14 +552,14 @@ export const returnBulkResults = async (response: Response, id: string, outputFo
       // return {msg: 'Job succeeded but results expired'}
       response.send({msg: 'Job succeeded but results expired'})
     }
-  } else if (job && job.status === 'failed') {
-    response.status(400).send({status: job.status, msg: job.options.stacktraces.join(' ')});
+  } else if (job && jobStatus === 'failed') {
+    response.status(400).send({status: jobStatus, msg: job.options.stacktraces.join(' ')});
     // self.setStatus(400)
     // return {status: job.status, msg: job.options.stacktraces.join(' ')};
-  } else if (job && jobsActive.some((j: any) => j.id === jobId)) {
+  } else if (job && jobStatus === 'active') {
     // return {status: 'active', id, progress: job.progress};
     response.send({status: 'active', id, progress: job.progress});
-  } else if (job) {
+  } else if (job && jobStatus === 'waiting') {
     const jobsWaiting = await jobQueue.getJobs(['wait'], 0, 100, true);
     const remainingRowsActive = jobsActive.reduce((acc: number, val: any) => {
       return Math.round(acc + ((100.0 - val.progress.percentage) * val.progress.rows) / val.progress.percentage)
