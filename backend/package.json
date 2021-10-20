@@ -19,7 +19,6 @@
   "dependencies": {
     "@jollie/soundex-fr": "^1.0.8",
     "axios": "^0.23.0",
-    "bee-queue": "^1.4.0",
     "bullmq": "^1.50.2",
     "damlev": "^1.0.0",
     "emailjs": "^3.5.0",
