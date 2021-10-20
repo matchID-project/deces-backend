@@ -253,14 +253,6 @@ const workerJobs = new Worker('jobs', async (job: Job) => {
   concurrency: Number(process.env.BACKEND_JOB_CONCURRENCY)
 })
 
-// workerChunks.on('progress', (job: Job) => {
-//   console.log("progress chunks");
-// })
-//
-// workerJobs.on('progress', (job: Job) => {
-//   console.log("progress job");
-// })
-
 
 const jsonFields: string[] = ['birthGeoPoint','deathGeoPoint','block'];
 
@@ -360,7 +352,7 @@ export class ProcessStream extends Transform {
   }
 
   async flushRecords(batchNumber: number): Promise<void> {
-    while((this.jobs.length > 0) && (Number(this.jobs[0].id) <= batchNumber)) {
+    while((this.jobs.length > 0) && (Number(this.jobs[0].id.split("-")[1]) <= batchNumber)) {
       const job = this.jobs.shift();
       const records = await job.result;
       this.pushRecords(records);
@@ -368,7 +360,7 @@ export class ProcessStream extends Transform {
   }
 
   async processBatch(): Promise<void> {
-    const jobId = `${this.batchNumber++}`;
+    const jobId = `${this.job.id}-${this.batchNumber++}`;
     const job = await chunkQueue
       .add(jobId, {
         chunk: this.batch.map((r: any) => this.toRequest(r)),
@@ -553,9 +545,8 @@ export const returnBulkResults = async (response: Response, id: string, outputFo
       response.send({msg: 'Job succeeded but results expired'})
     }
   } else if (job && jobStatus === 'failed') {
-    response.status(400).send({status: jobStatus, msg: job.options.stacktraces.join(' ')});
-    // self.setStatus(400)
-    // return {status: job.status, msg: job.options.stacktraces.join(' ')};
+    response.status(400).send({status: jobStatus, msg: job.stacktrace.join(' ')});
+    return 
   } else if (job && jobStatus === 'active') {
     // return {status: 'active', id, progress: job.progress};
     response.send({status: 'active', id, progress: job.progress});
@@ -565,14 +556,14 @@ export const returnBulkResults = async (response: Response, id: string, outputFo
       return Math.round(acc + ((100.0 - val.progress.percentage) * val.progress.rows) / val.progress.percentage)
     }, 0)
     const jobsWaitingBefore = jobsWaiting.reduce((acc: number, val: any) => {
-      if (val.options.timestamp < job.options.timestamp) {
+      if (val.timestamp < job.timestamp) {
         return acc + 1
       } else {
         return acc
       }
     }, 0)
     const remainingRowsWaiting = jobsWaiting.reduce((acc: number, val: any) => {
-      if (val.options.timestamp < job.options.timestamp) {
+      if (val.timestamp < job.timestamp) {
         const jobIndex = inputsArray.findIndex(x => x.id === val.id)
         return acc + (inputsArray[jobIndex] ? (inputsArray[jobIndex].size || 0) : 0)
       } else {
@@ -592,7 +583,8 @@ export const deleteThreadJob = async (response: Response, id: string): Promise<v
   if (!job) {
     job = await jobQueue.getJob(id)
   }
-  if (job && job.status === 'created') {
+  const jobStatus = await job.getState();
+  if (job && jobStatus === 'active') {
     stopJob.push(job.id);
     setTimeout(() => {
       // lazily remove encrypted files
@@ -607,12 +599,12 @@ export const deleteThreadJob = async (response: Response, id: string): Promise<v
         }
       });
     }, 2000);
-    response.send({msg: `Job ${id } cancelled`})
+    response.send({msg: `Job ${id} cancelled`})
   } else if (job) {
     if (stopJob.includes(job.id)) {
-      response.send({msg: `Job ${id } already cancelled`})
+      response.send({msg: `Job ${id} already cancelled`})
     } else {
-      response.send({msg: `job is ${job.status as string}`})
+      response.send({msg: `job is ${jobStatus as string}`})
     }
   } else {
     response.send({msg: 'no job found'})
