@@ -26,7 +26,7 @@ export class JobsController extends Controller {
           host: 'redis'
         }
       });
-      const queueScheduler = new QueueScheduler(name);
+      const queueScheduler = new QueueScheduler(name, { connection: { host: 'redis'}});
       const jobs = await jobQueue.getJobs(['wait', 'active', 'delayed', 'completed', 'failed'], 0, 100, true);
       await queueScheduler.close();
       return { jobs };
@@ -62,7 +62,7 @@ export class JobsController extends Controller {
     start = start || 0;
     end = end || start + 25;
     if (['wait', 'active', 'delayed', 'completed', 'failed'].includes(jobsType)) {
-      const queueScheduler = new QueueScheduler(queueName);
+      const queueScheduler = new QueueScheduler(queueName, { connection: { host: 'redis'}});
       const jobs = await jobQueue.getJobs(['wait', 'active', 'delayed', 'completed', 'failed'], 0, 100, true);
       await queueScheduler.close();
       return { jobs };
