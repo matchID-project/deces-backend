@@ -546,11 +546,11 @@ export const returnBulkResults = async (response: Response, id: string, outputFo
     }
   } else if (job && jobStatus === 'failed') {
     response.status(400).send({status: jobStatus, msg: job.stacktrace.join(' ')});
-    return 
+    return
   } else if (job && jobStatus === 'active') {
     // return {status: 'active', id, progress: job.progress};
     response.send({status: 'active', id, progress: job.progress});
-  } else if (job && jobStatus === 'waiting') {
+  } else if (job && jobStatus === 'wait') {
     const jobsWaiting = await jobQueue.getJobs(['wait'], 0, 100, true);
     const remainingRowsActive = jobsActive.reduce((acc: number, val: any) => {
       return Math.round(acc + ((100.0 - val.progress.percentage) * val.progress.rows) / val.progress.percentage)
@@ -570,8 +570,8 @@ export const returnBulkResults = async (response: Response, id: string, outputFo
         return acc
       }
     }, 0)
-    // return {status: 'waiting', id, remainingRowsActive, remainingRowsWaiting, activeJobs: jobsActive.length, waitingJobs: jobsWaitingBefore};
-    response.send({status: 'waiting', id, remainingRowsActive, remainingRowsWaiting, activeJobs: jobsActive.length, waitingJobs: jobsWaitingBefore});
+    // return {status: 'wait', id, remainingRowsActive, remainingRowsWaiting, activeJobs: jobsActive.length, waitingJobs: jobsWaitingBefore};
+    response.send({status: 'wait', id, remainingRowsActive, remainingRowsWaiting, activeJobs: jobsActive.length, waitingJobs: jobsWaitingBefore});
   } else {
     response.send({msg: 'job doesn\'t exists'});
   }
