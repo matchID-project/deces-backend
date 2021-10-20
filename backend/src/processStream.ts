@@ -587,6 +587,7 @@ export const deleteThreadJob = async (response: Response, id: string): Promise<v
   if (job && jobStatus === 'active') {
     stopJob.push(job.id);
     setTimeout(() => {
+      job.remove()
       // lazily remove encrypted files
       fs.unlink(`${jobId}.out.enc`, (e) => {
         if (e) {
