@@ -1,4 +1,4 @@
-import Queue from 'bee-queue';
+import { Queue, QueueScheduler } from 'bullmq';
 import { Controller, Get, Route, Tags, Path, Query, Security } from 'tsoa';
 
 /**
@@ -22,19 +22,14 @@ export class JobsController extends Controller {
   ): Promise<any> {
     if (name !== undefined) {
       const jobQueue = new Queue(name,  {
-        redis: {
+        connection: {
           host: 'redis'
         }
       });
-      const jobs = await jobQueue.checkHealth();
-      const checkStalledJobs = new Promise((resolve, reject) => {
-        jobQueue.checkStalledJobs((err, numStalled) => {
-          if (err) reject(err.toString())
-          resolve(numStalled)
-        })
-      });
-      const stalled = await checkStalledJobs
-      return { ...jobs, stalled };
+      const queueScheduler = new QueueScheduler(name);
+      const jobs = await jobQueue.getJobs(['wait', 'active', 'delayed', 'completed', 'failed'], 0, 100, true);
+      await queueScheduler.close();
+      return { jobs };
     } else {
       return {msg: 'available queues: "chunks" and "jobs". Use them as a query parameter. For example name=jobs'};
     }
@@ -45,7 +40,6 @@ export class JobsController extends Controller {
    * @summary Détails du jobs par type et par id
    * @param queueName Name of queue
    * @param jobsType Jobs type or Id
-   * @param size Number of returned jobs in list
    * @param start Jobs list page start
    * @param end Jobs list page end
    */
@@ -53,36 +47,25 @@ export class JobsController extends Controller {
   @Tags('Jobs')
   @Get('{queueName}')
   public async getJobs(
+
     @Path() queueName: 'jobs'|'chunks',
     @Query() jobId?: string,
     @Query() jobsType?: string,
-    @Query() size?: number,
     @Query() start?: number,
     @Query() end?: number,
   ): Promise<any> {
     const jobQueue = new Queue(queueName,  {
-      redis: {
+      connection: {
         host: 'redis'
       }
     });
-    const page = {
-      size: size || 20,
-      start: start || 0,
-      end: end || 25
-    }
-    if (['waiting', 'active', 'delayed', 'succeeded', 'failed'].includes(jobsType)) {
-      const jobs = await jobQueue.getJobs(jobsType, page)
-      jobs.forEach(j => delete j.queue);
+    start = start || 0;
+    end = end || start + 25;
+    if (['wait', 'active', 'delayed', 'completed', 'failed'].includes(jobsType)) {
+      const queueScheduler = new QueueScheduler(queueName);
+      const jobs = await jobQueue.getJobs(['wait', 'active', 'delayed', 'completed', 'failed'], 0, 100, true);
+      await queueScheduler.close();
       return { jobs };
-    } else if (jobsType === 'stalled') {
-      const checkStalledJobs = new Promise((resolve, reject) => {
-        jobQueue.checkStalledJobs((err, numStalled) => {
-          if (err) reject(err.toString())
-          resolve(numStalled)
-        })
-      });
-      const stalled = await checkStalledJobs
-      return { jobs: stalled}
     } else if (jobId) {
       const jobs = await jobQueue.getJob(jobsType)
       if (jobs) {
@@ -92,11 +75,11 @@ export class JobsController extends Controller {
       }
     } else {
       let jobs:any = []
-      const mylist = ['waiting', 'active', 'delayed', 'succeeded', 'failed']
+      const mylist = ['wait', 'active', 'delayed', 'completed', 'failed']
       for (const jobType of mylist) {
-        const jobsTmp = await jobQueue.getJobs(jobType, page)
-        jobsTmp.forEach(j => {
-          delete j.queue
+        const jobsTmp = await jobQueue.getJobs(jobType, 0, 100, true)
+        jobsTmp.forEach((j: any) => {
+          j.status = jobType
           delete j.data.randomKey
         });
         jobs = [...jobs, ...jobsTmp]
