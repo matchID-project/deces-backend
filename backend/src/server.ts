@@ -6,7 +6,6 @@ import express, {
 import { ValidateError } from 'tsoa';
 import { JsonWebTokenError } from 'jsonwebtoken';
 import morgan from 'morgan';
-import bodyParser from 'body-parser';
 import { RegisterRoutes } from './routes/routes';
 import loggerStream from './logger';
 // import { router as bulk } from './controllers/bulk';
@@ -61,7 +60,7 @@ const addRawBody = (req: any, res: any, buf: any, encoding: any) => {
 }
 
 app.use((req: ExRequest, res: ExResponse, next: NextFunction) => {
-    bodyParser.json({
+    express.json({
         verify: addRawBody,
     })(req, res, (err) => {
         if (err) {
@@ -72,7 +71,7 @@ app.use((req: ExRequest, res: ExResponse, next: NextFunction) => {
     });
 });
 
-app.use(bodyParser.urlencoded({ extended: false }));
+app.use(express.urlencoded({ extended: false }));
 RegisterRoutes(app);
 app.use((_req, res: ExResponse, next: NextFunction) => {
   if (_req.path.includes(`${process.env.BACKEND_PROXY_PATH}/docs`)) {
