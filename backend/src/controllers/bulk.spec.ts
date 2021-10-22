@@ -36,7 +36,7 @@ describe('bulk.controller.ts', () => {
    // console.log(res);
    // await new Promise(r => setTimeout(r, 2000));
    // console.log("finish sleep");
-   // while (res.status === 'created' || res.status === 'waiting' || res.status === 'active') {
+   // while (res.status === 'created' || res.status === 'wait' || res.status === 'active') {
    //   const response: any = {res: {send: (x) => res = x, status: (_) => {
    //     return {send: (x) => res = x}}
    //   }} as express.Request

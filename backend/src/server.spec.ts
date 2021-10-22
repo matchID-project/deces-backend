@@ -363,7 +363,7 @@ describe('server.ts - Express application', () => {
         .attach('csv', buf, 'file.csv')
       const { body : { id: jobId } }: { body: { id: string} } = res
 
-      while (res.body.status === 'created' || res.body.status === 'waiting' || res.body.msg === 'started') {
+      while (res.body.status === 'created' || res.body.status === 'wait' || res.body.msg === 'started') {
         res = await chai.request(app)
           .get(apiPath(`search/csv/${jobId}`))
       }
@@ -374,7 +374,7 @@ describe('server.ts - Express application', () => {
       expect(res.body.msg).to.have.string('cancelled');
       res = await chai.request(app)
          .get(apiPath(`search/csv/${jobId}`))
-      while (res.body.status === 'created' || res.body.status === 'waiting' || res.body.status === 'active' || res.body.msg === 'started') {
+      while (res.body.status === 'created' || res.body.status === 'wait' || res.body.status === 'active' || res.body.msg === 'started') {
         res = await chai.request(app)
           .get(apiPath(`search/csv/${jobId}`))
       }
@@ -412,7 +412,7 @@ describe('server.ts - Express application', () => {
         .attach('csv', buf, 'file.csv')
       const { body : { id: jobId } }: { body: { id: string} } = res
 
-      while (res.body.status === 'created' || res.body.status === 'waiting' || res.body.status === 'active' || res.body.msg === 'started') {
+      while (res.body.status === 'created' || res.body.status === 'wait' || res.body.status === 'active' || res.body.msg === 'started') {
         res = await chai.request(app)
           .get(apiPath(`search/csv/${jobId}`))
       }
@@ -446,7 +446,7 @@ describe('server.ts - Express application', () => {
       const { body : { id: jobId } }: { body: { id: string} } = res
       res = await chai.request(app)
         .get(apiPath(`search/csv/${jobId}?order=true`))
-      while (res.body.status === 'created' || res.body.status === 'waiting' || res.body.status === 'active') {
+      while (res.body.status === 'created' || res.body.status === 'wait' || res.body.status === 'active') {
         res = await chai.request(app)
           .get(apiPath(`search/csv/${jobId}?order=true`))
       }
@@ -479,7 +479,7 @@ describe('server.ts - Express application', () => {
       const { body : { id: jobId } }: { body: { id: string} } = res
       res = await chai.request(app)
         .get(apiPath(`search/csv/${jobId}`))
-      while (res.body.status === 'created' || res.body.status === 'waiting' || res.body.status === 'active') {
+      while (res.body.status === 'created' || res.body.status === 'wait' || res.body.status === 'active') {
         res = await chai.request(app)
           .get(apiPath(`search/csv/${jobId}`))
       }
@@ -507,7 +507,7 @@ describe('server.ts - Express application', () => {
       const { body : { id: jobId } }: { body: { id: string} } = res
       res = await chai.request(app)
         .get(apiPath(`search/csv/${jobId}`))
-      while (res.body.status === 'created' || res.body.status === 'waiting' || res.body.status === 'active') {
+      while (res.body.status === 'created' || res.body.status === 'wait' || res.body.status === 'active') {
         res = await chai.request(app)
           .get(apiPath(`search/csv/${jobId}`))
       }
@@ -535,7 +535,7 @@ describe('server.ts - Express application', () => {
       const { body : { id: jobId } }: { body: { id: string} } = res
       res = await chai.request(app)
         .get(apiPath(`search/csv/${jobId}`))
-      while (res.body.status === 'created' || res.body.status === 'waiting' || res.body.status === 'active') {
+      while (res.body.status === 'created' || res.body.status === 'wait' || res.body.status === 'active') {
         res = await chai.request(app)
           .get(apiPath(`search/csv/${jobId}`))
       }
@@ -575,7 +575,7 @@ describe('server.ts - Express application', () => {
       const { body : { id: jobId } }: { body: { id: string} } = res
       res = await chai.request(app)
         .get(apiPath(`search/json/${jobId}`))
-      while (res.body.status === 'created' || res.body.status === 'waiting' || res.body.status === 'active') {
+      while (res.body.status === 'created' || res.body.status === 'wait' || res.body.status === 'active') {
         res = await chai.request(app)
           .get(apiPath(`search/json/${jobId}`))
       }
@@ -602,7 +602,7 @@ describe('server.ts - Express application', () => {
       const { body : { id: jobId } }: { body: { id: string} } = res
       res = await chai.request(app)
         .get(apiPath(`search/json/${jobId}`))
-      while (res.body.status === 'created' || res.body.status === 'waiting' || res.body.status === 'active') {
+      while (res.body.status === 'created' || res.body.status === 'wait' || res.body.status === 'active') {
         res = await chai.request(app)
           .get(apiPath(`search/json/${jobId}`))
       }
@@ -637,7 +637,7 @@ describe('server.ts - Express application', () => {
       const { body : { id: jobId } }: { body: { id: string} } = res
       res = await chai.request(app)
         .get(apiPath(`search/json/${jobId}`))
-      while (res.body.status === 'created' || res.body.status === 'waiting' || res.body.status === 'active') {
+      while (res.body.status === 'created' || res.body.status === 'wait' || res.body.status === 'active') {
         res = await chai.request(app)
           .get(apiPath(`search/json/${jobId}`))
       }
@@ -663,7 +663,7 @@ describe('server.ts - Express application', () => {
       const { body : { id: jobId } }: { body: { id: string} } = res
       res = await chai.request(app)
         .get(apiPath(`search/csv/${jobId}`))
-      while (res.body.status === 'created' || res.body.status === 'waiting' || res.body.status === 'active') {
+      while (res.body.status === 'created' || res.body.status === 'wait' || res.body.status === 'active') {
         res = await chai.request(app)
           .get(apiPath(`search/csv/${jobId}`))
       }
