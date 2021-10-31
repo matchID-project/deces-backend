@@ -6,15 +6,14 @@ describe('score.ts - Score function', () => {
 
   it('should return 0.8 as global score', () => {
     const score = new ScoreResult({
-      firstName:  'georges',
-      lastName: 'pompidous',
-      birthDate: "19691101"
+      name: {
+        first: 'georges',
+        last: 'pompidous'
+      },
+      birth: {
+        date: "19691101"
+      }
     }, {
-      score: 0.7,
-      scores: {score: 0},
-      source: '',
-      sourceLine: 212,
-      id: "13",
       name: {
         first: "Georges",
         last: "Pompidou"
@@ -22,30 +21,7 @@ describe('score.ts - Score function', () => {
       sex: "M",
       birth: {
         date: "19691101",
-        location: {
-          city: '',
-          code: '',
-          departmentCode: '',
-          country: '',
-          countryCode: '',
-          latitude: +'',
-          longitude: +'',
-        }
       },
-      death: {
-        date: '',
-        certificateId: '',
-        age: +'',
-        location: {
-          city: '',
-          code: '',
-          departmentCode: '',
-          country: '',
-          countryCode: '',
-          latitude: +'',
-          longitude: +'',
-        }
-      }
     });
     expect(score).to.contain.all.keys(['score', 'birthDate', 'birthLocation', 'name'])
     expect(score.score).to.equal(0.73);
@@ -54,15 +30,16 @@ describe('score.ts - Score function', () => {
 
   it('birth geo score', () => {
     const score = new ScoreResult({
-      firstName:  'georges',
-      lastName: 'pompidous',
-      birthCity: 'Paris'
+      name: {
+        first : 'georges',
+        last: 'pompidous'
+      },
+      birth: {
+        location: {
+          city: 'Paris'
+        }
+      }
     }, {
-      score: 0.7,
-      scores: {score: 0},
-      source: '',
-      sourceLine: 212,
-      id: "13",
       name: {
         first: "Georges",
         last: "Pompidou"
@@ -81,20 +58,6 @@ describe('score.ts - Score function', () => {
           longitude: +'2.439497',
         }
       },
-      death: {
-        date: '',
-        certificateId: '',
-        age: +'',
-        location: {
-          city: '',
-          code: '',
-          departmentCode: '',
-          country: '',
-          countryCode: '',
-          latitude: +'',
-          longitude: +'',
-        }
-      }
     });
     expect(score).to.contain.all.keys(['score', 'birthLocation', 'name'])
     expect(score.birthLocation).to.contain.all.keys(['score', 'city', 'code'])
@@ -104,15 +67,16 @@ describe('score.ts - Score function', () => {
 
   it('birth postal code score', () => {
     const score = new ScoreResult({
-      firstName:  'georges',
-      lastName: 'pompidous',
-      birthPostalCode: '75001'
+      name: {
+        first: 'georges',
+        last: 'pompidous',
+      },
+      birth: {
+        location: {
+          codePostal: '75001'
+        }
+      }
     }, {
-      score: 0.7,
-      scores: {score: 0},
-      source: '',
-      sourceLine: 212,
-      id: "13",
       name: {
         first: "Georges",
         last: "Pompidou"
@@ -132,20 +96,6 @@ describe('score.ts - Score function', () => {
           longitude: +'2.439497',
         }
       },
-      death: {
-        date: '',
-        certificateId: '',
-        age: +'',
-        location: {
-          city: '',
-          code: '',
-          departmentCode: '',
-          country: '',
-          countryCode: '',
-          latitude: +'',
-          longitude: +'',
-        }
-      }
     });
     expect(score).to.contain.all.keys(['score', 'birthLocation', 'name'])
     expect(score.birthLocation).to.contain.all.keys(['score', 'codePostal'])

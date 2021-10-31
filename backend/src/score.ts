@@ -642,23 +642,23 @@ export class ScoreResult {
     birthLocation?: number;
     deathLocation?: number;
 
-    constructor(request: RequestBody, result: Person, params: ScoreParams = {}) {
+    constructor(request: Person, result: Person, params: ScoreParams = {}) {
       const pruneScore = params.pruneScore !== undefined ? params.pruneScore : defaultPruneScore
-      if (request.birthDate) {
-        this.birthDate = scoreDate(request.birthDate, result.birth.date, params.dateFormat,
+      if (request.birth && request.birth.date) {
+        this.birthDate = scoreDate(request.birth.date, result.birth.date, params.dateFormat,
           result.birth && result.birth.location && result.birth.location.countryCode && (result.birth.location.countryCode !== 'FRA')
           );
       }
-      if (request.firstName || request.lastName) {
+      if (request.name && (request.name.first || request.name.last)) {
         if ((pruneScore < scoreReduce(this, true)) || !this.birthDate) {
           if (result.sex && result.sex === 'F') {
-              if (request.legalName) {
-                  this.name = scoreName({first: request.firstName, last: [request.lastName, request.legalName]}, result.name, 'F');
+              if (request.name.legal) {
+                  this.name = scoreName({first: request.name.first, last: [request.name.last as string, request.name.legal as string]}, result.name, 'F');
               } else {
-                  this.name = scoreName({first: request.firstName, last: request.lastName}, result.name, 'F');
+                  this.name = scoreName(request.name, result.name, 'F');
               }
           } else {
-            this.name = scoreName({first: request.firstName, last: request.lastName}, result.name, 'M');
+            this.name = scoreName(request.name, result.name, 'M');
           }
         } else {
           this.score = 0
@@ -670,43 +670,31 @@ export class ScoreResult {
         } else {
           this.score = 0
         }
-      } else if (request.firstName && firstNameSexMismatch(request.firstName, result.name.first as string)) {
+      } else if (request.name.first && firstNameSexMismatch(request.name.first as string, result.name.first as string)) {
           this.sex = firstNameSexPenalty;
       }
       // birthLocation
       if (pruneScore < scoreReduce(this, true)) {
-          this.birthLocation = scoreLocation({
-              city: request.birthCity,
-              code: request.birthLocationCode,
-              codePostal: request.birthPostalCode,
-              departmentCode: request.birthDepartment,
-              country: request.birthCountry,
-              latitude: request.birthGeoPoint?.latitude,
-              longitude: request.birthGeoPoint?.longitude
-          }, result.birth.location);
+          this.birthLocation = scoreLocation(
+            request.birth && request.birth.location ? request.birth.location : {},
+            result.birth && result.birth.location ? result.birth.location: {});
       } else {
           this.score = 0
       }
-      if (request.deathDate || request.lastSeenAliveDate) {
+      if (request.death && request.death.date) {
           if (pruneScore < scoreReduce(this, true)) {
-              this.deathDate = scoreDate(request.deathDate || `>${request.lastSeenAliveDate}`, result.death.date, params.dateFormat,
+              this.deathDate = scoreDate(request.death.date, result.death.date, params.dateFormat,
                   result.death && result.death.location && result.death.location.countryCode && (result.death.location.countryCode !== 'FRA')
               );
           } else {
               this.score = 0
           }
       }
-      if ((request.deathCity || request.deathLocationCode || request.deathCountry || request.deathDepartment || request.deathGeoPoint)) {
+      if (request.death && request.death.location && (request.death.location.city || request.death.location.code || request.death.location.country || request.death.location.departmentCode || request.death.location.latitude)) {
           if (pruneScore < scoreReduce(this, true)) {
-              this.deathLocation = scoreLocation({
-                  city: request.deathLocation,
-                  code: request.deathLocationCode,
-                  codePostal: request.deathPostalCode,
-                  departmentCode: request.deathDepartment,
-                  country: request.deathCountry,
-                  latitude: request.deathGeoPoint?.latitude,
-                  longitude: request.deathGeoPoint?.longitude
-              }, result.death.location);
+              this.deathLocation = scoreLocation(
+                request.death && request.death.location ? request.death.location : {},
+                result.death && result.death.location ? result.death.location : {});
           } else {
               this.score = 0
           }
@@ -716,6 +704,36 @@ export class ScoreResult {
       }
     }
   }
+
+
+const personFromRequest = (item: RequestBody): Person => {
+  return {
+    ...(item.firstName || item.lastName) && {name: {
+      ...item.firstName && { first: item.firstName },
+      ...item.lastName && { last: item.lastName },
+      ...item.legalName && { legal: item.legalName }
+    }},
+    ...(item.birthDate || item.birthCity || item.birthLocationCode || item.birthDepartment || item.birthCountry ) && { birth: {
+      ...item.birthDate && { date: item.birthDate as string },
+      ...(item.birthCity || item.birthLocationCode || item.birthDepartment || item.birthCountry) && { location: {
+        ...item.birthCity && { city: item.birthCity },
+        ...item.birthLocationCode && { code: item.birthLocationCode },
+        ...item.birthDepartment && { departmentCode: item.birthDepartment },
+        ...item.birthCountry && { country: item.birthCountry }
+    }}}},
+    ...(item.deathDate || item.deathCity || item.deathLocationCode || item.deathDepartment || item.deathCountry ) && { death: {
+      // deathDate has priority over lastSeenAliveDate
+      ...item.lastSeenAliveDate && { date: `>${item.lastSeenAliveDate}`},
+      ...item.deathDate && { date: item.deathDate as string },
+      ...(item.deathCity || item.deathLocationCode || item.deathDepartment || item.deathCountry) && { location: {
+        ...item.deathCity && { city: item.deathCity },
+        ...item.deathLocationCode && { code: item.deathLocationCode },
+        ...item.deathDepartment && { departmentCode: item.deathDepartment },
+        ...item.deathCountry && { country: item.deathCountry }
+    }}}}
+  }
+}
+
 
 export const scoreResults = (request: RequestBody, results: Person[], params: ScoreParams): Person[] => {
     const pruneScore = params.pruneScore !== undefined ? params.pruneScore : defaultPruneScore
@@ -733,7 +751,7 @@ export const scoreResults = (request: RequestBody, results: Person[], params: Sc
             .filter((result:any) => result.score > 0)
             .map((result:any) => {
                 try {
-                    result.scores = new ScoreResult(request, result, params);
+                    result.scores = new ScoreResult(personFromRequest(request), result, params);
                     const perfectScores =
                         ((result.scores.name && result.scores.name.score >= perfectScoreThreshold) ? 1 : 0) +
                         ((result.scores.birtDate && result.scores.birthDate.score === 1) ? 1 : 0) +

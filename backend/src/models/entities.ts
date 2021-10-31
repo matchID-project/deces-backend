@@ -5,8 +5,8 @@ export interface Sort {
 }
 
 export interface Name {
-    first: string|string[]|RequestField;
-    last: string|string[]|RequestField;
+    first?: string|string[]|RequestField;
+    last?: string|string[]|RequestField;
     legal?: string|string[]|RequestField;
   };
 
@@ -133,22 +133,22 @@ export interface Modification {
 };
 
 export interface Person {
-    score: number;
-    source: string;
-    sourceLine: number;
-    id: string;
-    name: Name;
-    sex: 'M'|'F';
-    scores: ScoreResult;
-    birth: {
-      date: string;
-      location: Location;
+    score?: number;
+    source?: string;
+    sourceLine?: number;
+    id?: string;
+    name?: Name;
+    sex?: 'M'|'F';
+    scores?: ScoreResult;
+    birth?: {
+      date?: string;
+      location?: Location;
     };
-    death: {
+    death?: {
       date: string;
-      certificateId: string;
-      age: number;
-      location: Location;
+      certificateId?: string;
+      age?: number;
+      location?: Location;
     };
     links?: {
       label?: string;
