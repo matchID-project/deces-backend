@@ -159,6 +159,11 @@ export interface Person {
     modifications?: Modification[];
   };
 
+export interface PersonCompare {
+  personA: Person;
+  personB: Person;
+};
+
 export interface ScoreParams {
   dateFormat?: string;
   pruneScore?: number;

@@ -8,9 +8,10 @@ import { resultsHeader, jsonPath, prettyString } from '../processStream';
 import { runRequest, runBulkRequest } from '../runRequest';
 import { buildRequest } from '../buildRequest';
 import { RequestInput, RequestBody } from '../models/requestInput';
-import { StrAndNumber, Modification, UpdateRequest, UpdateUserRequest, Review, ReviewsStringified, statusAuthMap } from '../models/entities';
+import { StrAndNumber, Modification, UpdateRequest, UpdateUserRequest, Review, ReviewsStringified, statusAuthMap, PersonCompare } from '../models/entities';
 import { buildResult, buildResultSingle, Result, ErrorResponse } from '../models/result';
 import { format } from '@fast-csv/format';
+import { ScoreResult } from '../score';
 import { updatedFields } from '../updatedIds';
 import { sendUpdateConfirmation } from '../mail';
 // import getDataGouvCatalog from '../getDataGouvCatalog';
@@ -492,6 +493,19 @@ export class SearchController extends Controller {
             resolve(true);
         })
     })
+  }
+
+  /**
+   * Compare identities
+   * @summary Compare identities
+   */
+  @Response<ErrorResponse>('400', 'Bad request')
+  @Response<ScoreResult>('200', 'OK')
+  @Tags('Simple')
+  @Post('/compare')
+  public compareIdentitiesPost(@Body() requestBody: PersonCompare): ScoreResult {
+    const result = new ScoreResult(requestBody.personA, requestBody.personB)
+    return  result;
   }
 
 }
