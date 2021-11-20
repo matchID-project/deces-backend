@@ -28,7 +28,7 @@ const buildAdaptativeBlockMatch = (searchInput: RequestInput) => {
     if (searchInput.name.value.legal) {
       queryShould = [...queryShould, matchQuery('NOM', searchInput.name.value.legal as string, false, false)]
     }
-    if (searchInput.birthDate && searchInput.birthDate.value) {
+    if (searchInput.birthDate && searchInput.birthDate.value && (typeof(searchInput.birthDate.mask.transform(searchInput.birthDate.value, searchInput.dateFormat)) === 'string')) {
       if (isDateRange(searchInput.birthDate.value as string) || isDateLimit(searchInput.birthDate.value as string)) {
         queryMust = [
           ...queryMust,
