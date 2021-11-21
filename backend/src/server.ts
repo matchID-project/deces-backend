@@ -110,10 +110,13 @@ app.use((
   }
   if (err instanceof Error) {
     log({
-      error: err.toString()
+      ...err.stack && {error: err.stack}
     });
     return res.status(500).json({
-      message: err.toString(),
+      message: {
+        ...err.message && {error: err.message},
+        ...err.stack && {stacktrace: err.stack}
+      }
     });
   }
   next();

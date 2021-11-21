@@ -106,4 +106,21 @@ describe('processStream.ts - Process chunk', () => {
     expect(result[0][0].name.last).to.equal('Pierre')
   });
 
+  it('Wrong date format: mixed formats', async () => {
+    const result = await processChunk(
+      [
+        {firstName: 'jean', lastName: 'pierre', birthDate: '04/08/1933'},
+        {firstName: 'jean', lastName: 'pierre', birthDate: '08-1933'}
+      ],
+      1,
+      {
+        dateFormat: 'DD/MM/YYYY',
+        pruneScore: 0.01
+      }
+    )
+    expect(result.length).to.equal(2)
+    expect(result[0][0].name.first).to.contain('Jean')
+    expect(result[0][0].name.last).to.equal('Pierre')
+  });
+
 });
