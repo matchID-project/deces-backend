@@ -1,8 +1,18 @@
+import loggerStream from './logger';
 import { Sort } from './models/entities';
 import { RequestInput } from './models/requestInput';
 import { BodyResponse, ScrolledResponse } from './models/body';
 import { fuzzyTermQuery, matchQuery, prefixQuery } from './queries';
 import { isDateRange, isDateLimit, sortTransformationMask } from './masks';
+
+const log = (json:any) => {
+  loggerStream.write(JSON.stringify({
+    "backend": {
+      "server-date": new Date(Date.now()).toISOString(),
+      ...json
+    }
+  }));
+}
 
 const buildMatch = (requestInput: RequestInput) => {
   if (requestInput.block) {
@@ -28,7 +38,7 @@ const buildAdaptativeBlockMatch = (searchInput: RequestInput) => {
     if (searchInput.name.value.legal) {
       queryShould = [...queryShould, matchQuery('NOM', searchInput.name.value.legal as string, false, false)]
     }
-    if (searchInput.birthDate && searchInput.birthDate.value) {
+    if (searchInput.birthDate && searchInput.birthDate.value && (typeof(searchInput.birthDate.mask.transform(searchInput.birthDate.value, searchInput.dateFormat)) === 'string')) {
       if (isDateRange(searchInput.birthDate.value as string) || isDateLimit(searchInput.birthDate.value as string)) {
         queryMust = [
           ...queryMust,
@@ -52,6 +62,11 @@ const buildAdaptativeBlockMatch = (searchInput: RequestInput) => {
           matchQuery(searchInput.birthDate.field as string, searchInput.birthDate.mask.transform(searchInput.birthDate.value, searchInput.dateFormat) as string, false, false),
         ];
       }
+    } else {
+      log({
+        error: "Bad birthDate parsing",
+        ...searchInput.birthDate && {birthDate: searchInput.birthDate.value}
+      });
     }
     if (searchInput.deathDate && searchInput.deathDate.value) {
       if (isDateRange(searchInput.deathDate.value as string) || isDateLimit(searchInput.deathDate.value as string)) {

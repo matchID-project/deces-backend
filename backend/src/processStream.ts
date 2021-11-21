@@ -181,7 +181,12 @@ export const processCsv =  async (job: Job<any>, jobFile: JobInput): Promise<any
         stopJobReason.push({id: job.id, msg: e.toString()})
       })
       .pipe(processStream)
-      .on('error', (e: any) => log({matchingProcessingError: e.toString(), jobId}))
+      .on('error', (e: any) => {
+        log({matchingProcessingError: e.toString(), jobId})
+        readStream.close()
+        stopJob.push(job.id);
+        stopJobReason.push({id: job.id, msg: e.toString()})
+      })
       .pipe(jsonStringStream)
       .on('error', (e: any) => log({stringifyProcessingError: e.toString(), jobId}))
       .pipe(gzipStream)
