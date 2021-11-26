@@ -102,4 +102,44 @@ describe('score.ts - Score function', () => {
 
   });
 
+
+  it('explain: Nom d\'usage', () => {
+    const score = new ScoreResult({
+      name: {
+        first: 'jeanne',
+        last: 'michou',
+        legal: 'marie'
+      },
+      sex: 'F'
+    }, {
+      name: {
+        first: "jeanne",
+        last: "marie"
+      },
+      sex: "F",
+    });
+    expect(score.explain.name).to.contain.all.keys(['legal'])
+    expect(score.explain).to.contain.all.keys(['sex'])
+
+  });
+
+  it('explain: Longnames', () => {
+    const score = new ScoreResult({
+      name: {
+        first: 'tran',
+        last: 'chen ju mei wou',
+      },
+      sex: 'F'
+    }, {
+      name: {
+        first: 'tran mi',
+        last: "chen ju wang"
+      },
+      sex: "F",
+    });
+    expect(score.explain).to.contain.all.keys(['sex'])
+
+  });
+
+
 });
