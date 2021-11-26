@@ -1,4 +1,5 @@
 import { ScoreResult } from '../score';
+import { RequestBody } from './requestInput';
 
 export interface Sort {
  [key: string]: 'asc'|'desc';
@@ -160,8 +161,8 @@ export interface Person {
   };
 
 export interface PersonCompare {
-  personA: Person;
-  personB: Person;
+  personA: RequestBody;
+  personB: RequestBody;
 };
 
 export interface ScoreParams {
