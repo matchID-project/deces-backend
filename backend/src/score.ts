@@ -131,7 +131,7 @@ const scoreReduce = (score:any, multiplePenalty?: boolean ):number => {
     if (score.score) {
         return round(score.score);
     } else {
-        const r:any = Object.keys(score).map(k => {
+        const r:any = Object.keys(score).filter(x => x !== 'explain').map(k => {
             if (typeof(score[k]) === 'number') {
                 return  round(score[k]);
             } else {
@@ -182,7 +182,14 @@ const firstNameSexMismatch = (firstNameA: string, firstNameB: string): boolean =
     return /^.?(e|a)$/.test(firstA.replace(firstB, '')) || /^.?(e|a)$/.test(firstB.replace(firstA, ''));
 }
 
-let scoreName = (nameA: Name, nameB: Name, sex: string): any => {
+const updateObjProp = (obj = {}, key: any, val: any) => {
+  const keys = key.split('.')
+  const last = keys.pop()
+  keys.reduce((o: any, k: any) => o[k] ??= {}, obj)[last] = val
+  return obj
+}
+
+let scoreName = (nameA: Name, nameB: Name, sex: string, explain?: any): any => {
     if ((!nameA.first && !nameA.last) || (!nameB.first && !nameB.last)) { return blindNameScore }
     let score:any;
     const firstA = firstNameNorm(nameA.first as string|string[]);
@@ -192,8 +199,17 @@ let scoreName = (nameA: Name, nameB: Name, sex: string): any => {
     const lastAtokens = tokenize(lastA);
     const lastBtokens = tokenize(lastB);
     // reduce lastNamePenalty for long names
-    const thisLastNamePenalty = ((Array.isArray(lastAtokens) && (lastAtokens.length > 2)) ||
-        (Array.isArray(lastBtokens) && (lastBtokens.length > 2))) ? 1 : lastNamePenalty;
+    let thisLastNamePenalty;
+    if ((Array.isArray(lastAtokens) && (lastAtokens.length > 2)) || (Array.isArray(lastBtokens) && (lastBtokens.length > 2))) {
+      thisLastNamePenalty = 1
+      // explain =  {name: { longname: true, last: {namePenalty: lastNamePenalty}}}
+      updateObjProp(explain, 'name.longname', true)
+      updateObjProp(explain, 'name.last.namePenalty', lastNamePenalty)
+    } else {
+      thisLastNamePenalty = lastNamePenalty
+      updateObjProp(explain, 'name.longname', false)
+      updateObjProp(explain, 'name.last.namePenalty', lastNamePenalty)
+    }
     let firstFirstA; let firstFirstB; let scoreFirstALastB; let fuzzScore;
     const scoreFirst = round(scoreToken(firstA, firstB));
     const scoreLast = round(scoreToken(lastA, lastB));
@@ -635,6 +651,7 @@ scoreDate = timer(scoreDate, 'scoreDate',1000);
 
 export class ScoreResult {
     score: number;
+    explain?: any; // TODO: type explain
     birthDate?: number
     deathDate?: number
     name?: number;
@@ -643,22 +660,29 @@ export class ScoreResult {
     deathLocation?: number;
 
     constructor(request: Person, result: Person, params: ScoreParams = {}) {
+      // if params.explain == True
+      // this.explain = {}
+      let explain = {}
       const pruneScore = params.pruneScore !== undefined ? params.pruneScore : defaultPruneScore
       if (request.birth && request.birth.date) {
         this.birthDate = scoreDate(request.birth.date, result.birth.date, params.dateFormat,
           result.birth && result.birth.location && result.birth.location.countryCode && (result.birth.location.countryCode !== 'FRA')
           );
+        explain = {birth: {date: {location: {france: true}}}}
       }
       if (request.name && (request.name.first || request.name.last)) {
         if ((pruneScore < scoreReduce(this, true)) || !this.birthDate) {
           if (result.sex && result.sex === 'F') {
+              updateObjProp(explain, 'sex', 'F')
               if (request.name.legal) {
-                  this.name = scoreName({first: request.name.first, last: [request.name.last as string, request.name.legal as string]}, result.name, 'F');
+                  this.name = scoreName({first: request.name.first, last: [request.name.last as string, request.name.legal as string]}, result.name, 'F', explain);
+                  updateObjProp(explain, 'name.legal', true)
               } else {
-                  this.name = scoreName(request.name, result.name, 'F');
+                  this.name = scoreName(request.name, result.name, 'F', explain);
               }
           } else {
             this.name = scoreName(request.name, result.name, 'M');
+            updateObjProp(explain, 'sex', 'M')
           }
         } else {
           this.score = 0
@@ -670,7 +694,7 @@ export class ScoreResult {
         } else {
           this.score = 0
         }
-      } else if (request.name.first && firstNameSexMismatch(request.name.first as string, result.name.first as string)) {
+      } else if (request.name && request.name.first && firstNameSexMismatch(request.name.first as string, result.name.first as string)) {
           this.sex = firstNameSexPenalty;
       }
       // birthLocation
@@ -702,11 +726,12 @@ export class ScoreResult {
       if (!this.score) {
         this.score = scoreReduce(this, true)
       }
+      this.explain = explain
     }
   }
 
 
-const personFromRequest = (item: RequestBody): Person => {
+export const personFromRequest = (item: RequestBody): Person => {
   return {
     ...(item.firstName || item.lastName) && {name: {
       ...item.firstName && { first: item.firstName },
