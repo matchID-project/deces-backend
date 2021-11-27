@@ -659,66 +659,66 @@ export class ScoreResult {
     birthLocation?: number;
     deathLocation?: number;
 
-    constructor(request: Person, result: Person, params: ScoreParams = {}) {
+    constructor(persA: Person, persB: Person, params: ScoreParams = {}) {
       // if params.explain == True
       // this.explain = {}
       let explain = {}
       const pruneScore = params.pruneScore !== undefined ? params.pruneScore : defaultPruneScore
-      if (request.birth && request.birth.date) {
-        this.birthDate = scoreDate(request.birth.date, result.birth.date, params.dateFormat,
-          result.birth && result.birth.location && result.birth.location.countryCode && (result.birth.location.countryCode !== 'FRA')
+      if (persA.birth && persA.birth.date) {
+        this.birthDate = scoreDate(persA.birth.date, persB.birth.date, params.dateFormat,
+          persB.birth && persB.birth.location && persB.birth.location.countryCode && (persB.birth.location.countryCode !== 'FRA')
           );
         explain = {birth: {date: {location: {france: true}}}}
       }
-      if (request.name && (request.name.first || request.name.last)) {
+      if (persA.name && (persA.name.first || persA.name.last)) {
         if ((pruneScore < scoreReduce(this, true)) || !this.birthDate) {
-          if (result.sex && result.sex === 'F') {
+          if (persB.sex && persB.sex === 'F') {
               updateObjProp(explain, 'sex', 'F')
-              if (request.name.legal) {
-                  this.name = scoreName({first: request.name.first, last: [request.name.last as string, request.name.legal as string]}, result.name, 'F', explain);
+              if (persA.name.legal) {
+                  this.name = scoreName({first: persA.name.first, last: [persA.name.last as string, persA.name.legal as string]}, persB.name, 'F', explain);
                   updateObjProp(explain, 'name.legal', true)
               } else {
-                  this.name = scoreName(request.name, result.name, 'F', explain);
+                  this.name = scoreName(persA.name, persB.name, 'F', explain);
               }
           } else {
-            this.name = scoreName(request.name, result.name, 'M');
+            this.name = scoreName(persA.name, persB.name, 'M');
             updateObjProp(explain, 'sex', 'M')
           }
         } else {
           this.score = 0
         }
       }
-      if (request.sex) {
+      if (persA.sex) {
         if (pruneScore < scoreReduce(this, true)) {
-          this.sex = scoreSex(request.sex, result.sex);
+          this.sex = scoreSex(persA.sex, persB.sex);
         } else {
           this.score = 0
         }
-      } else if (request.name && request.name.first && firstNameSexMismatch(request.name.first as string, result.name.first as string)) {
+      } else if (persA.name && persA.name.first && firstNameSexMismatch(persA.name.first as string, persB.name.first as string)) {
           this.sex = firstNameSexPenalty;
       }
       // birthLocation
       if (pruneScore < scoreReduce(this, true)) {
           this.birthLocation = scoreLocation(
-            request.birth && request.birth.location ? request.birth.location : {},
-            result.birth && result.birth.location ? result.birth.location: {});
+            persA.birth && persA.birth.location ? persA.birth.location : {},
+            persB.birth && persB.birth.location ? persB.birth.location: {});
       } else {
           this.score = 0
       }
-      if (request.death && request.death.date) {
+      if (persA.death && persA.death.date) {
           if (pruneScore < scoreReduce(this, true)) {
-              this.deathDate = scoreDate(request.death.date, result.death.date, params.dateFormat,
-                  result.death && result.death.location && result.death.location.countryCode && (result.death.location.countryCode !== 'FRA')
+              this.deathDate = scoreDate(persA.death.date, persB.death.date, params.dateFormat,
+                  persB.death && persB.death.location && persB.death.location.countryCode && (persB.death.location.countryCode !== 'FRA')
               );
           } else {
               this.score = 0
           }
       }
-      if (request.death && request.death.location && (request.death.location.city || request.death.location.code || request.death.location.country || request.death.location.departmentCode || request.death.location.latitude)) {
+      if (persA.death && persA.death.location && (persA.death.location.city || persA.death.location.code || persA.death.location.country || persA.death.location.departmentCode || persA.death.location.latitude)) {
           if (pruneScore < scoreReduce(this, true)) {
               this.deathLocation = scoreLocation(
-                request.death && request.death.location ? request.death.location : {},
-                result.death && result.death.location ? result.death.location : {});
+                persA.death && persA.death.location ? persA.death.location : {},
+                persB.death && persB.death.location ? persB.death.location : {});
           } else {
               this.score = 0
           }
