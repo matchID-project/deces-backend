@@ -34,7 +34,7 @@
     "node-forge": "^0.10.0",
     "streamifier": "^0.1.1",
     "swagger-jsdoc": "^6.1.0",
-    "swagger-ui-express": "^4.3.0",
+    "swagger-ui-express": "^4.2.0",
     "swagger-ui-svelte": "latest",
     "tsoa": "^3.14.1",
     "util": "^0.12.4",
