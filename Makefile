@@ -27,7 +27,7 @@ export ES_INDEX = deces
 export ES_DATA = ${APP_PATH}/esdata
 export ES_NODES = 1
 export ES_MEM = 1024m
-export ES_VERSION = 7.16.2
+export ES_VERSION = 7.16.3
 export ES_BACKUP_BASENAME := esdata
 export API_PATH = deces
 export ES_PROXY_PATH = /${API_PATH}/api/v0/search
@@ -376,11 +376,13 @@ wikidata-src: ${WIKIDATA_SRC}
 wikidata-links: ${WIKIDATA_LINKS}
 
 ${COMMUNES_JSON}:
-	@echo "downloading communes geo data";
-	@curl -s -l 'https://static.data.gouv.fr/resources/decoupage-administratif-communal-francais-issu-d-openstreetmap/20190103-150534/communes-20190101.zip' -O
-	@unzip -o communes-20190101.zip communes-20190101.json
-	@rm communes-20190101.zip
-	@mv communes-20190101.json ${BACKEND}/data/communes.json
+	@echo "downloading communes geo data"
+	@sudo apt-get install gdal-bin
+	@curl -s -L -l 'https://www.data.gouv.fr/fr/datasets/r/0e117c06-248f-45e5-8945-0e79d9136165' -o communes-20220101.zip
+	@unzip -o  communes-20220101.zip  -d communes-20220101
+	@ogr2ogr -f GeoJSON -s_srs EPSG:26917 -t_srs EPSG:4326 communes-20220101.json communes-20220101/communes-20220101.shp -simplify 0.001
+	@rm -rf communes-20220101
+	@mv communes-20220101.json ${BACKEND}/data/communes.json
 
 communes: ${COMMUNES_JSON}
 
