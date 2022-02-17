@@ -36,6 +36,11 @@ describe('search.controller.ts - GET request', () => {
     expect(result.response.persons.map(x => x.birth.location.city)).to.include('Noyon')
   });
 
+  it('Bad GeoPoint in query', async () => {
+    const result = await controller.search(null, null, null, null, null, null, null, null, null, null, null, `{"latitude": 49.6, "longitude": 2.98}`)
+    expect(result.msg[0]).to.include('invalid birthGeoPoint');
+  });
+
 });
 
 describe('search.controller.ts - POST request', () => {
