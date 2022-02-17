@@ -1,4 +1,4 @@
-import { Sort } from './models/entities';
+import { Sort, GeoPoint } from './models/entities';
 
 export const ageValidationMask = (ageString: string): boolean => {
     return /^(|[0-9]|[1-9]([0-9]|[0-3][0-9]))$/.test(ageString);
@@ -152,6 +152,29 @@ export const sortValidationMask = (sort: string|Sort[]): boolean => {
   }
 }
 
+export const geoPointValidationMask = (geoPoint: string|GeoPoint): boolean => {
+  if (typeof(geoPoint) === 'string') {
+    try {
+      if (Object.values(JSON.parse(geoPoint)).length > 0) {
+        // TODO: add verification for latitude and longitude
+        return true;
+      } else {
+        return false;
+      }
+    } catch (e) {
+      return false;
+    }
+  } else {
+    try {
+      // TODO: add verification for latitude and longitude
+      if (Object.values(geoPoint).length > 0) return true;
+      return false;
+    } catch (e) {
+      return false;
+    }
+  }
+}
+
 export const sortTransformationMask = (sort: string|Sort[]): Sort[] => {
   return (typeof(sort) === 'string') ? Object.values(JSON.parse(sort)) : Object.values(sort)
 }
@@ -186,6 +209,10 @@ export const aggsValidationMask = (aggs: string|string[]): boolean => {
       return false;
     }
   }
+}
+
+export const geoPointTransformMask = (geoPoint: GeoPoint|string): GeoPoint => {
+  return (typeof(geoPoint) === 'string') ? JSON.parse(geoPoint) : geoPoint
 }
 
 export const aggsTransformMask = (aggs: string|string[]): string[] => {

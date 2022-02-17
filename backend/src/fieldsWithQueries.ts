@@ -12,7 +12,9 @@ import {
     aggsTransformMask,
     fuzzyValidation,
     fuzzyTransform,
-    sourceValidationMask
+    sourceValidationMask,
+    geoPointValidationMask,
+    geoPointTransformMask
 } from './masks';
 
 import {
@@ -108,8 +110,12 @@ export const birthCountryWithQuery = (value: string, fuzzy: boolean): WithQuery 
     fuzzy: fuzzy ? "auto" : false
 };
 
-export const birthGeoPointWithQuery = (value: GeoPoint): WithQuery => value && {
+export const birthGeoPointWithQuery = (value: GeoPoint|string): WithQuery => value && {
     value,
+    mask: {
+        validation: geoPointValidationMask,
+        transform: geoPointTransformMask
+    },
     field: "GEOPOINT_NAISSANCE",
     query: geoPointQuery,
     fuzzy: false
@@ -172,8 +178,12 @@ export const deathCountryWithQuery = (value: string, fuzzy: boolean): WithQuery 
     fuzzy: fuzzy ? "auto" : false
 };
 
-export const deathGeoPointWithQuery = (value: GeoPoint): WithQuery => value && {
+export const deathGeoPointWithQuery = (value: GeoPoint|string): WithQuery => value && {
     value,
+    mask: {
+        validation: geoPointValidationMask,
+        transform: geoPointTransformMask
+    },
     field: "GEOPOINT_DECES",
     query: geoPointQuery,
     fuzzy: false

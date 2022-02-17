@@ -180,14 +180,14 @@ interface RequestInputParams {
   birthLocationCode?: string;
   birthDepartment?: string|number;
   birthCountry?: string;
-  birthGeoPoint?: GeoPoint;
+  birthGeoPoint?: GeoPoint|string;
   deathDate?: string|number;
   deathCity?: string;
   deathPostalCode?: string;
   deathLocationCode?: string;
   deathDepartment?: string|number;
   deathCountry?: string;
-  deathGeoPoint?: GeoPoint;
+  deathGeoPoint?: GeoPoint|string;
   deathAge?: string|number;
   lastSeenAliveDate?: string;
   source?: string;
