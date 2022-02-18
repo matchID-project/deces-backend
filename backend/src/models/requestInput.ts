@@ -111,6 +111,9 @@ export interface RequestBody {
   * Libellé de pays de naissance en clair (pour les personnes nées à l'étranger)
   */
  birthCountry?: string;
+ /**
+  * Coordonnées GPS du point de naissance
+  */
  birthGeoPoint?: GeoPoint;
  /**
   * Date de décès au format\: JJ/MM/AAAA. <br> <li> Pour une date inconnue les valeurs sont 0000 pour AAAA; 00 pour MM et JJ</li>.<br> <li> Une recherche par tranche de date est également possible sous la forme: JJ/MM/AAAA - JJ/MM/AAAA</li>
@@ -136,6 +139,9 @@ export interface RequestBody {
   * Pays du lieu de décès
   */
  deathCountry?: string;
+ /**
+  * Coordonnées GPS du point de décès
+ */
  deathGeoPoint?: GeoPoint;
  /**
   * Age du décès
@@ -180,14 +186,14 @@ interface RequestInputParams {
   birthLocationCode?: string;
   birthDepartment?: string|number;
   birthCountry?: string;
-  birthGeoPoint?: GeoPoint;
+  birthGeoPoint?: GeoPoint|string;
   deathDate?: string|number;
   deathCity?: string;
   deathPostalCode?: string;
   deathLocationCode?: string;
   deathDepartment?: string|number;
   deathCountry?: string;
-  deathGeoPoint?: GeoPoint;
+  deathGeoPoint?: GeoPoint|string;
   deathAge?: string|number;
   lastSeenAliveDate?: string;
   source?: string;
