@@ -21,14 +21,24 @@ describe('search.controller.ts - GET request', () => {
   });
 
   it('Query by lastSeenAliveDate', async () => {
-    const result = await controller.search(null, 'jean', null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, '20/01/2020')
+    const result = await controller.search(null, 'jean', null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, '20/01/2020')
     expect(result.response.persons.every(x => parseInt(x.death.date, 10) >= 20200120)).to.equal(true);
     expect(result.response.persons.length).to.greaterThan(0);
   });
 
   it('Query by source', async () => {
-    const result = await controller.search(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, '2020-m01')
+    const result = await controller.search(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, '2020-m01')
     expect(result.response.persons.length).to.greaterThan(0);
+  });
+
+  it('Query by GeoPoint', async () => {
+    const result = await controller.search(null, null, null, null, null, null, null, null, null, null, null, `{"latitude": 49.6, "longitude": 2.98, "distance": "10km"}`)
+    expect(result.response.persons.map(x => x.birth.location.city)).to.include('Noyon')
+  });
+
+  it('Bad GeoPoint in query', async () => {
+    const result = await controller.search(null, null, null, null, null, null, null, null, null, null, null, `{"latitude": 49.6, "longitude": 2.98}`)
+    expect(result.msg[0]).to.include('invalid birthGeoPoint');
   });
 
 });

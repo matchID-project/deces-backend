@@ -1,4 +1,4 @@
-import { Queue, QueueScheduler } from 'bullmq';
+import { Queue, QueueScheduler, JobType } from 'bullmq';
 import { Controller, Get, Route, Tags, Path, Query, Security } from 'tsoa';
 
 /**
@@ -75,7 +75,7 @@ export class JobsController extends Controller {
       }
     } else {
       let jobs:any = []
-      const mylist = ['wait', 'active', 'delayed', 'completed', 'failed']
+      const mylist: JobType[] = ['wait', 'active', 'delayed', 'completed', 'failed']
       for (const jobType of mylist) {
         const jobsTmp = await jobQueue.getJobs(jobType, 0, 100, true)
         jobsTmp.forEach((j: any) => {
