@@ -439,9 +439,9 @@ const scoreCountry = (countryA: string|string[]|RequestField, countryB: string|s
         if (typeof(countryB) === 'string') {
             return fuzzyRatio(countryNormA, countryNorm(countryB) as string, fuzzballTokenSetRatio);
         } else {
-            return Math.max(...countryB.map(country => fuzzyRatio(countryNormA, countryNorm(country) as string, fuzzballTokenSetRatio)),
+            return Array.isArray(countryB) ? Math.max(...countryB.map(country => fuzzyRatio(countryNormA, countryNorm(country) as string, fuzzballTokenSetRatio)),
                 fuzzballTokenSetRatio(countryNormA, countryB.join(' '))
-                );
+                ) : fuzzballTokenSetRatio(countryNormA, countryB);
         }
     } else {
         const countryNormB = countryNorm(countryB);
@@ -662,7 +662,7 @@ export class ScoreResult {
     constructor(persA: Person, persB: Person, params: ScoreParams = {}) {
       // if params.explain == True
       // this.explain = {}
-      let explain = {}
+      const explain = {}
       const pruneScore = params.pruneScore !== undefined ? params.pruneScore : defaultPruneScore
       if (persA.birth && persA.birth.date) {
         this.birthDate = scoreDate(persA.birth.date, persB.birth.date, params.dateFormat,
