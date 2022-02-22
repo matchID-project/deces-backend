@@ -667,8 +667,8 @@ export class ScoreResult {
       if (persA.birth && persA.birth.date) {
         this.birthDate = scoreDate(persA.birth.date, persB.birth.date, params.dateFormat,
           persB.birth && persB.birth.location && persB.birth.location.countryCode && (persB.birth.location.countryCode !== 'FRA')
-          );
-        explain = {birth: {date: {location: {france: true}}}}
+        );
+        updateObjProp(explain, 'birth.date.location.france', true)
       }
       if (persA.name && (persA.name.first || persA.name.last)) {
         if ((pruneScore < scoreReduce(this, true)) || !this.birthDate) {
@@ -733,11 +733,12 @@ export class ScoreResult {
 
 export const personFromRequest = (item: RequestBody): Person => {
   return {
-    ...(item.firstName || item.lastName) && {name: {
+    ...(item.firstName || item.lastName || item.legalName) && {name: {
       ...item.firstName && { first: item.firstName },
       ...item.lastName && { last: item.lastName },
       ...item.legalName && { legal: item.legalName }
     }},
+    ...item.sex && { sex: item.sex as 'M'|'F' },
     ...(item.birthDate || item.birthCity || item.birthLocationCode || item.birthDepartment || item.birthCountry ) && { birth: {
       ...item.birthDate && { date: item.birthDate as string },
       ...(item.birthCity || item.birthLocationCode || item.birthDepartment || item.birthCountry) && { location: {
