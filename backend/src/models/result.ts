@@ -297,8 +297,8 @@ export const buildResultSingle = (item: ResultRawHit): Person => {
     result.modifications = updatedData.map((u: any) => {
       const update: any = {...u};
       // WIP quick n dirty anonymization
-      const author: string = u.author as string;
-      update.author = author.substring(0,2)
+      const { author } = u;
+      update.author = author && author.substring(0,2)
         + '...' + author.replace(/@.*/,'').substring(author.replace(/@.*/,'').length-2)
         + '@' + author.replace(/.*@/,'');
       return update;
