@@ -741,21 +741,23 @@ export const personFromRequest = (item: RequestBody): Person => {
     ...item.sex && { sex: item.sex as 'M'|'F' },
     ...(item.birthDate || item.birthCity || item.birthLocationCode || item.birthDepartment || item.birthCountry ) && { birth: {
       ...item.birthDate && { date: item.birthDate as string },
-      ...(item.birthCity || item.birthLocationCode || item.birthDepartment || item.birthCountry) && { location: {
+      ...(item.birthCity || item.birthLocationCode || item.birthDepartment || item.birthCountry || item.birthGeoPoint) && { location: {
         ...item.birthCity && { city: item.birthCity },
         ...item.birthLocationCode && { code: item.birthLocationCode },
         ...item.birthDepartment && { departmentCode: item.birthDepartment },
-        ...item.birthCountry && { country: item.birthCountry }
+        ...item.birthCountry && { country: item.birthCountry },
+        ...item.birthGeoPoint && { latitude: item.birthGeoPoint.latitude, longitude: item.birthGeoPoint.longitude }
     }}}},
     ...(item.deathDate || item.deathCity || item.deathLocationCode || item.deathDepartment || item.deathCountry ) && { death: {
       // deathDate has priority over lastSeenAliveDate
       ...item.lastSeenAliveDate && { date: `>${item.lastSeenAliveDate}`},
       ...item.deathDate && { date: item.deathDate as string },
-      ...(item.deathCity || item.deathLocationCode || item.deathDepartment || item.deathCountry) && { location: {
+      ...(item.deathCity || item.deathLocationCode || item.deathDepartment || item.deathCountry || item.deathGeoPoint) && { location: {
         ...item.deathCity && { city: item.deathCity },
         ...item.deathLocationCode && { code: item.deathLocationCode },
         ...item.deathDepartment && { departmentCode: item.deathDepartment },
-        ...item.deathCountry && { country: item.deathCountry }
+        ...item.deathCountry && { country: item.deathCountry },
+        ...item.deathGeoPoint && { latitude: item.deathGeoPoint.latitude, longitude: item.deathGeoPoint.longitude }
     }}}}
   }
 }
