@@ -102,6 +102,33 @@ describe('score.ts - Score function', () => {
 
   });
 
+  it('Score GeoPoint', () => {
+    const score = new ScoreResult({
+      name: {
+        first: 'tran',
+        last: 'chen',
+      },
+      birth: {
+        location: {
+          latitude: 48.847759,
+          longitude: 2.439497
+        }
+      }
+    }, {
+      name: {
+        first: 'tran',
+        last: 'chen',
+      },
+      birth: {
+        location: {
+          latitude: 48.847759,
+          longitude: 2.439497
+        }
+      }
+    });
+    expect(score).to.contain.all.keys(['birthLocation'])
+    expect(score.birthLocation).to.contain.all.keys(['geo'])
+  });
 
   it('explain: Nom d\'usage', () => {
     const score = new ScoreResult({

@@ -105,11 +105,12 @@ describe('search.controller.ts - POST id', () => {
 
 describe('search.controller.ts - POST compare', () => {
   const controller = new SearchController()
-  it('compare', () => {
+
+  it('compare name and birth date', () => {
     const body: PersonCompare = {
       personA: {
-          firstName: 'georges',
-          lastName: 'pompidous',
+        firstName: 'georges',
+        lastName: 'pompidous',
         birthDate: "19691101"
       },
       personB: {
@@ -122,5 +123,33 @@ describe('search.controller.ts - POST compare', () => {
     const res = controller.compareIdentitiesPost(body)
     expect(res).to.contain.all.keys(['score', 'birthDate', 'birthLocation', 'name'])
     expect(res.score).to.equal(0.73);
+  });
+
+  it('compare with Geopoints', () => {
+    const body: PersonCompare = {
+      personA: {
+        firstName: 'georges',
+        lastName: 'pompidous',
+        birthCountry: "France",
+        birthGeoPoint: {
+          latitude: 48.847759,
+          longitude: 2.439497,
+          distance: "10km"
+        }
+      },
+      personB: {
+        firstName: "Georges",
+        lastName: "Pompidou",
+        birthCountry: "France",
+        birthGeoPoint: {
+          latitude: 48.847759,
+          longitude: 2.339497,
+          distance: "10km"
+        }
+      }
+    }
+    const res = controller.compareIdentitiesPost(body)
+    expect(res).to.contain.all.keys(['score', 'birthLocation', 'name'])
+    expect(res.score).to.equal(0.6);
   });
 });
