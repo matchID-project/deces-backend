@@ -77,8 +77,9 @@ try {
       dic[cityNorm(feature.properties.nom) as string] = {
         lat,
         lon,
-        code: feature.properties.insee
-        // TODO: surf_ha dispo to use for ML
+        code: feature.properties.insee,
+        // surface en hectares de la commune.
+        surface: feature.properties.surf_ha
       }});
 } catch(e) {
     // eslint-disable-next-line no-console
@@ -90,5 +91,6 @@ export const communesDict = dic as {
       lat: number;
       lon: number;
       code: string;
+      surface: string;
     };
 };
