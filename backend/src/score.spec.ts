@@ -27,6 +27,32 @@ describe('score.ts - Score function', () => {
     expect(score.score).to.equal(0.73);
   });
 
+  it('special: should return 0.8 as global score different date format', () => {
+    const score = new ScoreResult({
+      name: {
+        first: 'georges',
+        last: 'pompidous'
+      },
+      birth: {
+        date: "01/11/1969"
+      }
+    }, {
+      name: {
+        first: "Georges",
+        last: "Pompidou"
+      },
+      sex: "M",
+      birth: {
+        date: "01/11/1969",
+      },
+    },{
+      dateFormatA: "dd/MM/yyyy",
+      dateFormatB: "dd/MM/yyyy"
+    });
+    expect(score).to.contain.all.keys(['score', 'birthDate', 'birthLocation', 'name'])
+    expect(score.score).to.equal(0.73);
+  });
+
 
   it('birth geo score', () => {
     const score = new ScoreResult({
@@ -165,8 +191,36 @@ describe('score.ts - Score function', () => {
       sex: "F",
     });
     expect(score.explain).to.contain.all.keys(['sex'])
-
   });
+
+  it('explain: location', () => {
+    const score = new ScoreResult({
+      name: {
+        first: 'tran',
+        last: 'chen ju mei wou',
+      },
+      birth: {
+        location: {
+          city: "Paris",
+          countryCode: 'FRA',
+        }
+      },
+      sex: 'F'
+    }, {
+      name: {
+        first: 'tran mi',
+        last: "chen ju wang"
+      },
+      birth: {
+        location: {
+          city: "Parisi",
+          countryCode: 'FRA',
+        }
+      },
+      sex: "F",
+    });
+    expect(score.explain).to.contain.all.keys(['sex'])
+  })
 
 
 });

@@ -163,10 +163,13 @@ export interface Person {
 export interface PersonCompare {
   personA: RequestBody;
   personB: RequestBody;
+  params?: ScoreParams;
 };
 
 export interface ScoreParams {
-  dateFormat?: string;
+  dateFormatA?: string;
+  dateFormatB?: string;
+  explain?: boolean;
   pruneScore?: number;
   candidateNumber?: number;
 };

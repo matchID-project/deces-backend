@@ -14,6 +14,7 @@ import { format } from '@fast-csv/format';
 import { ScoreResult, personFromRequest } from '../score';
 import { updatedFields } from '../updatedIds';
 import { sendUpdateConfirmation } from '../mail';
+import { dateTransform } from '../masks';
 // import getDataGouvCatalog from '../getDataGouvCatalog';
 
 const writeFileAsync = promisify(writeFile);
@@ -504,7 +505,7 @@ export class SearchController extends Controller {
   @Tags('Simple')
   @Post('/compare')
   public compareIdentitiesPost(@Body() requestBody: PersonCompare): ScoreResult {
-    const result = new ScoreResult(personFromRequest(requestBody.personA), personFromRequest(requestBody.personB))
+    const result = new ScoreResult(personFromRequest(requestBody.personA), personFromRequest(requestBody.personB), requestBody.params)
     return  result;
   }
 

@@ -183,6 +183,7 @@ const firstNameSexMismatch = (firstNameA: string, firstNameB: string): boolean =
 }
 
 const updateObjProp = (obj = {}, key: any, val: any) => {
+  if (obj === null) return
   const keys = key.split('.')
   const last = keys.pop()
   keys.reduce((o: any, k: any) => o[k] ??= {}, obj)[last] = val
@@ -202,7 +203,6 @@ let scoreName = (nameA: Name, nameB: Name, sex: string, explain?: any): any => {
     let thisLastNamePenalty;
     if ((Array.isArray(lastAtokens) && (lastAtokens.length > 2)) || (Array.isArray(lastBtokens) && (lastBtokens.length > 2))) {
       thisLastNamePenalty = 1
-      // explain =  {name: { longname: true, last: {namePenalty: lastNamePenalty}}}
       updateObjProp(explain, 'name.longname', true)
       updateObjProp(explain, 'name.last.namePenalty', lastNamePenalty)
     } else {
@@ -213,6 +213,8 @@ let scoreName = (nameA: Name, nameB: Name, sex: string, explain?: any): any => {
     let firstFirstA; let firstFirstB; let scoreFirstALastB; let fuzzScore;
     const scoreFirst = round(scoreToken(firstA, firstB));
     const scoreLast = round(scoreToken(lastA, lastB));
+    updateObjProp(explain, 'name.first.levenshteinScore', scoreFirst)
+    updateObjProp(explain, 'name.last.levenshteinScore', scoreLast)
     score = round(Math.max(
                 scoreFirst * (scoreLast ** thisLastNamePenalty),
                 Math.max(
@@ -250,6 +252,7 @@ let scoreName = (nameA: Name, nameB: Name, sex: string, explain?: any): any => {
                     nameInversionPenalty * (scoreFirstALastB ** thisLastNamePenalty) * scoreToken(lastA, firstFirstB) ** thisLastNamePenalty
                 )
             );
+            updateObjProp(explain, 'name.nameSwap', true)
         }
     }
     score = { score, first: scoreFirst, last: scoreLast };
@@ -275,6 +278,7 @@ let scoreName = (nameA: Name, nameB: Name, sex: string, explain?: any): any => {
         if (particleScore > score.score) {
             score.score = particleScore;
             score.particleScore = particleScore;
+            updateObjProp(explain, 'name.particles', true)
         }
     }
     return score;
@@ -452,7 +456,7 @@ const scoreCountry = (countryA: string|string[]|RequestField, countryB: string|s
 }
 
 
-let scoreLocation = (locA: Location, locB: Location): any => {
+let scoreLocation = (locA: Location, locB: Location, event?: string, explain?: any): any => {
     const score: any = {};
     const BisFrench = locB.countryCode && (locB.countryCode === 'FRA');
     if (locA.code && locB.code) {
@@ -465,6 +469,7 @@ let scoreLocation = (locA: Location, locB: Location): any => {
       score.geo = scoreGeo(locA.latitude, locA.longitude, locB.latitude, locB.longitude)
     }
     if (BisFrench) {
+        updateObjProp(explain, `${event}Location.country`, 'France')
         if (normalize(locA.country as string|string[])) {
             score.country = scoreCountry(locA.country, tokenize(locB.country as string));
             if ((score.code >= round(blindLocationScore ** 0.5)) && (score.country < perfectScoreThreshold)) {
@@ -473,6 +478,7 @@ let scoreLocation = (locA: Location, locB: Location): any => {
             }
         }
         if (normalize(locA.city as string|string[]) && locB.city) {
+            updateObjProp(explain, `${event}Location.surface`, communesDict[cityNorm(locA.city as string) as string].surface)
             score.city = scoreCity(locA.city, locB.city as string|string[]);
             if ((score.code === 1) && (score.city < perfectScoreThreshold)) {
                 // insee code has priority over label
@@ -595,19 +601,20 @@ const scoreDateRaw = (dateRangeA: any, dateStringB: string, foreignDate: boolean
     }
 };
 
-let scoreDate = (dateRangeA: any, dateStringB: string, dateFormat: string, foreignDate: boolean): number => {
+let scoreDate = (dateRangeA: any, dateStringB: string, dateFormatA: string, dateFormatB: string, foreignDate: boolean): number => {
     if (dateStringB === "00000000" || !dateStringB || !dateRangeA) {
         return blindDateScore;
     }
     let dateRangeATransformed = dateRangeA;
-    if (dateFormat) {
+    dateStringB = dateFormatB ? dateTransform(dateStringB, dateFormatB, "yyyyMMdd") : dateStringB;
+    if (dateFormatA) {
         const dr = isDateRange(dateRangeA);
         if (!dr) {
           const dl = isDateLimit(dateRangeA);
-          dateRangeATransformed = dl ? `${dl[1]}${dateTransform(dl[2], dateFormat, "yyyyMMdd")}`
-            : dateTransform(dateRangeA, dateFormat, "yyyyMMdd");
+          dateRangeATransformed = dl ? `${dl[1]}${dateTransform(dl[2], dateFormatA, "yyyyMMdd")}`
+            : dateTransform(dateRangeA, dateFormatA, "yyyyMMdd");
         } else {
-            dateRangeATransformed = `${dateTransform(dr[1], dateFormat, "yyyyMMdd")}-${dateTransform(dr[2], dateFormat, "yyyyMMdd")}`;
+            dateRangeATransformed = `${dateTransform(dr[1], dateFormatA, "yyyyMMdd")}-${dateTransform(dr[2], dateFormatA, "yyyyMMdd")}`;
         }
     }
     return 0.01 * Math.round((scoreDateRaw(dateRangeATransformed, dateStringB, foreignDate) ** datePenalty) * 100);
@@ -660,12 +667,10 @@ export class ScoreResult {
     deathLocation?: number;
 
     constructor(persA: Person, persB: Person, params: ScoreParams = {}) {
-      // if params.explain == True
-      // this.explain = {}
-      const explain = {}
+      const explain = params.explain ? {} : null;
       const pruneScore = params.pruneScore !== undefined ? params.pruneScore : defaultPruneScore
       if (persA.birth && persA.birth.date) {
-        this.birthDate = scoreDate(persA.birth.date, persB.birth.date, params.dateFormat,
+        this.birthDate = scoreDate(persA.birth.date, persB.birth.date, params.dateFormatA, params.dateFormatB,
           persB.birth && persB.birth.location && persB.birth.location.countryCode && (persB.birth.location.countryCode !== 'FRA')
         );
         updateObjProp(explain, 'birth.date.location.france', true)
@@ -701,13 +706,16 @@ export class ScoreResult {
       if (pruneScore < scoreReduce(this, true)) {
           this.birthLocation = scoreLocation(
             persA.birth && persA.birth.location ? persA.birth.location : {},
-            persB.birth && persB.birth.location ? persB.birth.location: {});
+            persB.birth && persB.birth.location ? persB.birth.location: {},
+            'birth',
+            explain,
+          );
       } else {
           this.score = 0
       }
       if (persA.death && persA.death.date) {
           if (pruneScore < scoreReduce(this, true)) {
-              this.deathDate = scoreDate(persA.death.date, persB.death.date, params.dateFormat,
+              this.deathDate = scoreDate(persA.death.date, persB.death.date, params.dateFormatA, params.dateFormatB,
                   persB.death && persB.death.location && persB.death.location.countryCode && (persB.death.location.countryCode !== 'FRA')
               );
           } else {
@@ -718,7 +726,10 @@ export class ScoreResult {
           if (pruneScore < scoreReduce(this, true)) {
               this.deathLocation = scoreLocation(
                 persA.death && persA.death.location ? persA.death.location : {},
-                persB.death && persB.death.location ? persB.death.location : {});
+                persB.death && persB.death.location ? persB.death.location : {},
+                'death',
+                explain
+              );
           } else {
               this.score = 0
           }
@@ -726,7 +737,9 @@ export class ScoreResult {
       if (!this.score) {
         this.score = scoreReduce(this, true)
       }
-      this.explain = explain
+      if (params.explain) {
+        this.explain = explain
+      }
     }
   }
 
