@@ -203,18 +203,18 @@ let scoreName = (nameA: Name, nameB: Name, sex: string, explain?: any): any => {
     let thisLastNamePenalty;
     if ((Array.isArray(lastAtokens) && (lastAtokens.length > 2)) || (Array.isArray(lastBtokens) && (lastBtokens.length > 2))) {
       thisLastNamePenalty = 1
-      updateObjProp(explain, 'name.longname', true)
-      updateObjProp(explain, 'name.last.namePenalty', lastNamePenalty)
+      updateObjProp(explain, 'lastName.longname', true)
+      updateObjProp(explain, 'lastName.penalty', lastNamePenalty)
     } else {
       thisLastNamePenalty = lastNamePenalty
-      updateObjProp(explain, 'name.longname', false)
-      updateObjProp(explain, 'name.last.namePenalty', lastNamePenalty)
+      updateObjProp(explain, 'lastName.longname', false)
+      updateObjProp(explain, 'lastName.penalty', lastNamePenalty)
     }
     let firstFirstA; let firstFirstB; let scoreFirstALastB; let fuzzScore;
     const scoreFirst = round(scoreToken(firstA, firstB));
     const scoreLast = round(scoreToken(lastA, lastB));
-    updateObjProp(explain, 'name.first.levenshteinScore', scoreFirst)
-    updateObjProp(explain, 'name.last.levenshteinScore', scoreLast)
+    updateObjProp(explain, 'firstName.levenshteinScore', scoreFirst)
+    updateObjProp(explain, 'lastName.levenshteinScore', scoreLast)
     score = round(Math.max(
                 scoreFirst * (scoreLast ** thisLastNamePenalty),
                 Math.max(
@@ -252,7 +252,8 @@ let scoreName = (nameA: Name, nameB: Name, sex: string, explain?: any): any => {
                     nameInversionPenalty * (scoreFirstALastB ** thisLastNamePenalty) * scoreToken(lastA, firstFirstB) ** thisLastNamePenalty
                 )
             );
-            updateObjProp(explain, 'name.nameSwap', true)
+            updateObjProp(explain, 'firstName.nameSwap', true)
+            updateObjProp(explain, 'lastName.nameSwap', true)
         }
     }
     score = { score, first: scoreFirst, last: scoreLast };
@@ -278,7 +279,7 @@ let scoreName = (nameA: Name, nameB: Name, sex: string, explain?: any): any => {
         if (particleScore > score.score) {
             score.score = particleScore;
             score.particleScore = particleScore;
-            updateObjProp(explain, 'name.particles', true)
+            updateObjProp(explain, 'firstName.particles', true)
         }
     }
     return score;
@@ -469,7 +470,7 @@ let scoreLocation = (locA: Location, locB: Location, event?: string, explain?: a
       score.geo = scoreGeo(locA.latitude, locA.longitude, locB.latitude, locB.longitude)
     }
     if (BisFrench) {
-        updateObjProp(explain, `${event}Location.country`, 'France')
+        updateObjProp(explain, `${event}Country`, 'France')
         if (normalize(locA.country as string|string[])) {
             score.country = scoreCountry(locA.country, tokenize(locB.country as string));
             if ((score.code >= round(blindLocationScore ** 0.5)) && (score.country < perfectScoreThreshold)) {
@@ -478,7 +479,7 @@ let scoreLocation = (locA: Location, locB: Location, event?: string, explain?: a
             }
         }
         if (normalize(locA.city as string|string[]) && locB.city) {
-            updateObjProp(explain, `${event}Location.surface`, communesDict[cityNorm(locA.city as string) as string].surface)
+            updateObjProp(explain, `${event}City.surface`, communesDict[cityNorm(locA.city as string) as string].surface)
             score.city = scoreCity(locA.city, locB.city as string|string[]);
             if ((score.code === 1) && (score.city < perfectScoreThreshold)) {
                 // insee code has priority over label
@@ -673,7 +674,7 @@ export class ScoreResult {
         this.birthDate = scoreDate(persA.birth.date, persB.birth.date, params.dateFormatA, params.dateFormatB,
           persB.birth && persB.birth.location && persB.birth.location.countryCode && (persB.birth.location.countryCode !== 'FRA')
         );
-        updateObjProp(explain, 'birth.date.location.france', true)
+        updateObjProp(explain, 'birthCountry', 'France')
       }
       if (persA.name && (persA.name.first || persA.name.last)) {
         if ((pruneScore < scoreReduce(this, true)) || !this.birthDate) {
@@ -681,7 +682,7 @@ export class ScoreResult {
               updateObjProp(explain, 'sex', 'F')
               if (persA.name.legal) {
                   this.name = scoreName({first: persA.name.first, last: [persA.name.last as string, persA.name.legal as string]}, persB.name, 'F', explain);
-                  updateObjProp(explain, 'name.legal', true)
+                  updateObjProp(explain, 'legalName', true)
               } else {
                   this.name = scoreName(persA.name, persB.name, 'F', explain);
               }
