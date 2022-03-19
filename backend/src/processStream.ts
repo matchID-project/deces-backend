@@ -212,7 +212,7 @@ export const processCsv =  async (job: Job<any>, jobFile: JobInput): Promise<any
 
 export const processChunk = async (chunk: any[], candidateNumber: number, params: ScoreParams): Promise<any[]> => {
   const bulkRequest = chunk.map((row: any) => { // TODO: type
-    const requestInput = new RequestInput({...row, dateFormat: params.dateFormat});
+    const requestInput = new RequestInput({...row, dateFormat: params.dateFormatA});
     return [JSON.stringify({index: "deces"}), JSON.stringify(buildRequest(requestInput))];
   })
   const msearchRequest = bulkRequest.map((x: any) => x.join('\n\r')).join('\n\r') + '\n';
@@ -239,7 +239,7 @@ export const processChunk = async (chunk: any[], candidateNumber: number, params
 }
 
 const workerChunks = new Worker('chunks', async (chunkJob: Job) => {
-  return await processChunk(chunkJob.data.chunk, chunkJob.data.candidateNumber, {dateFormat: chunkJob.data.dateFormat, pruneScore: chunkJob.data.pruneScore, candidateNumber: chunkJob.data.candidateNumber});
+  return await processChunk(chunkJob.data.chunk, chunkJob.data.candidateNumber, {dateFormatA: chunkJob.data.dateFormatA, pruneScore: chunkJob.data.pruneScore, candidateNumber: chunkJob.data.candidateNumber});
 }, {
   connection: {
     host: 'redis'
@@ -277,7 +277,7 @@ export class ProcessStream extends Transform {
   sourceLineNumber: number;
   jobs: any[];
   totalRows: number;
-  dateFormat: string;
+  dateFormatA: string;
   candidateNumber: number;
   pruneScore: number;
 
@@ -293,7 +293,7 @@ export class ProcessStream extends Transform {
     this.processedRows = 0;
     this.sourceLineNumber = 1;
     this.totalRows = this.job.data.totalRows;
-    this.dateFormat = this.job.data.dateFormat;
+    this.dateFormatA = this.job.data.dateFormatA;
     this.pruneScore = this.job.data.pruneScore;
     this.candidateNumber = this.job.data.candidateNumber;
     this.jobs = [];
@@ -369,7 +369,7 @@ export class ProcessStream extends Transform {
     const job = await chunkQueue
       .add(jobId, {
         chunk: this.batch.map((r: any) => this.toRequest(r)),
-        dateFormat: this.dateFormat,
+        dateFormatA: this.dateFormatA,
         pruneScore: this.pruneScore,
         candidateNumber: this.candidateNumber
       }, {

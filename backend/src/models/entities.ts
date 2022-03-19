@@ -1,12 +1,13 @@
 import { ScoreResult } from '../score';
+import { RequestBody } from './requestInput';
 
 export interface Sort {
  [key: string]: 'asc'|'desc';
 }
 
 export interface Name {
-    first: string|string[]|RequestField;
-    last: string|string[]|RequestField;
+    first?: string|string[]|RequestField;
+    last?: string|string[]|RequestField;
     legal?: string|string[]|RequestField;
   };
 
@@ -133,22 +134,22 @@ export interface Modification {
 };
 
 export interface Person {
-    score: number;
-    source: string;
-    sourceLine: number;
-    id: string;
-    name: Name;
-    sex: 'M'|'F';
-    scores: ScoreResult;
-    birth: {
-      date: string;
-      location: Location;
+    score?: number;
+    source?: string;
+    sourceLine?: number;
+    id?: string;
+    name?: Name;
+    sex?: 'M'|'F';
+    scores?: ScoreResult;
+    birth?: {
+      date?: string;
+      location?: Location;
     };
-    death: {
+    death?: {
       date: string;
-      certificateId: string;
-      age: number;
-      location: Location;
+      certificateId?: string;
+      age?: number;
+      location?: Location;
     };
     links?: {
       label?: string;
@@ -159,8 +160,16 @@ export interface Person {
     modifications?: Modification[];
   };
 
+export interface PersonCompare {
+  personA: RequestBody;
+  personB: RequestBody;
+  params?: ScoreParams;
+};
+
 export interface ScoreParams {
-  dateFormat?: string;
+  dateFormatA?: string;
+  dateFormatB?: string;
+  explain?: boolean;
   pruneScore?: number;
   candidateNumber?: number;
 };
