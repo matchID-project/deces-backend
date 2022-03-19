@@ -170,8 +170,8 @@ describe('score.ts - Score function', () => {
         last: "marie"
       },
       sex: "F",
-    });
-    expect(score.explain.name).to.contain.all.keys(['legal'])
+    }, {explain: true});
+    expect(score.explain).to.contain.all.keys(['legalName'])
     expect(score.explain).to.contain.all.keys(['sex'])
 
   });
@@ -189,7 +189,7 @@ describe('score.ts - Score function', () => {
         last: "chen ju wang"
       },
       sex: "F",
-    });
+    }, {explain: true});
     expect(score.explain).to.contain.all.keys(['sex'])
   });
 
@@ -218,7 +218,7 @@ describe('score.ts - Score function', () => {
         }
       },
       sex: "F",
-    });
+    }, {explain: true});
     expect(score.explain).to.contain.all.keys(['sex'])
   })
 
