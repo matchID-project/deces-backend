@@ -8,7 +8,7 @@ describe('processStream.ts - Process chunk', () => {
       [{firstName: 'jean', lastName: 'pierre', birthDate: '04/08/1933'}, {firstName: 'georges', lastName: 'michel', birthDate: '12/03/1939'}],
       5,
       {
-        dateFormat: 'dd/MM/yyyy',
+        dateFormatA: 'dd/MM/yyyy',
       }
     )
     expect(result.length).to.equal(2)
@@ -21,7 +21,7 @@ describe('processStream.ts - Process chunk', () => {
       [{firstName: 'jean', lastName: 'petit'}, {firstName: 'georges', lastName: 'michel'}],
       10,
       {
-        dateFormat: 'dd/MM/yyyy',
+        dateFormatA: 'dd/MM/yyyy',
       },
     )
     expect(result[0].length).to.above(2)
@@ -37,7 +37,7 @@ describe('processStream.ts - Process chunk', () => {
       [{firstName: 'jean', lastName: 'petit'}],
       5,
       {
-        dateFormat: 'dd/MM/yyyy',
+        dateFormatA: 'dd/MM/yyyy',
         pruneScore: 0.5
       },
     )
@@ -45,7 +45,7 @@ describe('processStream.ts - Process chunk', () => {
       [{firstName: 'jean', lastName: 'petit'}],
       5,
       {
-        dateFormat: 'dd/MM/yyyy',
+        dateFormatA: 'dd/MM/yyyy',
         pruneScore: 0.1
       },
     )
@@ -57,7 +57,7 @@ describe('processStream.ts - Process chunk', () => {
       [{firstName: 'jean', lastName: 'pierre', birthDate: '1933-08-04'}, {firstName: 'georges', lastName: 'michel', birthDate: '1939-03-12'}],
       1,
       {
-        dateFormat: 'yyyy-MM-dd'
+        dateFormatA: 'yyyy-MM-dd'
       }
     )
     expect(result.length).to.equal(2)
@@ -70,7 +70,7 @@ describe('processStream.ts - Process chunk', () => {
       [{firstName: 'jeanne', lastName: 'michou', sex: 'F', legalName: 'marie'}],
       1,
       {
-        dateFormat: 'yyyy-MM-dd'
+        dateFormatA: 'yyyy-MM-dd'
       }
     )
     expect(result.length).to.equal(1)
@@ -84,7 +84,7 @@ describe('processStream.ts - Process chunk', () => {
       [{firstName: 'jean', lastName: 'pierre', birthDate: '04/08/1933'}],
       1,
       {
-        dateFormat: 'DD/MM/YYYY'
+        dateFormatA: 'DD/MM/YYYY'
       }
     )
     expect(result.length).to.equal(1)
@@ -97,7 +97,7 @@ describe('processStream.ts - Process chunk', () => {
       [{firstName: 'jean', lastName: 'pierre', birthDate: '08/1933'}],
       1,
       {
-        dateFormat: 'MM/YYYY',
+        dateFormatA: 'MM/YYYY',
         pruneScore: 0.01
       }
     )
@@ -114,7 +114,7 @@ describe('processStream.ts - Process chunk', () => {
       ],
       1,
       {
-        dateFormat: 'DD/MM/YYYY',
+        dateFormatA: 'DD/MM/YYYY',
         pruneScore: 0.01
       }
     )

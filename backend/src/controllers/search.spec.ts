@@ -1,4 +1,5 @@
 import { SearchController } from './search.controller';
+import { PersonCompare } from '../models/entities';
 import express from 'express';
 import { expect } from 'chai';
 import 'mocha';
@@ -99,5 +100,56 @@ describe('search.controller.ts - POST id', () => {
     } as express.Request
     const res = await controller.updateId('POgzt_2CZT2o', body, req)
     expect(res.msg).to.equal('Update stored');
+  });
+});
+
+describe('search.controller.ts - POST compare', () => {
+  const controller = new SearchController()
+
+  it('compare name and birth date', () => {
+    const body: PersonCompare = {
+      personA: {
+        firstName: 'georges',
+        lastName: 'pompidous',
+        birthDate: "19691101"
+      },
+      personB: {
+        firstName: "Georges",
+        lastName: "Pompidou",
+        sex: "M",
+        birthDate: "19691101",
+      }
+    }
+    const res = controller.compareIdentitiesPost(body)
+    expect(res).to.contain.all.keys(['score', 'birthDate', 'birthLocation', 'name'])
+    expect(res.score).to.equal(0.73);
+  });
+
+  it('compare with Geopoints', () => {
+    const body: PersonCompare = {
+      personA: {
+        firstName: 'georges',
+        lastName: 'pompidous',
+        birthCountry: "France",
+        birthGeoPoint: {
+          latitude: 48.847759,
+          longitude: 2.439497,
+          distance: "10km"
+        }
+      },
+      personB: {
+        firstName: "Georges",
+        lastName: "Pompidou",
+        birthCountry: "France",
+        birthGeoPoint: {
+          latitude: 48.847759,
+          longitude: 2.339497,
+          distance: "10km"
+        }
+      }
+    }
+    const res = controller.compareIdentitiesPost(body)
+    expect(res).to.contain.all.keys(['score', 'birthLocation', 'name'])
+    expect(res.score).to.equal(0.6);
   });
 });

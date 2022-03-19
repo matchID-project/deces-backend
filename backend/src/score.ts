@@ -131,7 +131,7 @@ const scoreReduce = (score:any, multiplePenalty?: boolean ):number => {
     if (score.score) {
         return round(score.score);
     } else {
-        const r:any = Object.keys(score).map(k => {
+        const r:any = Object.keys(score).filter(x => x !== 'explain').map(k => {
             if (typeof(score[k]) === 'number') {
                 return  round(score[k]);
             } else {
@@ -182,7 +182,15 @@ const firstNameSexMismatch = (firstNameA: string, firstNameB: string): boolean =
     return /^.?(e|a)$/.test(firstA.replace(firstB, '')) || /^.?(e|a)$/.test(firstB.replace(firstA, ''));
 }
 
-let scoreName = (nameA: Name, nameB: Name, sex: string): any => {
+const updateObjProp = (obj = {}, key: any, val: any) => {
+  if (obj === null) return
+  const keys = key.split('.')
+  const last = keys.pop()
+  keys.reduce((o: any, k: any) => o[k] ??= {}, obj)[last] = val
+  return obj
+}
+
+let scoreName = (nameA: Name, nameB: Name, sex: string, explain?: any): any => {
     if ((!nameA.first && !nameA.last) || (!nameB.first && !nameB.last)) { return blindNameScore }
     let score:any;
     const firstA = firstNameNorm(nameA.first as string|string[]);
@@ -192,11 +200,21 @@ let scoreName = (nameA: Name, nameB: Name, sex: string): any => {
     const lastAtokens = tokenize(lastA);
     const lastBtokens = tokenize(lastB);
     // reduce lastNamePenalty for long names
-    const thisLastNamePenalty = ((Array.isArray(lastAtokens) && (lastAtokens.length > 2)) ||
-        (Array.isArray(lastBtokens) && (lastBtokens.length > 2))) ? 1 : lastNamePenalty;
+    let thisLastNamePenalty;
+    if ((Array.isArray(lastAtokens) && (lastAtokens.length > 2)) || (Array.isArray(lastBtokens) && (lastBtokens.length > 2))) {
+      thisLastNamePenalty = 1
+      updateObjProp(explain, 'lastName.longname', true)
+      updateObjProp(explain, 'lastName.penalty', lastNamePenalty)
+    } else {
+      thisLastNamePenalty = lastNamePenalty
+      updateObjProp(explain, 'lastName.longname', false)
+      updateObjProp(explain, 'lastName.penalty', lastNamePenalty)
+    }
     let firstFirstA; let firstFirstB; let scoreFirstALastB; let fuzzScore;
     const scoreFirst = round(scoreToken(firstA, firstB));
     const scoreLast = round(scoreToken(lastA, lastB));
+    updateObjProp(explain, 'firstName.levenshteinScore', scoreFirst)
+    updateObjProp(explain, 'lastName.levenshteinScore', scoreLast)
     score = round(Math.max(
                 scoreFirst * (scoreLast ** thisLastNamePenalty),
                 Math.max(
@@ -234,6 +252,8 @@ let scoreName = (nameA: Name, nameB: Name, sex: string): any => {
                     nameInversionPenalty * (scoreFirstALastB ** thisLastNamePenalty) * scoreToken(lastA, firstFirstB) ** thisLastNamePenalty
                 )
             );
+            updateObjProp(explain, 'firstName.nameSwap', true)
+            updateObjProp(explain, 'lastName.nameSwap', true)
         }
     }
     score = { score, first: scoreFirst, last: scoreLast };
@@ -259,6 +279,7 @@ let scoreName = (nameA: Name, nameB: Name, sex: string): any => {
         if (particleScore > score.score) {
             score.score = particleScore;
             score.particleScore = particleScore;
+            updateObjProp(explain, 'firstName.particles', true)
         }
     }
     return score;
@@ -423,9 +444,9 @@ const scoreCountry = (countryA: string|string[]|RequestField, countryB: string|s
         if (typeof(countryB) === 'string') {
             return fuzzyRatio(countryNormA, countryNorm(countryB) as string, fuzzballTokenSetRatio);
         } else {
-            return Math.max(...countryB.map(country => fuzzyRatio(countryNormA, countryNorm(country) as string, fuzzballTokenSetRatio)),
+            return Array.isArray(countryB) ? Math.max(...countryB.map(country => fuzzyRatio(countryNormA, countryNorm(country) as string, fuzzballTokenSetRatio)),
                 fuzzballTokenSetRatio(countryNormA, countryB.join(' '))
-                );
+                ) : fuzzballTokenSetRatio(countryNormA, countryB);
         }
     } else {
         const countryNormB = countryNorm(countryB);
@@ -436,7 +457,7 @@ const scoreCountry = (countryA: string|string[]|RequestField, countryB: string|s
 }
 
 
-let scoreLocation = (locA: Location, locB: Location): any => {
+let scoreLocation = (locA: Location, locB: Location, event?: string, explain?: any): any => {
     const score: any = {};
     const BisFrench = locB.countryCode && (locB.countryCode === 'FRA');
     if (locA.code && locB.code) {
@@ -449,6 +470,7 @@ let scoreLocation = (locA: Location, locB: Location): any => {
       score.geo = scoreGeo(locA.latitude, locA.longitude, locB.latitude, locB.longitude)
     }
     if (BisFrench) {
+        updateObjProp(explain, `${event}Country`, 'France')
         if (normalize(locA.country as string|string[])) {
             score.country = scoreCountry(locA.country, tokenize(locB.country as string));
             if ((score.code >= round(blindLocationScore ** 0.5)) && (score.country < perfectScoreThreshold)) {
@@ -457,6 +479,7 @@ let scoreLocation = (locA: Location, locB: Location): any => {
             }
         }
         if (normalize(locA.city as string|string[]) && locB.city) {
+            updateObjProp(explain, `${event}City.surface`, communesDict[cityNorm(locA.city as string) as string].surface)
             score.city = scoreCity(locA.city, locB.city as string|string[]);
             if ((score.code === 1) && (score.city < perfectScoreThreshold)) {
                 // insee code has priority over label
@@ -527,7 +550,7 @@ const parseYMD = (dateString: string): Date => {
     return new Date(+dateString.substr(0,4),+dateString.substr(4,2) - 1,+dateString.substr(6,2));
 }
 
-const scoreDateRaw = (dateRangeA: any, dateStringB: string, foreignDate: boolean): number => {
+const scoreDateRaw = (dateRangeA: any, dateStringB: string, foreignDate: boolean, event: string, explain: any): number => {
     // if (dateStringB === "00000000" || !dateStringB || !dateRangeA) {
     if (/^00000000$/.test(dateStringB) || !dateStringB || !dateRangeA) {
         return blindDateScore;
@@ -544,7 +567,7 @@ const scoreDateRaw = (dateRangeA: any, dateStringB: string, foreignDate: boolean
             } else {
                 const dateArrayA = [dr[1],dr[2]];
                 if (dateArrayA[0] === dateArrayA[1]) {
-                    return scoreDateRaw(dateArrayA[0], dateStringB, foreignDate);
+                    return scoreDateRaw(dateArrayA[0], dateStringB, foreignDate, event, explain);
                 }
                 return ((dateArrayA[0] <= dateStringB) && (dateArrayA[1] >= dateStringB))
                     ? uncertainDateScore
@@ -553,6 +576,7 @@ const scoreDateRaw = (dateRangeA: any, dateStringB: string, foreignDate: boolean
         } else {
             const dateRangeATransformed = dateTransformMask(dateRangeA);
             if (dateRangeATransformed === dateStringB) {
+                updateObjProp(explain, `${event}Date.score`, '1')
                 return 1;
             }
             if (dateStringB.startsWith("0000")) {
@@ -568,10 +592,16 @@ const scoreDateRaw = (dateRangeA: any, dateStringB: string, foreignDate: boolean
                 return round((foreignDate && (dateStringB.substring(0,4) < "1990") ? uncertainDateScore : uncertainDateScore ** 2) *
                     levRatio(dateRangeATransformed.substring(0,4),dateStringB.substring(0,4), damlev) ** 2);
             }
+            const levenshteinScore = levRatio(dateRangeATransformed, dateStringB, damlev)
+            const currentUncertainScore = round((uncertainDateScore ** 2) * (dateRangeATransformed.substring(0,6) === dateStringB.substring(0,6) ? 1: 0))
+            const oldDateScore = round((1-(((parseYMD(dateRangeATransformed).getTime()-parseYMD(dateStringB).getTime()) /  31536000000) ** 2) ** 0.2))||0
+            updateObjProp(explain, `${event}Date.levenshteinScore`, levenshteinScore)
+            updateObjProp(explain, `${event}Date.uncertainScore`, currentUncertainScore)
+            updateObjProp(explain, `${event}Date.oldDateScore`, oldDateScore)
             return Math.max(
-                levRatio(dateRangeATransformed, dateStringB, damlev),
-                round((uncertainDateScore ** 2) * (dateRangeATransformed.substring(0,6) === dateStringB.substring(0,6) ? 1: 0)),
-                round((1-(((parseYMD(dateRangeATransformed).getTime()-parseYMD(dateStringB).getTime()) /  31536000000) ** 2) ** 0.2))||0
+                levenshteinScore,
+                currentUncertainScore,
+                oldDateScore
             );
         }
     } else {
@@ -579,22 +609,23 @@ const scoreDateRaw = (dateRangeA: any, dateStringB: string, foreignDate: boolean
     }
 };
 
-let scoreDate = (dateRangeA: any, dateStringB: string, dateFormat: string, foreignDate: boolean): number => {
+let scoreDate = (dateRangeA: any, dateStringB: string, dateFormatA: string, dateFormatB: string, foreignDate: boolean, event: string, explain: any): number => {
     if (dateStringB === "00000000" || !dateStringB || !dateRangeA) {
         return blindDateScore;
     }
     let dateRangeATransformed = dateRangeA;
-    if (dateFormat) {
+    dateStringB = dateFormatB ? dateTransform(dateStringB, dateFormatB, "yyyyMMdd") : dateStringB;
+    if (dateFormatA) {
         const dr = isDateRange(dateRangeA);
         if (!dr) {
           const dl = isDateLimit(dateRangeA);
-          dateRangeATransformed = dl ? `${dl[1]}${dateTransform(dl[2], dateFormat, "yyyyMMdd")}`
-            : dateTransform(dateRangeA, dateFormat, "yyyyMMdd");
+          dateRangeATransformed = dl ? `${dl[1]}${dateTransform(dl[2], dateFormatA, "yyyyMMdd")}`
+            : dateTransform(dateRangeA, dateFormatA, "yyyyMMdd");
         } else {
-            dateRangeATransformed = `${dateTransform(dr[1], dateFormat, "yyyyMMdd")}-${dateTransform(dr[2], dateFormat, "yyyyMMdd")}`;
+            dateRangeATransformed = `${dateTransform(dr[1], dateFormatA, "yyyyMMdd")}-${dateTransform(dr[2], dateFormatA, "yyyyMMdd")}`;
         }
     }
-    return 0.01 * Math.round((scoreDateRaw(dateRangeATransformed, dateStringB, foreignDate) ** datePenalty) * 100);
+    return 0.01 * Math.round((scoreDateRaw(dateRangeATransformed, dateStringB, foreignDate, event, explain) ** datePenalty) * 100);
 }
 
 let scoreSex = (sexA: any, sexB: string): number => {
@@ -635,6 +666,7 @@ scoreDate = timer(scoreDate, 'scoreDate',1000);
 
 export class ScoreResult {
     score: number;
+    explain?: any; // TODO: type explain
     birthDate?: number
     deathDate?: number
     name?: number;
@@ -642,71 +674,73 @@ export class ScoreResult {
     birthLocation?: number;
     deathLocation?: number;
 
-    constructor(request: RequestBody, result: Person, params: ScoreParams = {}) {
+    constructor(persA: Person, persB: Person, params: ScoreParams = {}) {
+      const explain = params.explain ? {} : null;
       const pruneScore = params.pruneScore !== undefined ? params.pruneScore : defaultPruneScore
-      if (request.birthDate) {
-        this.birthDate = scoreDate(request.birthDate, result.birth.date, params.dateFormat,
-          result.birth && result.birth.location && result.birth.location.countryCode && (result.birth.location.countryCode !== 'FRA')
-          );
+      if (persA.birth && persA.birth.date) {
+        this.birthDate = scoreDate(persA.birth.date, persB.birth.date, params.dateFormatA, params.dateFormatB,
+          persB.birth && persB.birth.location && persB.birth.location.countryCode && (persB.birth.location.countryCode !== 'FRA'),
+          'birth',
+          explain
+        );
       }
-      if (request.firstName || request.lastName) {
+      if (persA.name && (persA.name.first || persA.name.last)) {
         if ((pruneScore < scoreReduce(this, true)) || !this.birthDate) {
-          if (result.sex && result.sex === 'F') {
-              if (request.legalName) {
-                  this.name = scoreName({first: request.firstName, last: [request.lastName, request.legalName]}, result.name, 'F');
+          if (persB.sex && persB.sex === 'F') {
+              updateObjProp(explain, 'sex', 'F')
+              if (persA.name.legal) {
+                  this.name = scoreName({first: persA.name.first, last: [persA.name.last as string, persA.name.legal as string]}, persB.name, 'F', explain);
+                  updateObjProp(explain, 'legalName', true)
               } else {
-                  this.name = scoreName({first: request.firstName, last: request.lastName}, result.name, 'F');
+                  this.name = scoreName(persA.name, persB.name, 'F', explain);
               }
           } else {
-            this.name = scoreName({first: request.firstName, last: request.lastName}, result.name, 'M');
+            this.name = scoreName(persA.name, persB.name, 'M');
+            updateObjProp(explain, 'sex', 'M')
           }
         } else {
           this.score = 0
         }
       }
-      if (request.sex) {
+      if (persA.sex) {
         if (pruneScore < scoreReduce(this, true)) {
-          this.sex = scoreSex(request.sex, result.sex);
+          this.sex = scoreSex(persA.sex, persB.sex);
         } else {
           this.score = 0
         }
-      } else if (request.firstName && firstNameSexMismatch(request.firstName, result.name.first as string)) {
+      } else if (persA.name && persA.name.first && firstNameSexMismatch(persA.name.first as string, persB.name.first as string)) {
           this.sex = firstNameSexPenalty;
       }
       // birthLocation
       if (pruneScore < scoreReduce(this, true)) {
-          this.birthLocation = scoreLocation({
-              city: request.birthCity,
-              code: request.birthLocationCode,
-              codePostal: request.birthPostalCode,
-              departmentCode: request.birthDepartment,
-              country: request.birthCountry,
-              latitude: request.birthGeoPoint?.latitude,
-              longitude: request.birthGeoPoint?.longitude
-          }, result.birth.location);
+          this.birthLocation = scoreLocation(
+            persA.birth && persA.birth.location ? persA.birth.location : {},
+            persB.birth && persB.birth.location ? persB.birth.location: {},
+            'birth',
+            explain,
+          );
       } else {
           this.score = 0
       }
-      if (request.deathDate || request.lastSeenAliveDate) {
+      if (persA.death && persA.death.date) {
           if (pruneScore < scoreReduce(this, true)) {
-              this.deathDate = scoreDate(request.deathDate || `>${request.lastSeenAliveDate}`, result.death.date, params.dateFormat,
-                  result.death && result.death.location && result.death.location.countryCode && (result.death.location.countryCode !== 'FRA')
+              this.deathDate = scoreDate(persA.death.date, persB.death.date, params.dateFormatA, params.dateFormatB,
+                  persB.death && persB.death.location && persB.death.location.countryCode && (persB.death.location.countryCode !== 'FRA'),
+                  'death',
+                  explain
               );
           } else {
               this.score = 0
           }
       }
-      if ((request.deathCity || request.deathLocationCode || request.deathCountry || request.deathDepartment || request.deathGeoPoint)) {
+      if (persA.death && persA.death.location && (persA.death.location.city || persA.death.location.code || persA.death.location.country || persA.death.location.departmentCode || persA.death.location.latitude)) {
           if (pruneScore < scoreReduce(this, true)) {
-              this.deathLocation = scoreLocation({
-                  city: request.deathLocation,
-                  code: request.deathLocationCode,
-                  codePostal: request.deathPostalCode,
-                  departmentCode: request.deathDepartment,
-                  country: request.deathCountry,
-                  latitude: request.deathGeoPoint?.latitude,
-                  longitude: request.deathGeoPoint?.longitude
-              }, result.death.location);
+              this.deathLocation = scoreLocation(
+                persA.death && persA.death.location ? persA.death.location : {},
+                persB.death && persB.death.location ? persB.death.location : {},
+                'death',
+                explain
+              );
           } else {
               this.score = 0
           }
@@ -714,8 +748,44 @@ export class ScoreResult {
       if (!this.score) {
         this.score = scoreReduce(this, true)
       }
+      if (params.explain) {
+        this.explain = explain
+      }
     }
   }
+
+
+export const personFromRequest = (item: RequestBody): Person => {
+  return {
+    ...(item.firstName || item.lastName || item.legalName) && {name: {
+      ...item.firstName && { first: item.firstName },
+      ...item.lastName && { last: item.lastName },
+      ...item.legalName && { legal: item.legalName }
+    }},
+    ...item.sex && { sex: item.sex as 'M'|'F' },
+    ...(item.birthDate || item.birthCity || item.birthLocationCode || item.birthDepartment || item.birthCountry ) && { birth: {
+      ...item.birthDate && { date: item.birthDate as string },
+      ...(item.birthCity || item.birthLocationCode || item.birthDepartment || item.birthCountry || item.birthGeoPoint) && { location: {
+        ...item.birthCity && { city: item.birthCity },
+        ...item.birthLocationCode && { code: item.birthLocationCode },
+        ...item.birthDepartment && { departmentCode: item.birthDepartment },
+        ...item.birthCountry && { country: item.birthCountry },
+        ...item.birthGeoPoint && { latitude: item.birthGeoPoint.latitude, longitude: item.birthGeoPoint.longitude }
+    }}}},
+    ...(item.deathDate || item.deathCity || item.deathLocationCode || item.deathDepartment || item.deathCountry ) && { death: {
+      // deathDate has priority over lastSeenAliveDate
+      ...item.lastSeenAliveDate && { date: `>${item.lastSeenAliveDate}`},
+      ...item.deathDate && { date: item.deathDate as string },
+      ...(item.deathCity || item.deathLocationCode || item.deathDepartment || item.deathCountry || item.deathGeoPoint) && { location: {
+        ...item.deathCity && { city: item.deathCity },
+        ...item.deathLocationCode && { code: item.deathLocationCode },
+        ...item.deathDepartment && { departmentCode: item.deathDepartment },
+        ...item.deathCountry && { country: item.deathCountry },
+        ...item.deathGeoPoint && { latitude: item.deathGeoPoint.latitude, longitude: item.deathGeoPoint.longitude }
+    }}}}
+  }
+}
+
 
 export const scoreResults = (request: RequestBody, results: Person[], params: ScoreParams): Person[] => {
     const pruneScore = params.pruneScore !== undefined ? params.pruneScore : defaultPruneScore
@@ -733,7 +803,7 @@ export const scoreResults = (request: RequestBody, results: Person[], params: Sc
             .filter((result:any) => result.score > 0)
             .map((result:any) => {
                 try {
-                    result.scores = new ScoreResult(request, result, params);
+                    result.scores = new ScoreResult(personFromRequest(request), result, params);
                     const perfectScores =
                         ((result.scores.name && result.scores.name.score >= perfectScoreThreshold) ? 1 : 0) +
                         ((result.scores.birtDate && result.scores.birthDate.score === 1) ? 1 : 0) +
