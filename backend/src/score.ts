@@ -550,7 +550,7 @@ const parseYMD = (dateString: string): Date => {
     return new Date(+dateString.substr(0,4),+dateString.substr(4,2) - 1,+dateString.substr(6,2));
 }
 
-const scoreDateRaw = (dateRangeA: any, dateStringB: string, foreignDate: boolean): number => {
+const scoreDateRaw = (dateRangeA: any, dateStringB: string, foreignDate: boolean, event: string, explain: any): number => {
     // if (dateStringB === "00000000" || !dateStringB || !dateRangeA) {
     if (/^00000000$/.test(dateStringB) || !dateStringB || !dateRangeA) {
         return blindDateScore;
@@ -567,7 +567,7 @@ const scoreDateRaw = (dateRangeA: any, dateStringB: string, foreignDate: boolean
             } else {
                 const dateArrayA = [dr[1],dr[2]];
                 if (dateArrayA[0] === dateArrayA[1]) {
-                    return scoreDateRaw(dateArrayA[0], dateStringB, foreignDate);
+                    return scoreDateRaw(dateArrayA[0], dateStringB, foreignDate, event, explain);
                 }
                 return ((dateArrayA[0] <= dateStringB) && (dateArrayA[1] >= dateStringB))
                     ? uncertainDateScore
@@ -576,6 +576,7 @@ const scoreDateRaw = (dateRangeA: any, dateStringB: string, foreignDate: boolean
         } else {
             const dateRangeATransformed = dateTransformMask(dateRangeA);
             if (dateRangeATransformed === dateStringB) {
+                updateObjProp(explain, `${event}Date.score`, '1')
                 return 1;
             }
             if (dateStringB.startsWith("0000")) {
@@ -591,10 +592,16 @@ const scoreDateRaw = (dateRangeA: any, dateStringB: string, foreignDate: boolean
                 return round((foreignDate && (dateStringB.substring(0,4) < "1990") ? uncertainDateScore : uncertainDateScore ** 2) *
                     levRatio(dateRangeATransformed.substring(0,4),dateStringB.substring(0,4), damlev) ** 2);
             }
+            const levenshteinScore = levRatio(dateRangeATransformed, dateStringB, damlev)
+            const currentUncertainScore = round((uncertainDateScore ** 2) * (dateRangeATransformed.substring(0,6) === dateStringB.substring(0,6) ? 1: 0))
+            const oldDateScore = round((1-(((parseYMD(dateRangeATransformed).getTime()-parseYMD(dateStringB).getTime()) /  31536000000) ** 2) ** 0.2))||0
+            updateObjProp(explain, `${event}Date.levenshteinScore`, levenshteinScore)
+            updateObjProp(explain, `${event}Date.uncertainScore`, currentUncertainScore)
+            updateObjProp(explain, `${event}Date.oldDateScore`, oldDateScore)
             return Math.max(
-                levRatio(dateRangeATransformed, dateStringB, damlev),
-                round((uncertainDateScore ** 2) * (dateRangeATransformed.substring(0,6) === dateStringB.substring(0,6) ? 1: 0)),
-                round((1-(((parseYMD(dateRangeATransformed).getTime()-parseYMD(dateStringB).getTime()) /  31536000000) ** 2) ** 0.2))||0
+                levenshteinScore,
+                currentUncertainScore,
+                oldDateScore
             );
         }
     } else {
@@ -602,7 +609,7 @@ const scoreDateRaw = (dateRangeA: any, dateStringB: string, foreignDate: boolean
     }
 };
 
-let scoreDate = (dateRangeA: any, dateStringB: string, dateFormatA: string, dateFormatB: string, foreignDate: boolean): number => {
+let scoreDate = (dateRangeA: any, dateStringB: string, dateFormatA: string, dateFormatB: string, foreignDate: boolean, event: string, explain: any): number => {
     if (dateStringB === "00000000" || !dateStringB || !dateRangeA) {
         return blindDateScore;
     }
@@ -618,7 +625,7 @@ let scoreDate = (dateRangeA: any, dateStringB: string, dateFormatA: string, date
             dateRangeATransformed = `${dateTransform(dr[1], dateFormatA, "yyyyMMdd")}-${dateTransform(dr[2], dateFormatA, "yyyyMMdd")}`;
         }
     }
-    return 0.01 * Math.round((scoreDateRaw(dateRangeATransformed, dateStringB, foreignDate) ** datePenalty) * 100);
+    return 0.01 * Math.round((scoreDateRaw(dateRangeATransformed, dateStringB, foreignDate, event, explain) ** datePenalty) * 100);
 }
 
 let scoreSex = (sexA: any, sexB: string): number => {
@@ -672,9 +679,10 @@ export class ScoreResult {
       const pruneScore = params.pruneScore !== undefined ? params.pruneScore : defaultPruneScore
       if (persA.birth && persA.birth.date) {
         this.birthDate = scoreDate(persA.birth.date, persB.birth.date, params.dateFormatA, params.dateFormatB,
-          persB.birth && persB.birth.location && persB.birth.location.countryCode && (persB.birth.location.countryCode !== 'FRA')
+          persB.birth && persB.birth.location && persB.birth.location.countryCode && (persB.birth.location.countryCode !== 'FRA'),
+          'birth',
+          explain
         );
-        updateObjProp(explain, 'birthCountry', 'France')
       }
       if (persA.name && (persA.name.first || persA.name.last)) {
         if ((pruneScore < scoreReduce(this, true)) || !this.birthDate) {
@@ -717,7 +725,9 @@ export class ScoreResult {
       if (persA.death && persA.death.date) {
           if (pruneScore < scoreReduce(this, true)) {
               this.deathDate = scoreDate(persA.death.date, persB.death.date, params.dateFormatA, params.dateFormatB,
-                  persB.death && persB.death.location && persB.death.location.countryCode && (persB.death.location.countryCode !== 'FRA')
+                  persB.death && persB.death.location && persB.death.location.countryCode && (persB.death.location.countryCode !== 'FRA'),
+                  'death',
+                  explain
               );
           } else {
               this.score = 0
