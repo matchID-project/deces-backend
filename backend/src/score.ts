@@ -479,7 +479,7 @@ let scoreLocation = (locA: Location, locB: Location, event?: string, explain?: a
             }
         }
         if (normalize(locA.city as string|string[]) && locB.city) {
-            updateObjProp(explain, `${event}City.surface`, communesDict[cityNorm(locA.city as string) as string].surface)
+            if (cityNorm(locA.city as string) as string in communesDict) updateObjProp(explain, `${event}City.surface`, communesDict[cityNorm(locA.city as string) as string].surface)
             score.city = scoreCity(locA.city, locB.city as string|string[]);
             if ((score.code === 1) && (score.city < perfectScoreThreshold)) {
                 // insee code has priority over label
@@ -521,6 +521,7 @@ let scoreLocation = (locA: Location, locB: Location, event?: string, explain?: a
         score.score = ((score.country && (score.country < 1)) || score.code || score.city || score.department || score.geo)
             ? Math.max(minLocationScore, scoreReduce(score)) : blindLocationScore;
     } else {
+        updateObjProp(explain, `${event}Country`, 'BirthCountry not France')
         if (normalize(locA.country as string|string[])) {
             score.country = scoreCountry(locA.country, tokenize(locB.country as string));
         } else {
@@ -538,6 +539,9 @@ let scoreLocation = (locA: Location, locB: Location, event?: string, explain?: a
         if (normalize(locA.city as string|string[]) && locB.city) {
             const sCity = scoreCity(locA.city, locB.city as string|string[]);
             score.city = score.country >= perfectScoreThreshold ? Math.max(minNotFrCityScore, sCity) : sCity
+            updateObjProp(explain, `${event}City.country`, 'BrithCountry not France')
+            if (cityNorm(locA.city as string) as string in communesDict) updateObjProp(explain, `${event}City.surface`, `${communesDict[cityNorm(locA.city as string) as string].surface} m2`)
+            updateObjProp(explain, `${event}City.score`, score.city)
         }
         score.score = Math.max(minNotFrScore, scoreReduce(score));
     }

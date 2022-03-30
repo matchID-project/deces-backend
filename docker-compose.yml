@@ -61,7 +61,7 @@ services:
     volumes:
       - ${REDIS_DATA}:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD-SHELL", "(redis-cli --raw incr ping) && (redis-cli ping | grep -q PONG)"]
       interval: 1m
       timeout: 10s
       retries: 3
