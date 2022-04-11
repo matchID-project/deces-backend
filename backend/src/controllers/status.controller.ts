@@ -1,5 +1,11 @@
 import { Controller, Get, Route, Response, Tags  } from 'tsoa';
 import { HealthcheckResponse } from '../models/result';
+import axios from 'axios';
+
+let uniqRecordsCount: number;
+let lastDataset: string;
+let lastRecordDate: string;
+let updateDate: string;
 
 /**
  * @swagger
@@ -25,9 +31,36 @@ export class StatusController extends Controller {
    * Backend version endpoint
    * @summary Obtenir la version du backend
    */
-  @Tags('Check')
+  @Tags('Info')
   @Get('/version')
-  public version(): string {
-    return process.env.APP_VERSION;
+  public async version(): Promise<any> {
+    if (! uniqRecordsCount) {
+      const response = await axios(`http://elasticsearch:9200/deces/_count`);
+      if (response.status === 200) {
+        uniqRecordsCount = response.data.count
+      }
+    }
+    if (! lastRecordDate || ! lastDataset) {
+      const response = await axios(`http://elasticsearch:9200/deces/_search?sort=DATE_DECES.raw:desc&size=1`);
+      if (response.status === 200) {
+        lastRecordDate = response.data.hits.hits[0]._source.DATE_DECES.replace(/(\d{4})(\d{2})(\d{2})/,"$3/$2/$1")
+        lastDataset = response.data.hits.hits[0]._source.SOURCE
+      }
+    }
+    if (! updateDate) {
+      const response = await axios(`http://elasticsearch:9200/_cat/indices/deces?h=creation.date.string`);
+      if (response.status === 200) {
+        updateDate = response.data.trim().replace(/T.*/,'').replaceAll('-','').replace(/(\d{4})(\d{2})(\d{2})/,"$3/$2/$1")
+      }
+    }
+
+
+    return {
+      backend: process.env.APP_VERSION,
+      uniqRecordsCount: uniqRecordsCount,
+      lastRecordDate: lastRecordDate,
+      lastDataset: lastDataset,
+      updateDate: updateDate
+    }
   }
 }
