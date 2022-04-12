@@ -41,7 +41,7 @@ export class StatusController extends Controller {
       }
     }
     if (! lastRecordDate || ! lastDataset) {
-      const response = await axios(`http://elasticsearch:9200/deces/_search?sort=DATE_DECES.raw:desc&size=1`);
+      const response = await axios(`http://elasticsearch:9200/deces/_search?sort=SOURCE:desc,DATE_DECES.raw:desc&size=1`);
       if (response.status === 200) {
         lastRecordDate = response.data.hits.hits[0]._source.DATE_DECES.replace(/(\d{4})(\d{2})(\d{2})/,"$3/$2/$1")
         lastDataset = response.data.hits.hits[0]._source.SOURCE
