@@ -27,7 +27,7 @@ export ES_INDEX = deces
 export ES_DATA = ${APP_PATH}/esdata
 export ES_NODES = 1
 export ES_MEM = 1024m
-export ES_VERSION = 7.17.1
+export ES_VERSION = 8.1.3
 export ES_BACKUP_BASENAME := esdata
 export API_PATH = deces
 export ES_PROXY_PATH = /${API_PATH}/api/v0/search
@@ -136,7 +136,7 @@ ${GIT_DATAPREP}:
 	git clone ${GIT_ROOT}/${GIT_DATAPREP}
 
 ${DATAPREP_VERSION_FILE}: ${GIT_DATAPREP}
-	@cat \
+	@cat 	${GIT_DATAPREP}/Makefile\
 		${GIT_DATAPREP}/projects/deces-dataprep/recipes/deces_dataprep.yml\
 		${GIT_DATAPREP}/projects/deces-dataprep/datasets/deces_index.yml\
 	| sha1sum | awk '{print $1}' | cut -c-8 > ${DATAPREP_VERSION_FILE}
