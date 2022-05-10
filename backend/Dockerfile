@@ -86,7 +86,7 @@ RUN npm run build && tar czvf dist.tar.gz dist
 ###############################
 # Step 4: "production" target #
 ###############################
-FROM node:16-alpine as production
+FROM node:16.15-alpine3.15 as production
 ARG app_path
 ARG port
 ARG app_ver
