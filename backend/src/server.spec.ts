@@ -677,6 +677,33 @@ describe('server.ts - Express application', () => {
         });
     }).timeout(5000);
 
+    it('files without \n (only \r)', async () => {
+      let res;
+      const inputString = "Nom;Prenoms;Date \r FLOCH;Marie Anne;01/01/1919 \r FLOCH;Francois;01/01/1919 \r BRIANT;Joseph;01/01/1919 \n"
+      const buf: any = Buffer.from(inputString)
+      res = await chai.request(app)
+        .post(apiPath('search/csv'))
+        .field('sep', ';')
+        .field('firstName', 'Prenoms')
+        .field('lastName', 'Nom')
+        .field('birthDate', 'Date')
+        .attach('csv', buf, 'file.csv')
+      const { body : { id: jobId } }: { body: { id: string} } = res
+      res = await chai.request(app)
+        .get(apiPath(`search/csv/${jobId}`))
+      while (res.body.status === 'created' || res.body.status === 'wait' || res.body.status === 'active') {
+        res = await chai.request(app)
+          .get(apiPath(`search/csv/${jobId}`))
+      }
+      expect(res).to.have.status(200);
+      parseString(res.text, { headers: true})
+        .on('data', (row: any) => {
+          expect(Object.keys(row).slice(0,8)).to.have.ordered.members(['name.first', 'Prenom', 'name.last', 'Nom', 'birth.date', 'Date']);
+        })
+         .on('end', (rowCount: number) => {
+           expect(rowCount).to.eql(3);
+         });
+    });
 
 
   })
