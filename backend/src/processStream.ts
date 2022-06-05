@@ -432,8 +432,18 @@ export const csvHandle = async (request: Request, options: Options): Promise<any
     let idx = -1;
     options.totalRows--; // Because the loop will run once for idx=-1
     do {
-      idx = buffer.indexOf(10, idx+1);
+      const idxR = buffer.indexOf("\r", idx+1);
+      const idxN = buffer.indexOf("\n", idx+1);
       options.totalRows++;
+      if (idxR !== -1 && idxN !== -1) {
+        idx = idxR < idxN ? idxR : idxN
+      } else if (idxR !== -1) {
+        idx = idxR
+      } else if (idxN !== -1) {
+        idx = idxN
+      } else {
+        idx = -1
+      }
     } while (idx !== -1);
   });
   pipelineAsync(readStream, gzipStream, encryptStream, writeStream);
