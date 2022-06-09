@@ -679,7 +679,7 @@ describe('server.ts - Express application', () => {
 
     it('files without \n (only \r)', async () => {
       let res;
-      const inputString = "Nom;Prenoms;Date \r FLOCH;Marie Anne;01/01/1919 \r FLOCH;Francois;01/01/1919 \r BRIANT;Joseph;01/01/1919 \n"
+      const inputString = "Nom;Prenoms;Date \rFLOCH;Marie Anne;01/01/1919 \rFLOCH;Francois;01/01/1919 \r BRIANT;Joseph;01/01/1919"
       const buf: any = Buffer.from(inputString)
       res = await chai.request(app)
         .post(apiPath('search/csv'))
@@ -690,15 +690,15 @@ describe('server.ts - Express application', () => {
         .attach('csv', buf, 'file.csv')
       const { body : { id: jobId } }: { body: { id: string} } = res
       res = await chai.request(app)
-        .get(apiPath(`search/csv/${jobId}`))
+        .get(apiPath(`search/csv/${jobId}?order=true`))
       while (res.body.status === 'created' || res.body.status === 'wait' || res.body.status === 'active') {
         res = await chai.request(app)
-          .get(apiPath(`search/csv/${jobId}`))
+          .get(apiPath(`search/csv/${jobId}?order=true`))
       }
       expect(res).to.have.status(200);
-      parseString(res.text, { headers: true})
+      parseString(res.text, { headers: true, delimiter: ";"})
         .on('data', (row: any) => {
-          expect(Object.keys(row).slice(0,8)).to.have.ordered.members(['name.first', 'Prenom', 'name.last', 'Nom', 'birth.date', 'Date']);
+          expect(Object.keys(row).slice(0,4)).to.have.ordered.members(['name.last', 'name.first', 'Nom', 'Prenoms']);
         })
          .on('end', (rowCount: number) => {
            expect(rowCount).to.eql(3);
