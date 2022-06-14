@@ -57,10 +57,10 @@ export class StatusController extends Controller {
 
     return {
       backend: process.env.APP_VERSION,
-      uniqRecordsCount: uniqRecordsCount,
-      lastRecordDate: lastRecordDate,
-      lastDataset: lastDataset,
-      updateDate: updateDate
+      uniqRecordsCount,
+      lastRecordDate,
+      lastDataset,
+      updateDate
     }
   }
 }
