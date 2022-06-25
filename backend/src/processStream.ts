@@ -373,7 +373,6 @@ export class ProcessStream extends Transform {
         pruneScore: this.pruneScore,
         candidateNumber: this.candidateNumber
       }, {
-        timeout: 30000,
         attempts: 2,
         jobId
       })
