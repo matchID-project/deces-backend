@@ -12,13 +12,21 @@ import { StrAndNumber, Modification, UpdateRequest, UpdateUserRequest, Review, R
 import { buildResult, buildResultSingle, Result, ErrorResponse } from '../models/result';
 import { format } from '@fast-csv/format';
 import { ScoreResult, personFromRequest } from '../score';
-import { updatedFields } from '../updatedIds';
+import { watch } from 'fs';
 import { sendUpdateConfirmation } from '../mail';
 // import getDataGouvCatalog from '../getDataGouvCatalog';
 
 const writeFileAsync = promisify(writeFile);
 const mkdirAsync = promisify(mkdir);
 const accessAsync = promisify(access);
+
+const nocache = (module) => {
+  watch(require('./data/proofs').resolve(module), () => {delete require.cache[require.resolve(module)]})
+}
+nocache("../updatedIds");
+//import { updatedFields } from '../updatedIds';
+const updatedFields = require("../updatedIds");
+
 
 /**
  * @swagger

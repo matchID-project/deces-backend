@@ -2,7 +2,14 @@ import { Person } from './entities';
 import { RequestInput } from './requestInput';
 import { scoreResults } from '../score';
 import { wikidata } from '../wikidata';
-import { updatedFields } from '../updatedIds';
+import { watch } from 'fs';
+
+const nocache = (module) => {
+  watch(require('./data/proofs').resolve(module), () => {delete require.cache[require.resolve(module)]})
+}
+nocache("../updatedIds");
+//import { updatedFields } from '../updatedIds';
+const updatedFields = require("../updatedIds");
 
 interface RequestType {
   [key: string]: any; // Index signature
