@@ -375,7 +375,7 @@ wikidata-src: ${WIKIDATA_SRC}
 
 wikidata-links: ${WIKIDATA_LINKS}
 
-${COMMUNES_JSON}:
+communes-push:
 	@echo "downloading communes geo data"
 	@sudo apt-get install gdal-bin
 	@curl --retry 5 -L -l 'https://www.data.gouv.fr/fr/datasets/r/0e117c06-248f-45e5-8945-0e79d9136165' -o communes-20220101.zip
@@ -383,9 +383,19 @@ ${COMMUNES_JSON}:
 	@unzip -o  communes-20220101.zip  -d communes-20220101
 	@ogr2ogr -f GeoJSON -s_srs EPSG:26917 -t_srs EPSG:4326 communes-20220101.json communes-20220101/communes-20220101.shp -simplify 0.001
 	@rm -rf communes-20220101
-	@mv communes-20220101.json ${BACKEND}/data/communes.json
+	@mv communes-20220101.json ${COMMUNES_JSON}
+	@make -C ${APP_PATH}/${GIT_TOOLS} storage-push\
+		FILE=${COMMUNES_JSON}\
+		STORAGE_BUCKET=${STORAGE_BUCKET} STORAGE_ACCESS_KEY=${STORAGE_ACCESS_KEY} STORAGE_SECRET_KEY=${STORAGE_SECRET_KEY};\
 
-communes: ${COMMUNES_JSON}
+${COMMUNES_JSON}: config
+	@make -C ${APP_PATH}/${GIT_TOOLS} storage-pull\
+		FILE=communes.json DATA_DIR=${BACKEND}/data\
+		STORAGE_BUCKET=${STORAGE_BUCKET} STORAGE_ACCESS_KEY=${STORAGE_ACCESS_KEY} STORAGE_SECRET_KEY=${STORAGE_SECRET_KEY};\
+
+communes-pull: ${COMMUNES_JSON}
+
+communes: communes-pull
 
 ${PROOFS}:
 	mkdir -p ${PROOFS}
