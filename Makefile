@@ -301,7 +301,7 @@ test-perf-v1:
 backend-perf-clinic:
 	@echo Start API in clinic mode
 	@export EXEC_ENV=production; export BACKEND_LOG_LEVEL=debug; \
-		${DC_BACKEND} run -v ${BACKEND}/clinic:/${APP}/clinic/ -d --rm --name deces-backend --use-aliases backend /bin/sh -c "apk --no-cache add npm && npm install clinic && ./node_modules/.bin/clinic doctor --no-insight --collect-only -- node dist/index.js && mkdir -p clinic && cp -r /${APP}/.clinic/* /${APP}/clinic"
+		${DC_BACKEND} run -v ${BACKEND}/clinic:/${APP}/clinic/ -d --rm --name deces-backend --use-aliases backend /bin/sh -c "apk --no-cache add npm && npm install clinic && NO_INSIGHT=true ./node_modules/.bin/clinic doctor --collect-only -- node dist/index.js && mkdir -p clinic && cp -r /${APP}/.clinic/* /${APP}/clinic"
 	@timeout=${BULK_TIMEOUT} ; ret=1 ;\
 		until [ "$$timeout" -le 0 -o "$$ret" -eq "0"  ] ; do\
 			(docker exec -i ${USE_TTY} `docker ps -l --format "{{.Names}}" --filter name=deces-backend` curl -s --fail -X GET http://localhost:${BACKEND_PORT}/deces/api/v1/version > /dev/null) ;\
