@@ -1,7 +1,7 @@
 #######################
 # Step 1: Base target #
 #######################
-FROM node:16.15-slim as base
+FROM node:18.7-slim as base
 ARG http_proxy
 ARG https_proxy
 ARG no_proxy
@@ -86,7 +86,7 @@ RUN npm run build && tar czvf dist.tar.gz dist
 ###############################
 # Step 4: "production" target #
 ###############################
-FROM node:16.15-alpine3.15 as production
+FROM node:18.7-alpine3.16 as production
 ARG app_path
 ARG port
 ARG app_ver
