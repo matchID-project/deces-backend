@@ -27,7 +27,7 @@ export ES_INDEX = deces
 export ES_DATA = ${APP_PATH}/esdata
 export ES_NODES = 1
 export ES_MEM = 1024m
-export ES_VERSION = 8.1.3
+export ES_VERSION = 8.3.3
 export ES_BACKUP_BASENAME := esdata
 export API_PATH = deces
 export ES_PROXY_PATH = /${API_PATH}/api/v0/search
@@ -301,7 +301,7 @@ test-perf-v1:
 backend-perf-clinic:
 	@echo Start API in clinic mode
 	@export EXEC_ENV=production; export BACKEND_LOG_LEVEL=debug; \
-		${DC_BACKEND} run -v ${BACKEND}/clinic:/${APP}/clinic/ -d --rm --name deces-backend --use-aliases backend /bin/sh -c "apk --no-cache add npm && npm install clinic && ./node_modules/.bin/clinic doctor --no-insight --collect-only -- node dist/index.js && mkdir -p clinic && cp -r /${APP}/.clinic/* /${APP}/clinic"
+		${DC_BACKEND} run -v ${BACKEND}/clinic:/${APP}/clinic/ -d --rm --name deces-backend --use-aliases backend /bin/sh -c "apk --no-cache add npm && npm install clinic && NO_INSIGHT=true ./node_modules/.bin/clinic doctor --collect-only -- node dist/index.js && mkdir -p clinic && cp -r /${APP}/.clinic/* /${APP}/clinic"
 	@timeout=${BULK_TIMEOUT} ; ret=1 ;\
 		until [ "$$timeout" -le 0 -o "$$ret" -eq "0"  ] ; do\
 			(docker exec -i ${USE_TTY} `docker ps -l --format "{{.Names}}" --filter name=deces-backend` curl -s --fail -X GET http://localhost:${BACKEND_PORT}/deces/api/v1/version > /dev/null) ;\
@@ -375,7 +375,7 @@ wikidata-src: ${WIKIDATA_SRC}
 
 wikidata-links: ${WIKIDATA_LINKS}
 
-${COMMUNES_JSON}:
+communes-push:
 	@echo "downloading communes geo data"
 	@sudo apt-get install gdal-bin
 	@curl --retry 5 -L -l 'https://www.data.gouv.fr/fr/datasets/r/0e117c06-248f-45e5-8945-0e79d9136165' -o communes-20220101.zip
@@ -383,9 +383,19 @@ ${COMMUNES_JSON}:
 	@unzip -o  communes-20220101.zip  -d communes-20220101
 	@ogr2ogr -f GeoJSON -s_srs EPSG:26917 -t_srs EPSG:4326 communes-20220101.json communes-20220101/communes-20220101.shp -simplify 0.001
 	@rm -rf communes-20220101
-	@mv communes-20220101.json ${BACKEND}/data/communes.json
+	@mv communes-20220101.json ${COMMUNES_JSON}
+	@make -C ${APP_PATH}/${GIT_TOOLS} storage-push\
+		FILE=${COMMUNES_JSON}\
+		STORAGE_BUCKET=${STORAGE_BUCKET} STORAGE_ACCESS_KEY=${STORAGE_ACCESS_KEY} STORAGE_SECRET_KEY=${STORAGE_SECRET_KEY};\
 
-communes: ${COMMUNES_JSON}
+${COMMUNES_JSON}: config
+	@make -C ${APP_PATH}/${GIT_TOOLS} storage-pull\
+		FILE=communes.json DATA_DIR=${BACKEND}/data\
+		STORAGE_BUCKET=${STORAGE_BUCKET} STORAGE_ACCESS_KEY=${STORAGE_ACCESS_KEY} STORAGE_SECRET_KEY=${STORAGE_SECRET_KEY};\
+
+communes-pull: ${COMMUNES_JSON}
+
+communes: communes-pull
 
 ${PROOFS}:
 	mkdir -p ${PROOFS}
