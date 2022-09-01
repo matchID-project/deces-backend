@@ -20,13 +20,13 @@ const writeFileAsync = promisify(writeFile);
 const mkdirAsync = promisify(mkdir);
 const accessAsync = promisify(access);
 
-const nocache = (module) => {
-  watch(require('./data/proofs').resolve(module), () => {delete require.cache[require.resolve(module)]})
+let updatedFields: any = {}
+const nocache = (moduleName: string) => {
+  watch('./data/proofs', async () => {
+    updatedFields = await import(moduleName);
+  })
 }
 nocache("../updatedIds");
-//import { updatedFields } from '../updatedIds';
-const updatedFields = require("../updatedIds");
-
 
 /**
  * @swagger

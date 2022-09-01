@@ -4,12 +4,13 @@ import { scoreResults } from '../score';
 import { wikidata } from '../wikidata';
 import { watch } from 'fs';
 
-const nocache = (module) => {
-  watch(require('./data/proofs').resolve(module), () => {delete require.cache[require.resolve(module)]})
+let updatedFields: any = {}
+const nocache = (moduleName: string) => {
+  watch('./data/proofs', async () => {
+    updatedFields = await import(moduleName);
+  })
 }
 nocache("../updatedIds");
-//import { updatedFields } from '../updatedIds';
-const updatedFields = require("../updatedIds");
 
 interface RequestType {
   [key: string]: any; // Index signature
