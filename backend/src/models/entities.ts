@@ -175,3 +175,7 @@ export interface ScoreParams {
 };
 
 export type StrAndNumber = string | number;
+
+export interface Wikidict {
+  id: string;
+}

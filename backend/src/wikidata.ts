@@ -1,8 +1,10 @@
 import { readFileSync } from 'fs';
+import { Wikidict } from './models/entities';
+
 const dic: any = {};
 try {
     const rawdata = JSON.parse(readFileSync('data/wikidata.json','utf8'));
-    rawdata.forEach((item: any) => {dic[item.id] = {...item}; delete dic[item.id].id})
+    rawdata.forEach((item: Wikidict) => {dic[item.id] = {...item}; delete dic[item.id].id})
 } catch(e) {
     // eslint-disable-next-line no-console
     console.log('Failed loading wikidata',e);
