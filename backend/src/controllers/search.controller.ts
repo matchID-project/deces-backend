@@ -59,7 +59,7 @@ export class SearchController extends Controller {
    * @param fuzzy Recherche floue ou exacte
    * @param sort Tri sur les colonnes (à préciser sur la structure du champs)
    */
-  @Security("tmp", ["tmp"])
+  @Security("tmp", ["user"])
   @Response<ErrorResponse>('400', 'Bad request')
   @Response<Result>('200', 'OK')
   @Tags('Simple')
@@ -120,7 +120,7 @@ export class SearchController extends Controller {
    * @summary Rapprocher une seule identité
    * @param accept Format of the response text/csv for csv otherwise application/json
    */
-  @Security("tmp", ["tmp"])
+  @Security("tmp", ["user"])
   @Response<ErrorResponse>('400', 'Bad request')
   @Response<Result>('200', 'OK')
   @Tags('Simple')
