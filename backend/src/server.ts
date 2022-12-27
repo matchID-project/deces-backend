@@ -29,6 +29,8 @@ const log = (json:any) => {
 
 export const app = express();
 
+app.enable('trust proxy');
+
 morgan.token('fwd-addr', (req: any) => {
   return req.headers['x-forwarded-for']
 })
