@@ -1,17 +1,39 @@
 import * as express from "express";
 import * as jwt from "jsonwebtoken";
 
+const bannedIP: any = {};
+const toBeBannedIP: any = {};
+
 export const expressAuthentication = (
   request: express.Request,
   securityName: string,
   scopes?: string[]
 ): Promise<any> => {
-  if (securityName === "jwt") {
-    const authHeader = request.headers.Authorization || request.headers.authorization;
 
+  if (securityName === "jwt" || securityName === "tmp") {
+    const authHeader = request.headers.Authorization || request.headers.authorization;
+    const ip = request.ip;
     return new Promise((resolve, reject) => {
       if (!authHeader) {
-        reject(new jwt.JsonWebTokenError("No token provided"));
+        if (securityName === "tmp") {
+          if (bannedIP[ip]) {
+            reject(new jwt.JsonWebTokenError("No token provided and temporary anonymous usage expired, please register with email or wait 4h"));
+          } else {
+            if (!toBeBannedIP[ip]) {
+              toBeBannedIP[ip] = true;
+              setTimeout(() => {
+                bannedIP[ip] = true;
+                setTimeout(() => {
+                  toBeBannedIP[ip] = false;
+                  bannedIP[ip] = false;
+                }, 4 * 60 * 60 * 1000);
+              }, 5 * 60 * 1000);
+            }
+            resolve({});
+          }
+        } else {
+          reject(new jwt.JsonWebTokenError("No token provided"));
+        }
       }
       let token
       if (Array.isArray(authHeader)) {
