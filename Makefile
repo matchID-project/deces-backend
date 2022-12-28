@@ -51,6 +51,8 @@ export BULK_TIMEOUT = 600
 export BACKEND_TIMEOUT = 30
 export BACKEND_JOB_CONCURRENCY = 2
 export BACKEND_CHUNK_CONCURRENCY = 4
+export BACKEND_TMP_DURATION = 300
+export BACKEND_TMP_WINDOW = 14400
 export SMTP_HOST?=smtp
 export SMTP_PORT?=25
 export SMTP_USER?=${API_EMAIL}
@@ -301,7 +303,7 @@ test-perf-v1:
 backend-perf-clinic:
 	@echo Start API in clinic mode
 	@export EXEC_ENV=production; export BACKEND_LOG_LEVEL=debug; \
-		${DC_BACKEND} run -v ${BACKEND}/clinic:/${APP}/clinic/ -d --rm --name deces-backend --use-aliases backend /bin/sh -c "apk --no-cache add npm && npm install clinic && NO_INSIGHT=true ./node_modules/.bin/clinic doctor --collect-only -- node dist/index.js && mkdir -p clinic && cp -r /${APP}/.clinic/* /${APP}/clinic"
+		${DC_BACKEND} run -v ${BACKEND}/clinic:/${APP}/clinic/ -d -e BACKEND_TMP_DURATION='1800' --rm --name deces-backend --use-aliases backend /bin/sh -c "apk --no-cache add npm && npm install clinic && NO_INSIGHT=true ./node_modules/.bin/clinic doctor --collect-only -- node dist/index.js && mkdir -p clinic && cp -r /${APP}/.clinic/* /${APP}/clinic"
 	@timeout=${BULK_TIMEOUT} ; ret=1 ;\
 		until [ "$$timeout" -le 0 -o "$$ret" -eq "0"  ] ; do\
 			(docker exec -i ${USE_TTY} `docker ps -l --format "{{.Names}}" --filter name=deces-backend` curl -s --fail -X GET http://localhost:${BACKEND_PORT}/deces/api/v1/version > /dev/null) ;\

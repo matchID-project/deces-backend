@@ -26,8 +26,8 @@ export const expressAuthentication = (
                 setTimeout(() => {
                   toBeBannedIP[ip] = false;
                   bannedIP[ip] = false;
-                }, 4 * 60 * 60 * 1000);
-              }, 5 * 60 * 1000);
+                }, Number(process.env.BACKEND_TMP_WINDOW || "14400") * 1000);
+              }, Number(process.env.BACKEND_TMP_DURATION || "300") * 1000);
             }
             resolve({});
           }
