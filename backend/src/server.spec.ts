@@ -353,8 +353,13 @@ describe('server.ts - Express application', () => {
       });
       const buf = Buffer.from(data.split('\n').slice(0, nrows).join('\n'), 'utf8');
 
+      const token = await chai.request(app)
+        .post(apiPath(`auth`))
+        .send({user:'user1@gmail.com', password: 'magicPass'})
+
       res = await chai.request(app)
         .post(apiPath('search/csv'))
+        .set('Authorization', `Bearer ${token.body.access_token as string}`)
         .field('sep', ';')
         .field('firstName', 'Prenom')
         .field('lastName', 'Nom')
@@ -366,18 +371,22 @@ describe('server.ts - Express application', () => {
       while (res.body.status === 'created' || res.body.status === 'wait' || res.body.msg === 'started') {
         res = await chai.request(app)
           .get(apiPath(`search/csv/${jobId}`))
-      }
+          .set('Authorization', `Bearer ${token.body.access_token as string}`)
+        }
       res = await chai.request(app)
         .delete(apiPath(`search/csv/${jobId}`))
+        .set('Authorization', `Bearer ${token.body.access_token as string}`)
       expect(res).to.have.status(200);
       expect(res.body).to.have.all.keys('msg');
       expect(res.body.msg).to.have.string('cancelled');
       res = await chai.request(app)
          .get(apiPath(`search/csv/${jobId}`))
-      while (res.body.status === 'created' || res.body.status === 'wait' || res.body.status === 'active' || res.body.msg === 'started') {
+         .set('Authorization', `Bearer ${token.body.access_token as string}`)
+         while (res.body.status === 'created' || res.body.status === 'wait' || res.body.status === 'active' || res.body.msg === 'started') {
         res = await chai.request(app)
           .get(apiPath(`search/csv/${jobId}`))
-      }
+          .set('Authorization', `Bearer ${token.body.access_token as string}`)
+        }
       expect(res).to.have.status(400);
       expect(res.body).to.have.all.keys('msg');
       expect(res.body.msg).to.have.string('cancelled');
@@ -402,8 +411,13 @@ describe('server.ts - Express application', () => {
       });
       const buf = Buffer.from(data.split('\n').slice(0, nrows).join('\n'), 'utf8');
 
+      const token = await chai.request(app)
+        .post(apiPath(`auth`))
+        .send({user:'user1@gmail.com', password: 'magicPass'})
+
       res = await chai.request(app)
         .post(apiPath('search/csv'))
+        .set('Authorization', `Bearer ${token.body.access_token as string}`)
         .field('sep', ';')
         .field('firstName', 'Prenom')
         .field('lastName', 'Nom')
@@ -415,9 +429,11 @@ describe('server.ts - Express application', () => {
       while (res.body.status === 'created' || res.body.status === 'wait' || res.body.status === 'active' || res.body.msg === 'started') {
         res = await chai.request(app)
           .get(apiPath(`search/csv/${jobId}`))
-      }
+          .set('Authorization', `Bearer ${token.body.access_token as string}`)
+        }
       res = await chai.request(app)
         .get(apiPath(`search/csv/${jobId}`))
+        .set('Authorization', `Bearer ${token.body.access_token as string}`)
       parseString(res.text, { headers: true, delimiter: ';'})
         .on('data', (row: any) => {
           expect(row).to.include.all.keys('Prenom', 'name.first', 'Nom', 'name.last');
@@ -435,8 +451,12 @@ describe('server.ts - Express application', () => {
         ['georges', 'michel', '12/03/1939', 'M']
       ]
       const buf = await writeToBuffer(inputArray)
+      const token = await chai.request(app)
+        .post(apiPath(`auth`))
+        .send({user:'user1@gmail.com', password: 'magicPass'})
       res = await chai.request(app)
         .post(apiPath('search/csv'))
+        .set('Authorization', `Bearer ${token.body.access_token as string}`)
         .field('sep', ',')
         .field('firstName', 'Prenom')
         .field('lastName', 'Nom')
@@ -446,10 +466,12 @@ describe('server.ts - Express application', () => {
       const { body : { id: jobId } }: { body: { id: string} } = res
       res = await chai.request(app)
         .get(apiPath(`search/csv/${jobId}?order=true`))
+        .set('Authorization', `Bearer ${token.body.access_token as string}`)
       while (res.body.status === 'created' || res.body.status === 'wait' || res.body.status === 'active') {
         res = await chai.request(app)
           .get(apiPath(`search/csv/${jobId}?order=true`))
-      }
+          .set('Authorization', `Bearer ${token.body.access_token as string}`)
+        }
       expect(res).to.have.status(200);
       parseString(res.text, { headers: true})
         .on('data', (row: any) => {
@@ -468,8 +490,12 @@ describe('server.ts - Express application', () => {
         ['georges', 'michel', '12/03/1939', 'M']
       ]
       const buf = await writeToBuffer(inputArray)
+      const token = await chai.request(app)
+        .post(apiPath(`auth`))
+        .send({user:'user1@gmail.com', password: 'magicPass'})
       res = await chai.request(app)
         .post(apiPath('search/csv'))
+        .set('Authorization', `Bearer ${token.body.access_token as string}`)
         .field('sep', ',')
         .field('firstName', 'Prenom')
         .field('lastName', 'Nom')
@@ -479,10 +505,12 @@ describe('server.ts - Express application', () => {
       const { body : { id: jobId } }: { body: { id: string} } = res
       res = await chai.request(app)
         .get(apiPath(`search/csv/${jobId}`))
+        .set('Authorization', `Bearer ${token.body.access_token as string}`)
       while (res.body.status === 'created' || res.body.status === 'wait' || res.body.status === 'active') {
         res = await chai.request(app)
           .get(apiPath(`search/csv/${jobId}`))
-      }
+          .set('Authorization', `Bearer ${token.body.access_token as string}`)
+        }
       expect(res).to.have.status(200);
       parseString(res.text, { headers: true})
         .on('data', (row: any) => {
@@ -497,8 +525,12 @@ describe('server.ts - Express application', () => {
       let res;
       const bufStr = `Prenom,Nom,Date,Sex\n jean,pierre,dupont,04/08/1933,Marseille,M\n georges,michel,john,steven,12/03/1939,M`
       const buf = Buffer.from(bufStr, 'utf8');
+      const token = await chai.request(app)
+        .post(apiPath(`auth`))
+        .send({user:'user1@gmail.com', password: 'magicPass'})
       res = await chai.request(app)
         .post(apiPath('search/csv'))
+        .set('Authorization', `Bearer ${token.body.access_token as string}`)
         .field('sep', ',')
         .field('firstName', 'Prenom')
         .field('lastName', 'Nom')
@@ -507,10 +539,12 @@ describe('server.ts - Express application', () => {
       const { body : { id: jobId } }: { body: { id: string} } = res
       res = await chai.request(app)
         .get(apiPath(`search/csv/${jobId}`))
+        .set('Authorization', `Bearer ${token.body.access_token as string}`)
       while (res.body.status === 'created' || res.body.status === 'wait' || res.body.status === 'active') {
         res = await chai.request(app)
           .get(apiPath(`search/csv/${jobId}`))
-      }
+          .set('Authorization', `Bearer ${token.body.access_token as string}`)
+        }
       expect(res).to.have.status(400);
       expect(res.body).to.have.property('msg');
       expect(res.body.msg).to.have.string('column header mismatch');
@@ -524,8 +558,12 @@ describe('server.ts - Express application', () => {
         ['georges', 'michel', '12/03/1903', 'M']
       ]
       const buf = await writeToBuffer(inputArray)
+      const token = await chai.request(app)
+        .post(apiPath(`auth`))
+        .send({user:'user1@gmail.com', password: 'magicPass'})
       res = await chai.request(app)
         .post(apiPath('search/csv'))
+        .set('Authorization', `Bearer ${token.body.access_token as string}`)
         .field('sep', ',')
         .field('firstName', 'Prenom')
         .field('lastName', 'Nom')
@@ -535,10 +573,12 @@ describe('server.ts - Express application', () => {
       const { body : { id: jobId } }: { body: { id: string} } = res
       res = await chai.request(app)
         .get(apiPath(`search/csv/${jobId}`))
+        .set('Authorization', `Bearer ${token.body.access_token as string}`)
       while (res.body.status === 'created' || res.body.status === 'wait' || res.body.status === 'active') {
         res = await chai.request(app)
           .get(apiPath(`search/csv/${jobId}`))
-      }
+          .set('Authorization', `Bearer ${token.body.access_token as string}`)
+        }
       expect(res).to.have.status(200);
       parseString(res.text, { headers: true})
         .on('data', (row: any) => {
@@ -564,8 +604,12 @@ describe('server.ts - Express application', () => {
         ['georges', 'michel', '12/03/1903', 'M']
       ]
       const buf = await writeToBuffer(inputArray)
+      const token = await chai.request(app)
+        .post(apiPath(`auth`))
+        .send({user:'user1@gmail.com', password: 'magicPass'})
       res = await chai.request(app)
         .post(apiPath('search/csv'))
+        .set('Authorization', `Bearer ${token.body.access_token as string}`)
         .field('sep', ',')
         .field('firstName', 'Prenom')
         .field('lastName', 'Nom')
@@ -575,10 +619,12 @@ describe('server.ts - Express application', () => {
       const { body : { id: jobId } }: { body: { id: string} } = res
       res = await chai.request(app)
         .get(apiPath(`search/json/${jobId}`))
+        .set('Authorization', `Bearer ${token.body.access_token as string}`)
       while (res.body.status === 'created' || res.body.status === 'wait' || res.body.status === 'active') {
         res = await chai.request(app)
           .get(apiPath(`search/json/${jobId}`))
-      }
+          .set('Authorization', `Bearer ${token.body.access_token as string}`)
+        }
       expect(res).to.have.status(200);
       expect(res.body).to.have.lengthOf(inputArray.length);
     }).timeout(5000);
@@ -591,8 +637,12 @@ describe('server.ts - Express application', () => {
         ['georges', 'michel', '12/03/1903', 'M']
       ]
       const buf = await writeToBuffer(inputArray)
+      const token = await chai.request(app)
+        .post(apiPath(`auth`))
+        .send({user:'user1@gmail.com', password: 'magicPass'})
       res = await chai.request(app)
         .post(apiPath('search/csv'))
+        .set('Authorization', `Bearer ${token.body.access_token as string}`)
         .field('sep', ',')
         .field('firstName', 'Prenom')
         .field('lastName', 'Nom')
@@ -602,10 +652,12 @@ describe('server.ts - Express application', () => {
       const { body : { id: jobId } }: { body: { id: string} } = res
       res = await chai.request(app)
         .get(apiPath(`search/json/${jobId}`))
+        .set('Authorization', `Bearer ${token.body.access_token as string}`)
       while (res.body.status === 'created' || res.body.status === 'wait' || res.body.status === 'active') {
         res = await chai.request(app)
           .get(apiPath(`search/json/${jobId}`))
-      }
+          .set('Authorization', `Bearer ${token.body.access_token as string}`)
+        }
       expect(res).to.have.status(200);
       const source1 = res.body
         .filter((x:any) => x.metadata && x.metadata.sourceLineNumber && x.metadata.sourceLineNumber === 1 )
@@ -627,8 +679,12 @@ describe('server.ts - Express application', () => {
         ['georges', 'michel', '12/03/1903', 'M']
       ]
       const buf = await writeToBuffer(inputArray)
+      const token = await chai.request(app)
+        .post(apiPath(`auth`))
+        .send({user:'user1@gmail.com', password: 'magicPass'})
       res = await chai.request(app)
         .post(apiPath('search/csv'))
+        .set('Authorization', `Bearer ${token.body.access_token as string}`)
         .field('sep', ',')
         .field('firstName', 'Prenom')
         .field('lastName', 'Nom')
@@ -637,10 +693,12 @@ describe('server.ts - Express application', () => {
       const { body : { id: jobId } }: { body: { id: string} } = res
       res = await chai.request(app)
         .get(apiPath(`search/json/${jobId}`))
+        .set('Authorization', `Bearer ${token.body.access_token as string}`)
       while (res.body.status === 'created' || res.body.status === 'wait' || res.body.status === 'active') {
         res = await chai.request(app)
           .get(apiPath(`search/json/${jobId}`))
-      }
+          .set('Authorization', `Bearer ${token.body.access_token as string}`)
+        }
       expect(res).to.have.status(200);
       expect(res.body).to.have.lengthOf(inputArray.length - skipLines);
     }).timeout(5000);
@@ -653,8 +711,12 @@ describe('server.ts - Express application', () => {
         ['jean', 'martin', 'La Londe'],
       ]
       const buf = await writeToBuffer(inputArray)
+      const token = await chai.request(app)
+        .post(apiPath(`auth`))
+        .send({user:'user1@gmail.com', password: 'magicPass'})
       res = await chai.request(app)
         .post(apiPath('search/csv'))
+        .set('Authorization', `Bearer ${token.body.access_token as string}`)
         .field('sep', ',')
         .field('firstName', 'Prenom')
         .field('lastName', 'Nom')
@@ -663,10 +725,12 @@ describe('server.ts - Express application', () => {
       const { body : { id: jobId } }: { body: { id: string} } = res
       res = await chai.request(app)
         .get(apiPath(`search/csv/${jobId}`))
+        .set('Authorization', `Bearer ${token.body.access_token as string}`)
       while (res.body.status === 'created' || res.body.status === 'wait' || res.body.status === 'active') {
         res = await chai.request(app)
           .get(apiPath(`search/csv/${jobId}`))
-      }
+          .set('Authorization', `Bearer ${token.body.access_token as string}`)
+        }
       expect(res).to.have.status(200);
       parseString(res.text, { headers: true})
         .on('data', (row: any) => {
@@ -681,8 +745,12 @@ describe('server.ts - Express application', () => {
       let res;
       const inputString = "Nom;Prenoms;Date \rFLOCH;Marie Anne;01/01/1919 \rFLOCH;Francois;01/01/1919 \r BRIANT;Joseph;01/01/1919"
       const buf: any = Buffer.from(inputString)
+      const token = await chai.request(app)
+        .post(apiPath(`auth`))
+        .send({user:'user1@gmail.com', password: 'magicPass'})
       res = await chai.request(app)
         .post(apiPath('search/csv'))
+        .set('Authorization', `Bearer ${token.body.access_token as string}`)
         .field('sep', ';')
         .field('firstName', 'Prenoms')
         .field('lastName', 'Nom')
@@ -691,10 +759,12 @@ describe('server.ts - Express application', () => {
       const { body : { id: jobId } }: { body: { id: string} } = res
       res = await chai.request(app)
         .get(apiPath(`search/csv/${jobId}?order=true`))
+        .set('Authorization', `Bearer ${token.body.access_token as string}`)
       while (res.body.status === 'created' || res.body.status === 'wait' || res.body.status === 'active') {
         res = await chai.request(app)
           .get(apiPath(`search/csv/${jobId}?order=true`))
-      }
+          .set('Authorization', `Bearer ${token.body.access_token as string}`)
+        }
       expect(res).to.have.status(200);
       parseString(res.text, { headers: true, delimiter: ";"})
         .on('data', (row: any) => {
