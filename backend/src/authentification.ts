@@ -12,7 +12,7 @@ export const expressAuthentication = (
 
   if (securityName === "jwt" || securityName === "tmp") {
     const authHeader = request.headers.Authorization || request.headers.authorization;
-    const ip = request.ip;
+    const { ip } = request;
     return new Promise((resolve, reject) => {
       if (!authHeader) {
         if (securityName === "tmp") {
