@@ -46,10 +46,10 @@ export class AuthController extends Controller {
         return { 'access_token': accessToken }
       }
     } else if ((Object.keys(userDB).indexOf(jsonToken.user)>=0) && (userDB[jsonToken.user] === crypto.createHash('sha256').update(jsonToken.password).digest('hex'))) {
-      const accessToken = jwt.sign({...jsonToken, scopes: ['user']}, process.env.BACKEND_TOKEN_KEY, { expiresIn: "7d" })
+      const accessToken = jwt.sign({...jsonToken, scopes: ['user']}, process.env.BACKEND_TOKEN_KEY, { expiresIn: "30d" })
       return { 'access_token': accessToken }
     } else if (validateOTP(jsonToken.user,jsonToken.password)) {
-      const accessToken = jwt.sign({...jsonToken, scopes: ['user']}, process.env.BACKEND_TOKEN_KEY, { expiresIn: "7d" })
+      const accessToken = jwt.sign({...jsonToken, scopes: ['user']}, process.env.BACKEND_TOKEN_KEY, { expiresIn: "30d" })
       return { 'access_token': accessToken }
     }
     this.setStatus(401);

@@ -247,7 +247,7 @@ const workerChunks = new Worker('chunks', async (chunkJob: Job) => {
   concurrency: Number(process.env.BACKEND_CHUNK_CONCURRENCY)
 })
 
-const workerJobs = new Worker('jobs', async (job: Job) => {
+new Worker('jobs', async (job: Job) => {
   const jobIndex = inputsArray.findIndex(x => x.id === job.id);
   const jobFile = inputsArray.splice(jobIndex, 1).pop();
   return await processCsv(job, jobFile);
