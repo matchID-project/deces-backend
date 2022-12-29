@@ -17,7 +17,7 @@ export const expressAuthentication = (
       if (!authHeader) {
         if (securityName === "tmp") {
           if (bannedIP[ip]) {
-            reject(new jwt.JsonWebTokenError("No token provided and temporary anonymous usage expired, please register with email or wait 4h"));
+            reject(new jwt.JsonWebTokenError(`No token provided and temporary anonymous usage expired, please register with email or wait ${(Number(process.env.BACKEND_TMP_WINDOW) / 3600).toFixed(0).toString()} hours`));
           } else {
             if (!toBeBannedIP[ip]) {
               toBeBannedIP[ip] = true;
