@@ -20,14 +20,20 @@ export const expressAuthentication = (
             reject(new jwt.JsonWebTokenError(`No token provided and temporary anonymous usage expired, please register with email or wait ${(Number(process.env.BACKEND_TMP_WINDOW) / 3600).toFixed(0).toString()} hours`));
           } else {
             if (!toBeBannedIP[ip]) {
-              toBeBannedIP[ip] = true;
+              toBeBannedIP[ip] = 1;
               setTimeout(() => {
+                  toBeBannedIP[ip] = 0;
+                  bannedIP[ip] = false;
+              }, Number(process.env.BACKEND_TMP_WINDOW || "86400") * 1000);
+            } else {
+              toBeBannedIP[ip]++;
+              if (toBeBannedIP[ip]>Number(process.env.BACKEND_TMP_MAX || "300")) {
                 bannedIP[ip] = true;
                 setTimeout(() => {
-                  toBeBannedIP[ip] = false;
+                  toBeBannedIP[ip] = 0;
                   bannedIP[ip] = false;
-                }, Number(process.env.BACKEND_TMP_WINDOW || "14400") * 1000);
-              }, Number(process.env.BACKEND_TMP_DURATION || "300") * 1000);
+                }, Number(process.env.BACKEND_TMP_DURATION || "14400") * 1000);
+              }
             }
             resolve({});
           }
