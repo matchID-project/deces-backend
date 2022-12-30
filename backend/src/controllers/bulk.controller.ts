@@ -1,7 +1,7 @@
 import multer from 'multer';
 import express from 'express';
 import forge from 'node-forge';
-import { Controller, Hidden, Get, Post, Delete, Route, Query, Tags, Request, Path } from 'tsoa';
+import { Controller, Hidden, Get, Post, Delete, Route, Query, Tags, Request, Path, Security } from 'tsoa';
 import { csvHandle, returnBulkResults, deleteThreadJob, validFields } from '../processStream';
 
 /**
@@ -119,6 +119,7 @@ export class BulkController extends Controller {
    *                     id: 'abc'
    *                     msg: 'started'
    */
+  @Security("jwt", ["user"])
   @Tags('Bulk')
   @Post('/csv')
   public async uploadCsv(@Request() request: express.Request): Promise<any> {
@@ -214,6 +215,7 @@ export class BulkController extends Controller {
    *               allOf:
    *                 - $ref: '#/components/schemas/Result'
    */
+  @Security("jwt", ["user"])
   @Tags('Bulk')
   @Get('/:outputFormat(csv|json)/{id}')
   public async downloadResults(@Request() request: express.Request, @Path() outputFormat: 'csv'|'json', @Path() id: string, @Query() order?: string): Promise<any> {
@@ -250,6 +252,7 @@ export class BulkController extends Controller {
    *                 - example:
    *                     msg: 'Job 1234 cancelled'
    */
+  @Security("jwt", ["user"])
   @Tags('Bulk')
   @Delete('/csv/{id}')
   public async deleteJob(@Request() request: express.Request, @Path() id: string): Promise<any> {

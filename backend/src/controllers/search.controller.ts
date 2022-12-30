@@ -14,7 +14,6 @@ import { format } from '@fast-csv/format';
 import { ScoreResult, personFromRequest } from '../score';
 import { updatedFields } from '../updatedIds';
 import { sendUpdateConfirmation } from '../mail';
-import { dateTransform } from '../masks';
 // import getDataGouvCatalog from '../getDataGouvCatalog';
 
 const writeFileAsync = promisify(writeFile);
@@ -60,6 +59,7 @@ export class SearchController extends Controller {
    * @param fuzzy Recherche floue ou exacte
    * @param sort Tri sur les colonnes (à préciser sur la structure du champs)
    */
+  @Security("tmp", ["user"])
   @Response<ErrorResponse>('400', 'Bad request')
   @Response<Result>('200', 'OK')
   @Tags('Simple')
@@ -120,6 +120,7 @@ export class SearchController extends Controller {
    * @summary Rapprocher une seule identité
    * @param accept Format of the response text/csv for csv otherwise application/json
    */
+  @Security("tmp", ["user"])
   @Response<ErrorResponse>('400', 'Bad request')
   @Response<Result>('200', 'OK')
   @Tags('Simple')
@@ -420,19 +421,19 @@ export class SearchController extends Controller {
 
   private async handleFile(request: express.Request): Promise<any> {
     const storage = multer.diskStorage({
-      destination: async (req, file, cb) => {
+      destination: void(async (req: any, file: any, cb: any) => {
         if (file.mimetype !== 'application/pdf') {
           cb(new Error('Only PDF upload is allowed'), null)
         }
-        const { id } = req.params
-        const dir = `./data/proofs/${id}`
+        const { id } = req.params;
+        const dir = `./data/proofs/${id as string}`;
         try {
           await accessAsync(dir);
         } catch(err) {
           await mkdirAsync(dir, { recursive: true });
         }
         cb(null, dir)
-      },
+      }),
       filename: (_, file, cb) => {
         const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1E9)}`
         cb(null, `${uniqueSuffix}_${file.originalname}`)

@@ -1,7 +1,7 @@
 #######################
 # Step 1: Base target #
 #######################
-FROM node:18.7-slim as base
+FROM node:18.12-slim as base
 ARG http_proxy
 ARG https_proxy
 ARG no_proxy

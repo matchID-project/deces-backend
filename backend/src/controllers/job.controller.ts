@@ -40,8 +40,6 @@ export class JobsController extends Controller {
    * @summary Détails du jobs par type et par id
    * @param queueName Name of queue
    * @param jobsType Jobs type or Id
-   * @param start Jobs list page start
-   * @param end Jobs list page end
    */
   @Security("jwt", ["admin"])
   @Tags('Jobs')
@@ -51,16 +49,12 @@ export class JobsController extends Controller {
     @Path() queueName: 'jobs'|'chunks',
     @Query() jobId?: string,
     @Query() jobsType?: string,
-    @Query() start?: number,
-    @Query() end?: number,
   ): Promise<any> {
     const jobQueue = new Queue(queueName,  {
       connection: {
         host: 'redis'
       }
     });
-    start = start || 0;
-    end = end || start + 25;
     if (['wait', 'active', 'delayed', 'completed', 'failed'].includes(jobsType)) {
       const queueScheduler = new QueueScheduler(queueName, { connection: { host: 'redis'}});
       const jobs = await jobQueue.getJobs(['wait', 'active', 'delayed', 'completed', 'failed'], 0, 100, true);
