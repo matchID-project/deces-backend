@@ -132,6 +132,7 @@ export class BulkController extends Controller {
 
       // Get parameters
       const options = {...request.body};
+      options.user = (request as any).user && (request as any).user.user
       options.chunkSize =  options.chunkSize || 50;
       options.sep = options.sep || ',';
       options.size = options.size || 10;
