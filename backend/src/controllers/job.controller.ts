@@ -27,7 +27,7 @@ export class JobsController extends Controller {
         }
       });
       const queueScheduler = new QueueScheduler(name, { connection: { host: 'redis'}});
-      const jobs = await jobQueue.getJobs(['wait', 'active', 'delayed', 'completed', 'failed'], 0, 100, true);
+      const jobs = await jobQueue.getJobs(['wait', 'active', 'delayed', 'completed', 'failed'], 0);
       await queueScheduler.close();
       return { jobs };
     } else {
@@ -57,7 +57,7 @@ export class JobsController extends Controller {
     });
     if (['wait', 'active', 'delayed', 'completed', 'failed'].includes(jobsType)) {
       const queueScheduler = new QueueScheduler(queueName, { connection: { host: 'redis'}});
-      const jobs = await jobQueue.getJobs(['wait', 'active', 'delayed', 'completed', 'failed'], 0, 100, true);
+      const jobs = await jobQueue.getJobs(['wait', 'active', 'delayed', 'completed', 'failed'], 0);
       await queueScheduler.close();
       return { jobs };
     } else if (jobId) {
@@ -71,7 +71,7 @@ export class JobsController extends Controller {
       let jobs:any = []
       const mylist: JobType[] = ['wait', 'active', 'delayed', 'completed', 'failed']
       for (const jobType of mylist) {
-        const jobsTmp = await jobQueue.getJobs(jobType, 0, 100, true)
+        const jobsTmp = await jobQueue.getJobs(jobType, 0);
         jobsTmp.forEach((j: any) => {
           j.status = jobType
           delete j.data.randomKey
