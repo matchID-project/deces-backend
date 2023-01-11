@@ -238,7 +238,7 @@ export const processChunk = async (chunk: any[], candidateNumber: number, params
   }
 }
 
-const workerChunks = new Worker('chunks', async (chunkJob: Job) => {
+new Worker('chunks', async (chunkJob: Job) => {
   return await processChunk(chunkJob.data.chunk, chunkJob.data.candidateNumber, {dateFormatA: chunkJob.data.dateFormatA, pruneScore: chunkJob.data.pruneScore, candidateNumber: chunkJob.data.candidateNumber});
 }, {
   connection: {
@@ -247,7 +247,7 @@ const workerChunks = new Worker('chunks', async (chunkJob: Job) => {
   concurrency: Number(process.env.BACKEND_CHUNK_CONCURRENCY)
 })
 
-new Worker('jobs', async (job: Job) => {
+const workerJobs = new Worker('jobs', async (job: Job) => {
   const jobIndex = inputsArray.findIndex(x => x.id === job.id);
   const jobFile = inputsArray.splice(jobIndex, 1).pop();
   return await processCsv(job, jobFile);
@@ -412,11 +412,11 @@ interface Options {
   [Key: string]: any;
 }
 
-workerChunks.on('completed', (job: Job) => {
+workerJobs.on('completed', (job: Job) => {
     if (!stopJob.includes(job.id)) {
       setTimeout(() => {
         fs.unlink(`${job.id}.out.enc`, (err: Error) => {if (err) log({unlinkOutputDeleteError: err});});
-      }, 3600000) // Delete results after 1 hour
+      }, Number(process.env.BACKEND_TMPFILE_PERSISTENCE || "3600000")) // Delete results after 1 hour
     }
 });
 
