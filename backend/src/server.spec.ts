@@ -441,6 +441,12 @@ describe('server.ts - Express application', () => {
         .on('end', (rowCount: number) => {
           expect(rowCount).to.eql(nrows - 1);
         });
+      await new Promise(resolve => setTimeout(resolve, Number(process.env.BACKEND_TMPFILE_PERSISTENCE || "3000")));
+      setTimeout(() => {
+        fs.readdirSync("./").forEach(file => {
+          expect(file).to.not.include('.enc');
+        });
+      }, Number(process.env.BACKEND_TMPFILE_PERSISTENCE || "3000"))
     }).timeout(10000);
 
     it('bulk ordered', async () => {
