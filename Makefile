@@ -54,6 +54,7 @@ export BACKEND_CHUNK_CONCURRENCY = 4
 export BACKEND_TMP_MAX = 300 # number of requests before ban
 export BACKEND_TMP_DURATION = 14400 # duration of ban in seconds after exceeding number of max request
 export BACKEND_TMP_WINDOW = 86400 # seconds before reset of request count
+export BACKEND_TMPFILE_PERSISTENCE = 3600000
 export SMTP_HOST?=smtp
 export SMTP_PORT?=25
 export SMTP_USER?=${API_EMAIL}

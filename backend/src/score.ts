@@ -229,8 +229,8 @@ let scoreName = (nameA: Name, nameB: Name, sex: string, explain?: any): any => {
         if ( ((scoreFirst >= blindNameScore) || (scoreLast >= blindNameScore))
             && (Array.isArray(lastAtokens) || Array.isArray(lastBtokens)) && (Array.isArray(firstA) || Array.isArray(firstB)) ) {
             // backoff to fuzzball set ratio for complex names situations
-            const partA = filterStopNames(lastA?.toString()+" "+firstA.toString());
-            const partB = filterStopNames(lastB.toString()+" "+firstB.toString());
+            const partA = filterStopNames(`${lastA !== undefined ? lastA.toString() : ''} ${firstA !== undefined ? firstA.toString() : ''}`);
+            const partB = filterStopNames(`${lastB !== undefined ? lastB.toString() : ''} ${firstB !== undefined ? firstB.toString() : ''}`);
             fuzzScore = round((tokenPlacePenalty * fuzzyRatio(partA as string, partB as string , fuzzballPartialTokenSortRatio) ** fuzzPenalty)
             );
             if (fuzzScore > blindNameScore) {
