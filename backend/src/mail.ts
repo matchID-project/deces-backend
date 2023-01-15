@@ -1,10 +1,21 @@
-import { SMTPClient } from 'emailjs';
+import nodemailer  from 'nodemailer';
 import { ReviewStatus } from './models/entities';
+import loggerStream from './logger';
 
-const client = new SMTPClient({
-    host: process.env.SMTP_HOST,
-    port: Number(process.env.SMTP_PORT)
-});
+const mailConfig = {
+     host: process.env.SMTP_HOST,
+     port: Number(process.env.SMTP_PORT),
+ };
+const transporter = nodemailer.createTransport(mailConfig);
+
+const log = (json:any) => {
+    loggerStream.write(JSON.stringify({
+      "backend": {
+        "server-date": new Date(Date.now()).toISOString(),
+        ...json
+      }
+    }));
+}
 
 const OTP:any = {};
 
@@ -13,7 +24,7 @@ const generateOTP = (email: string) => {
     let tmp = '';
     for (let i = 0; i < 6; i++ ) {
         tmp += digits[Math.floor(Math.random() * 10)];
-    };
+    }
     OTP[email] = tmp;
     setTimeout(() => {delete OTP[email]}, 600000);
 }
@@ -21,7 +32,7 @@ const generateOTP = (email: string) => {
 export const sendOTP = async (email: string): Promise<boolean> => {
     try {
         generateOTP(email);
-        await client.sendAsync({
+        await transporter.sendMail({
             subject: `Validez votre identité - ${process.env.APP_DNS}`,
             text: `Votre code, valide 10 minutes: ${OTP[email] as string}`,
             from: process.env.API_EMAIL,
@@ -29,6 +40,10 @@ export const sendOTP = async (email: string): Promise<boolean> => {
         } as any);
         return true;
     } catch (err) {
+        log({
+            error: "SendOTP error",
+            details: err.toString()
+        });
         return false;
     }
 }
@@ -72,7 +87,7 @@ export const sendUpdateConfirmation = async (email:string, status: ReviewStatus,
             </html>
             `, alternative: true};
         }
-        await client.sendAsync(message);
+        await transporter.sendMail(message);
         return true;
     } catch (err) {
         return false;

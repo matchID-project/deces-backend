@@ -171,7 +171,7 @@ export interface RequestBody {
   * Nombre de clé max d'aggrégation
   */
  aggsSize?: number;
-};
+}
 
 
 interface RequestInputParams {

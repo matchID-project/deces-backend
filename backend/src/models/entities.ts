@@ -9,7 +9,7 @@ export interface Name {
     first?: string|string[]|RequestField;
     last?: string|string[]|RequestField;
     legal?: string|string[]|RequestField;
-  };
+  }
 
 export interface NameFields {
     first?: {
@@ -18,7 +18,7 @@ export interface NameFields {
     };
     last: string|string[];
     legal?: string|string[];
-};
+}
 
 export interface RequestField {
     value: boolean|string|string[]|Name|number|GeoPoint|Sort[];
@@ -29,7 +29,7 @@ export interface RequestField {
       validation?: any;
       transform?: any;
     };
-  };
+  }
 
 /**
  * Coordonnés GPS
@@ -47,7 +47,7 @@ export interface GeoPoint {
    * Rayon de distance du point GPS
    */
   distance: string;
-};
+}
 
 export interface Location {
     city?: string|string[]|RequestField;
@@ -59,7 +59,7 @@ export interface Location {
     countryCode?: string|RequestField
     latitude?: number;
     longitude?: number;
-  };
+  }
 
 /**
  * Identity modification
@@ -86,7 +86,7 @@ export interface UpdateFields {
 export interface UpdateUserRequest extends UpdateFields {
   proof: string;
   message?: string;
-};
+}
 
 export type ReviewStatus = "rejected"|"validated"|"closed";
 
@@ -110,15 +110,15 @@ export interface Review {
   proofType?: ProofType;
   proofScrupt?: ProofScript;
   proofQuality?: ProofQuality;
-};
+}
 
 export interface Reviews {
   [key: string]: Review;
-};
+}
 
 export interface ReviewsStringified {
   [key: string]: string;
-};
+}
 
 export type UpdateRequest = UpdateUserRequest | ReviewsStringified ;
 
@@ -131,7 +131,7 @@ export interface Modification {
   auth: number;
   message?: string;
   review?: Review;
-};
+}
 
 export interface Person {
     score?: number;
@@ -158,13 +158,13 @@ export interface Person {
       wikimedia?: string;
     };
     modifications?: Modification[];
-  };
+  }
 
 export interface PersonCompare {
   personA: RequestBody;
   personB: RequestBody;
   params?: ScoreParams;
-};
+}
 
 export interface ScoreParams {
   dateFormatA?: string;
@@ -172,7 +172,7 @@ export interface ScoreParams {
   explain?: boolean;
   pruneScore?: number;
   candidateNumber?: number;
-};
+}
 
 export type StrAndNumber = string | number;
 

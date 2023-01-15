@@ -1,4 +1,4 @@
-import { Queue, QueueScheduler, JobType } from 'bullmq';
+import { Queue, JobType } from 'bullmq';
 import { Controller, Get, Route, Tags, Path, Query, Security } from 'tsoa';
 
 /**
@@ -26,8 +26,8 @@ export class JobsController extends Controller {
           host: 'redis'
         }
       });
-      const queueScheduler = new QueueScheduler(name, { connection: { host: 'redis'}});
-      const jobs = await jobQueue.getJobs(['wait', 'active', 'delayed', 'completed', 'failed'], 0);
+      const queueScheduler = new Queue(name, { connection: { host: 'redis'}});
+      const jobs = await jobQueue.getJobs(['wait', 'active', 'delayed', 'completed', 'failed']);
       await queueScheduler.close();
       return { jobs };
     } else {
@@ -56,8 +56,8 @@ export class JobsController extends Controller {
       }
     });
     if (['wait', 'active', 'delayed', 'completed', 'failed'].includes(jobsType)) {
-      const queueScheduler = new QueueScheduler(queueName, { connection: { host: 'redis'}});
-      const jobs = await jobQueue.getJobs(['wait', 'active', 'delayed', 'completed', 'failed'], 0);
+      const queueScheduler = new Queue(queueName, { connection: { host: 'redis'}});
+      const jobs = await jobQueue.getJobs(['wait', 'active', 'delayed', 'completed', 'failed']);
       await queueScheduler.close();
       return { jobs };
     } else if (jobId) {
@@ -71,7 +71,7 @@ export class JobsController extends Controller {
       let jobs:any = []
       const mylist: JobType[] = ['wait', 'active', 'delayed', 'completed', 'failed']
       for (const jobType of mylist) {
-        const jobsTmp = await jobQueue.getJobs(jobType, 0);
+        const jobsTmp = await jobQueue.getJobs(jobType);
         jobsTmp.forEach((j: any) => {
           j.status = jobType
           delete j.data.randomKey
