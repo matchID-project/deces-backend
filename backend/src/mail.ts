@@ -1,11 +1,21 @@
 import nodemailer  from 'nodemailer';
 import { ReviewStatus } from './models/entities';
+import loggerStream from './logger';
 
 const mailConfig = {
      host: process.env.SMTP_HOST,
      port: Number(process.env.SMTP_PORT),
  };
 const transporter = nodemailer.createTransport(mailConfig);
+
+const log = (json:any) => {
+    loggerStream.write(JSON.stringify({
+      "backend": {
+        "server-date": new Date(Date.now()).toISOString(),
+        ...json
+      }
+    }));
+}
 
 const OTP:any = {};
 
@@ -30,6 +40,10 @@ export const sendOTP = async (email: string): Promise<boolean> => {
         } as any);
         return true;
     } catch (err) {
+        log({
+            error: "SendOTP error",
+            details: err.toString()
+        });
         return false;
     }
 }
