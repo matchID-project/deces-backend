@@ -56,7 +56,7 @@ export BACKEND_TMP_DURATION = 14400 # duration of ban in seconds after exceeding
 export BACKEND_TMP_WINDOW = 86400 # seconds before reset of request count
 export BACKEND_TMPFILE_PERSISTENCE = 3600000
 export SMTP_HOST?=smtp
-export SMTP_PORT?=25
+export SMTP_PORT?=1025
 export SMTP_USER?=${API_EMAIL}
 export SMTP_PWD?=
 
@@ -322,7 +322,7 @@ backend-perf-clinic-stop:
 	@docker exec `docker ps -l --format "{{.Names}}" --filter name=deces-backend` /bin/sh -c "kill -INT \`pidof node\`"
 	@docker logs --tail 5 `docker ps -l --format "{{.Names}}" --filter name=deces-backend`
 	@docker restart `docker ps -l --format "{{.Names}}" --filter name=deces-backend`
-	@ls ${BACKEND}/clinic/*
+	@ls -R ${BACKEND}/clinic
 	@docker exec `docker ps -l --format "{{.Names}}" --filter name=deces-backend` /bin/sh -c "/${APP}/node_modules/.bin/clinic doctor --no-insight --visualize-only clinic/\`ls /${APP}/clinic/ |head -n 1 \`"
 
 # development mode
