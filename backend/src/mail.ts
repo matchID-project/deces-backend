@@ -5,6 +5,9 @@ import loggerStream from './logger';
 const mailConfig = {
      host: process.env.SMTP_HOST,
      port: Number(process.env.SMTP_PORT),
+     tls: {
+        rejectUnauthorized: process.env.SMTP_TLS_SELFSIGNED ? false : true,
+      },
  };
 const transporter = nodemailer.createTransport(mailConfig);
 
@@ -42,7 +45,7 @@ export const sendOTP = async (email: string): Promise<boolean> => {
     } catch (err) {
         log({
             error: "SendOTP error",
-            details: err.toString()
+            details: err
         });
         return false;
     }
