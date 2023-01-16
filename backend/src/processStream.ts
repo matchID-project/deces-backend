@@ -58,6 +58,9 @@ const chunkEvents = new QueueEvents('chunks', {
 const chunkQueue = new Queue('chunks',  {
   connection: {
     host: 'redis'
+  },
+  defaultJobOptions: {
+    removeOnFail: true
   }
 });
 
