@@ -1,8 +1,6 @@
 import { Queue, JobType } from 'bullmq';
 import { Controller, Get, Route, Tags, Path, Query, Security } from 'tsoa';
 
-const jobTypesList: JobType[] = ['completed', 'failed', 'active', 'delayed', 'waiting', 'waiting-children', 'paused', 'repeat', 'wait']
-
 /**
  * @swagger
  * tags:
@@ -28,12 +26,7 @@ export class JobsController extends Controller {
           host: 'redis'
         }
       });
-      const jobsSum:any = {}
-      for (const jobType of jobTypesList) {
-        const jobsTmp = await jobQueue.getJobs(jobType);
-        jobsSum[jobType] = jobsTmp.reduce((sum) => sum +1, 0)
-      }
-      return jobsSum;
+      return await jobQueue.getJobCounts();
     } else {
       return {msg: 'available queues: "chunks" and "jobs". Use them as a query parameter. For example name=jobs'};
     }
