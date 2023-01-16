@@ -15,6 +15,7 @@ export class JobsController extends Controller {
    * @summary Vérifier le nombre de jobs
    * @param name Name of queue
    */
+  @Security("jwt", ["admin"])
   @Tags('Jobs')
   @Get('')
   public async jobName(
