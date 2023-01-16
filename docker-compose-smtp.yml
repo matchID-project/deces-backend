@@ -7,7 +7,7 @@ services:
     image: maildev/maildev
     container_name: deces-smtp-fake
     ports:
-      - 1080:80
+      - 1080:1080
     restart: always
 
 networks:
