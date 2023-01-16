@@ -50,7 +50,7 @@ export class JobsController extends Controller {
   @Get('{queueName}')
   public async getJobs(
 
-    @Path() queueName: 'jobs'|'chunks',
+    @Path() queueName: 'jobs',
     @Query() jobId?: string,
     @Query() jobsType?: string,
   ): Promise<any> {
@@ -60,9 +60,7 @@ export class JobsController extends Controller {
       }
     });
     if (['wait', 'active', 'delayed', 'completed', 'failed'].includes(jobsType)) {
-      const queueScheduler = new Queue(queueName, { connection: { host: 'redis'}});
       const jobs = await jobQueue.getJobs(['wait', 'active', 'delayed', 'completed', 'failed']);
-      await queueScheduler.close();
       return { jobs };
     } else if (jobId) {
       const jobs = await jobQueue.getJob(jobsType)
