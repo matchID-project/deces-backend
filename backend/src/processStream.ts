@@ -379,6 +379,7 @@ export class ProcessStream extends Transform {
     await job.waitUntilFinished(chunkEvents)
     const jobResult = await Job.fromId(chunkQueue, job.id)
     this.jobs.push({id: jobId, result: jobResult.returnvalue})
+    await job.remove();
     this.batch = [];
   }
 
