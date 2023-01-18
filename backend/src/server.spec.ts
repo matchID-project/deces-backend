@@ -100,6 +100,19 @@ describe('server.ts - Express application', () => {
       expect(res).to.have.status(401);
       expect(res.body.msg).to.include('Wrong username or password');
     });
+
+    it('token details', async () => {
+      const token = await chai.request(app)
+        .post(apiPath(`auth`))
+        .send({user:'user1@gmail.com', password: 'magicPass'})
+      expect(token).to.have.status(200);
+      expect(token.body).to.include.all.keys('access_token');
+      const res = await chai.request(app)
+        .get(apiPath('auth'))
+        .set('Authorization', `Bearer ${token.body.access_token as string}`)
+      expect(res).to.have.status(200);
+      expect(res.body).to.include.all.keys(['msg', 'created_at', 'expiration_date']);
+    });
   })
 
   const testFixtures = [
