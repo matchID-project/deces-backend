@@ -26,10 +26,7 @@ export class JobsController extends Controller {
           host: 'redis'
         }
       });
-      const queueScheduler = new Queue(name, { connection: { host: 'redis'}});
-      const jobs = await jobQueue.getJobs(['wait', 'active', 'delayed', 'completed', 'failed']);
-      await queueScheduler.close();
-      return { jobs };
+      return await jobQueue.getJobCounts();
     } else {
       return {msg: 'available queues: "chunks" and "jobs". Use them as a query parameter. For example name=jobs'};
     }
@@ -46,31 +43,31 @@ export class JobsController extends Controller {
   @Get('{queueName}')
   public async getJobs(
 
-    @Path() queueName: 'jobs'|'chunks',
+    @Path() queueName: 'jobs',
     @Query() jobId?: string,
-    @Query() jobsType?: string,
+    @Query() jobsType?: JobType,
   ): Promise<any> {
     const jobQueue = new Queue(queueName,  {
       connection: {
         host: 'redis'
       }
     });
-    if (['wait', 'active', 'delayed', 'completed', 'failed'].includes(jobsType)) {
-      const queueScheduler = new Queue(queueName, { connection: { host: 'redis'}});
-      const jobs = await jobQueue.getJobs(['wait', 'active', 'delayed', 'completed', 'failed']);
-      await queueScheduler.close();
+    const jobsTypeList: JobType[] = ['completed', 'failed', 'active', 'delayed', 'waiting', 'waiting-children', 'paused', 'repeat', 'wait']
+    if (jobsTypeList.includes(jobsType)) {
+      const jobs = await jobQueue.getJobs(jobsType);
+      jobs.forEach((j: any) => delete j.data.randomKey)
       return { jobs };
     } else if (jobId) {
-      const jobs = await jobQueue.getJob(jobsType)
-      if (jobs) {
-        return { jobs };
+      const job = await jobQueue.getJob(jobId)
+      delete job.data.randomKey
+      if (job) {
+        return { job };
       } else {
         return { msg: 'job not found' };
       }
     } else {
       let jobs:any = []
-      const mylist: JobType[] = ['wait', 'active', 'delayed', 'completed', 'failed']
-      for (const jobType of mylist) {
+      for (const jobType of jobsTypeList) {
         const jobsTmp = await jobQueue.getJobs(jobType);
         jobsTmp.forEach((j: any) => {
           j.status = jobType

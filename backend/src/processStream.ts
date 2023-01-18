@@ -58,6 +58,9 @@ const chunkEvents = new QueueEvents('chunks', {
 const chunkQueue = new Queue('chunks',  {
   connection: {
     host: 'redis'
+  },
+  defaultJobOptions: {
+    removeOnFail: true
   }
 });
 
@@ -379,6 +382,7 @@ export class ProcessStream extends Transform {
     await job.waitUntilFinished(chunkEvents)
     const jobResult = await Job.fromId(chunkQueue, job.id)
     this.jobs.push({id: jobId, result: jobResult.returnvalue})
+    await job.remove();
     this.batch = [];
   }
 

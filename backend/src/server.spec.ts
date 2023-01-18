@@ -441,6 +441,16 @@ describe('server.ts - Express application', () => {
         .on('end', (rowCount: number) => {
           expect(rowCount).to.eql(nrows - 1);
         });
+
+      // verify that chunks info has been deleted
+      res = await chai.request(app)
+        .get(apiPath('queue?name=chunks'))
+        .set('Authorization', `Bearer ${token.body.access_token as string}`)
+      Object.values(res.body).forEach(jobType => {
+        expect(jobType).to.eql(0);
+      })
+
+      // verify that crypted files are deleted ater timeout
       await new Promise(resolve => setTimeout(resolve, Number(process.env.BACKEND_TMPFILE_PERSISTENCE || "3000")));
       setTimeout(() => {
         fs.readdirSync("./").forEach(file => {
