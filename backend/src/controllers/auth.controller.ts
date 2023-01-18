@@ -1,5 +1,5 @@
 import * as jwt from "jsonwebtoken";
-import {Body, Controller, Get, Post, Route, Security, Tags} from 'tsoa';
+import {Body, Controller, Get, Post, Route, Security, Tags, Header} from 'tsoa';
 import {userDB} from '../userDB';
 import crypto from 'crypto';
 import { validateOTP, sendOTP } from '../mail';
@@ -65,8 +65,21 @@ export class AuthController extends Controller {
   @Tags('Auth')
   @Get('/auth')
   public checkAuth(
+    @Header('Authorization') Authorization?: string,
+    @Header('authorization') authorization?: string
   ): any {
-    return { msg: "jwt is valid"}
+    const authHeader = Authorization || authorization;
+    const token = authHeader.split(' ')[1];
+    if (token) {
+      const decoded: any = jwt.verify(token, process.env.BACKEND_TOKEN_KEY)
+      return {
+        msg: "jwt is valid",
+        created_at: new Date(decoded.iat * 1000),
+        expiration_date: new Date(decoded.exp * 1000)
+      }
+    } else {
+      return { msg: "jwt is valid, but token info found"}
+    }
   }
 
 }
