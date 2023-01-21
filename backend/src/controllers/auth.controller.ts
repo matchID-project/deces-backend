@@ -59,7 +59,7 @@ export class AuthController extends Controller {
       const accessToken = jwt.sign({...jsonToken, scopes: ['user']}, process.env.BACKEND_TOKEN_KEY, { expiresIn: "30d", jwtid: Math.floor(Date.now() / 1000).toString()})
       return { 'access_token': accessToken }
     } else if (validateOTP(jsonToken.user,jsonToken.password)) {
-      const accessToken = jwt.sign({...jsonToken, scopes: ['user']}, process.env.BACKEND_TOKEN_KEY, { expiresIn: "30d" })
+      const accessToken = jwt.sign({...jsonToken, scopes: ['user']}, process.env.BACKEND_TOKEN_KEY, { expiresIn: "30d", jwtid: Math.floor(Date.now() / 1000).toString() })
       return { 'access_token': accessToken }
     } else if (jsonToken.token) {
       try {
@@ -70,7 +70,9 @@ export class AuthController extends Controller {
         if (now < oneYearAftercreation) {
           delete decoded.exp;
           delete decoded.iat;
-          const accessToken = jwt.sign({...decoded, }, process.env.BACKEND_TOKEN_KEY, { expiresIn: "30d" });
+          const jwtid = decoded.jti;
+          delete decoded.jti;
+          const accessToken = jwt.sign({...decoded, }, process.env.BACKEND_TOKEN_KEY, { expiresIn: "30d" , jwtid: Number(jwtid).toString()});
           return { 'access_token': accessToken }
         } else {
           return { msg: "Token already been refreshed for more than 1 year"}
