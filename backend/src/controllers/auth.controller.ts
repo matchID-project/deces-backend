@@ -95,7 +95,7 @@ export class AuthController extends Controller {
             'access_token': accessToken
           }
         } else {
-          return { msg: "Token already been refreshed for more than 1 year"}
+          return { msg: "Token can't be refreshed for more than 1 year" }
         }
       } catch (e) {
         log({
@@ -110,7 +110,7 @@ export class AuthController extends Controller {
       return {
         msg: "jwt is valid",
         created_at: decoded.jti,
-        expiration_date: decoded.exp
+        expiration_date: decoded.exp.toString()
       }
     }
   }

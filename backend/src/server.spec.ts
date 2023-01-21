@@ -140,7 +140,7 @@ describe('server.ts - Express application', () => {
             expect(refresh_token_verify).to.have.status(200);
             expect(refresh_token_verify.body).to.include.all.keys(['msg', 'created_at', 'expiration_date']);
             expect(refresh_token_verify.body.created_at).to.be.equal(token_verify.body.created_at)
-            expect(refresh_token_verify.body.expiration_date).to.be.greaterThan(token_verify.body.expiration_date)
+            expect(Number(refresh_token_verify.body.expiration_date)).to.be.greaterThan(Number(token_verify.body.expiration_date))
           } catch (e) {
             reject(e)
           }
