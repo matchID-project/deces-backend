@@ -100,6 +100,54 @@ describe('server.ts - Express application', () => {
       expect(res).to.have.status(401);
       expect(res.body.msg).to.include('Wrong username or password');
     });
+
+    it('token details', async () => {
+      const token = await chai.request(app)
+        .post(apiPath(`auth`))
+        .send({user:'user1@gmail.com', password: 'magicPass'})
+      expect(token).to.have.status(200);
+      expect(token.body).to.include.all.keys('access_token');
+      const res = await chai.request(app)
+        .get(apiPath('auth'))
+        .set('Authorization', `Bearer ${token.body.access_token as string}`)
+      expect(res).to.have.status(200);
+      expect(res.body).to.include.all.keys(['msg', 'created_at', 'expiration_date']);
+    });
+
+    it('refresh token', async () => {
+      const token = await chai.request(app)
+        .post(apiPath(`auth`))
+        .send({user:'user1@gmail.com', password: 'magicPass'})
+      expect(token).to.have.status(200);
+      expect(token.body).to.include.all.keys('access_token');
+      const token_verify = await chai.request(app)
+        .get(apiPath('auth'))
+        .set('Authorization', `Bearer ${token.body.access_token as string}`)
+      expect(token_verify).to.have.status(200);
+      expect(token_verify.body).to.include.all.keys(['msg', 'created_at', 'expiration_date']);
+      await new Promise(( resolve: any, reject ) => {
+        setTimeout( async () => {
+          try {
+            const refresh_token = await chai.request(app)
+              .get(apiPath(`auth`))
+              .query({refresh: true })
+              .set('Authorization', `Bearer ${token.body.access_token as string}`)
+            expect(refresh_token).to.have.status(200);
+            expect(refresh_token.body).to.include.all.keys('access_token');
+            const refresh_token_verify = await chai.request(app)
+              .get(apiPath('auth'))
+              .set('Authorization', `Bearer ${refresh_token.body.access_token as string}`)
+            expect(refresh_token_verify).to.have.status(200);
+            expect(refresh_token_verify.body).to.include.all.keys(['msg', 'created_at', 'expiration_date']);
+            expect(refresh_token_verify.body.created_at).to.be.equal(token_verify.body.created_at)
+            expect(Number(refresh_token_verify.body.expiration_date)).to.be.greaterThan(Number(token_verify.body.expiration_date))
+          } catch (e) {
+            reject(e)
+          }
+          resolve()
+        }, 3000 );
+      });
+    }).timeout(10000);
   })
 
   const testFixtures = [

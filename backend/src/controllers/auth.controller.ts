@@ -1,8 +1,18 @@
 import * as jwt from "jsonwebtoken";
-import {Body, Controller, Get, Post, Route, Security, Tags} from 'tsoa';
+import {Body, Controller, Get, Post, Route, Security, Tags, Header, Query} from 'tsoa';
 import {userDB} from '../userDB';
 import crypto from 'crypto';
 import { validateOTP, sendOTP } from '../mail';
+import loggerStream from '../logger';
+
+const log = (json:any) => {
+    loggerStream.write(JSON.stringify({
+      "backend": {
+        "server-date": new Date(Date.now()).toISOString(),
+        ...json
+      }
+    }));
+}
 
 /**
  * @swagger
@@ -46,10 +56,10 @@ export class AuthController extends Controller {
         return { 'access_token': accessToken }
       }
     } else if ((Object.keys(userDB).indexOf(jsonToken.user)>=0) && (userDB[jsonToken.user] === crypto.createHash('sha256').update(jsonToken.password).digest('hex'))) {
-      const accessToken = jwt.sign({...jsonToken, scopes: ['user']}, process.env.BACKEND_TOKEN_KEY, { expiresIn: "30d" })
+      const accessToken = jwt.sign({...jsonToken, scopes: ['user']}, process.env.BACKEND_TOKEN_KEY, { expiresIn: "30d", jwtid: Math.floor(Date.now() / 1000).toString()})
       return { 'access_token': accessToken }
     } else if (validateOTP(jsonToken.user,jsonToken.password)) {
-      const accessToken = jwt.sign({...jsonToken, scopes: ['user']}, process.env.BACKEND_TOKEN_KEY, { expiresIn: "30d" })
+      const accessToken = jwt.sign({...jsonToken, scopes: ['user']}, process.env.BACKEND_TOKEN_KEY, { expiresIn: "30d", jwtid: Math.floor(Date.now() / 1000).toString() })
       return { 'access_token': accessToken }
     }
     this.setStatus(401);
@@ -65,8 +75,44 @@ export class AuthController extends Controller {
   @Tags('Auth')
   @Get('/auth')
   public checkAuth(
+    @Header('Authorization') Authorization?: string,
+    @Header('authorization') authorization?: string,
+    @Query() refresh?: string
   ): any {
-    return { msg: "jwt is valid"}
+    const authHeader = Authorization || authorization;
+    const token = authHeader.split(' ')[1];
+    if (refresh && token) {
+      try {
+        const decoded: any = jwt.verify(token, process.env.BACKEND_TOKEN_KEY)
+        const now = Math.floor(Date.now() / 1000)
+        // refresh until 11 month of creation
+        const oneYearAftercreation = Number(decoded.jti) + 2592000 * 11;
+        if (now < oneYearAftercreation) {
+          delete decoded.exp;
+          delete decoded.iat;
+          const accessToken = jwt.sign(decoded, process.env.BACKEND_TOKEN_KEY, { expiresIn: "30d" });
+          return {
+            'access_token': accessToken
+          }
+        } else {
+          return { msg: "Token can't be refreshed for more than 1 year" }
+        }
+      } catch (e) {
+        log({
+            error: "Refresh token error",
+            details: e
+        });
+        this.setStatus(401);
+        return { msg: "Wrong token"}
+      }
+    } else {
+      const decoded: any = jwt.verify(token, process.env.BACKEND_TOKEN_KEY)
+      return {
+        msg: "jwt is valid",
+        created_at: decoded.jti,
+        expiration_date: decoded.exp.toString()
+      }
+    }
   }
 
 }
