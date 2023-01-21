@@ -129,8 +129,8 @@ describe('server.ts - Express application', () => {
         setTimeout( async () => {
           try {
             const refresh_token = await chai.request(app)
-              .post(apiPath(`auth`))
-              .send({token: token.body.access_token})
+              .get(apiPath(`auth`))
+              .query({refresh: true })
               .set('Authorization', `Bearer ${token.body.access_token as string}`)
             expect(refresh_token).to.have.status(200);
             expect(refresh_token.body).to.include.all.keys('access_token');
