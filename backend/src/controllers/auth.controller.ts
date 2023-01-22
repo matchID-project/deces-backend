@@ -28,15 +28,17 @@ export class AuthController extends Controller {
    */
   @Tags('Auth')
   @Post('/register')
-  public register(
+  public async register(
     @Body() register: Register
-  ): any {
+  ): Promise<any> {
     try {
-      sendOTP(register.user);
-      return { msg: "Check your mail and auth with OTP" };
+      return await sendOTP(register.user);
     } catch(e) {
       this.setStatus(422);
-      return { msg: "Coudn't send mail"}
+      return {
+        valid: false,
+        msg: "Coudn't send mail"
+      }
     }
   }
 

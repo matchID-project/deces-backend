@@ -1,6 +1,20 @@
 import nodemailer  from 'nodemailer';
 import { ReviewStatus } from './models/entities';
 import loggerStream from './logger';
+import axios from 'axios';
+
+let disposableMails: string[];
+
+axios.get(
+  `https://gist.github.com/adamloving/4401361/raw/e81212c3caecb54b87ced6392e0a0de2b6466287/temporary-email-address-domains`,
+  {
+    headers: {
+      Accept: 'text/plain',
+    },
+  },
+).then(data => {
+  disposableMails = data.data.split("\n");
+})
 
 const mailConfig = {
      host: process.env.SMTP_HOST,
@@ -32,8 +46,15 @@ const generateOTP = (email: string) => {
     setTimeout(() => {delete OTP[email]}, 600000);
 }
 
-export const sendOTP = async (email: string): Promise<boolean> => {
+export const sendOTP = async (email: string): Promise<sendOTPResponse> => {
     try {
+      const provider = email.split("@")[1].toLowerCase();
+      if (disposableMails.includes(provider)) {
+        return {
+          msg: "Le courriel fourni appartient à un fournisseur d'addresses temporales",
+          valid: false
+        };
+      } else {
         generateOTP(email);
         await transporter.sendMail({
             subject: `Validez votre identité - ${process.env.APP_DNS}`,
@@ -41,13 +62,20 @@ export const sendOTP = async (email: string): Promise<boolean> => {
             from: process.env.API_EMAIL,
             to: `${email}`,
         } as any);
-        return true;
+        return {
+          msg: "Un code vous a été envoyé à l'adresse indiquée",
+          valid: true
+        };
+      }
     } catch (err) {
         log({
             error: "SendOTP error",
             details: err
         });
-        return false;
+        return {
+          msg: `Un erreur s'est produit`,
+          valid: false
+        };
     }
 }
 
@@ -95,4 +123,18 @@ export const sendUpdateConfirmation = async (email:string, status: ReviewStatus,
     } catch (err) {
         return false;
     }
+}
+
+/**
+ * OTP Response
+ * @tsoaModel
+ * @example
+ * {
+ *   "valid": true,
+ *   "msg": "Adresse valide",
+ * }
+ */
+interface sendOTPResponse {
+  valid: boolean;
+  msg: string
 }
