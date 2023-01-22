@@ -1,5 +1,6 @@
 import * as jwt from "jsonwebtoken";
 import {Body, Controller, Get, Post, Route, Security, Tags, Header, Query} from 'tsoa';
+import { sendOTPResponse } from '../models/entities';
 import {userDB} from '../userDB';
 import crypto from 'crypto';
 import { validateOTP, sendOTP } from '../mail';
@@ -30,7 +31,7 @@ export class AuthController extends Controller {
   @Post('/register')
   public async register(
     @Body() register: Register
-  ): Promise<any> {
+  ): Promise<sendOTPResponse> {
     try {
       return await sendOTP(register.user);
     } catch(e) {
@@ -72,6 +73,7 @@ export class AuthController extends Controller {
    * Authentification confirmation endpoint
    * Checks if jwt is valid
    * @summary Route de vérification de validité de session
+   * @param refresh Renouveler une token déjà valide
    */
   @Security('jwt',['user'])
   @Tags('Auth')
@@ -80,7 +82,7 @@ export class AuthController extends Controller {
     @Header('Authorization') Authorization?: string,
     @Header('authorization') authorization?: string,
     @Query() refresh?: string
-  ): any {
+  ): AccessToken {
     const authHeader = Authorization || authorization;
     const token = authHeader.split(' ')[1];
     if (refresh && token) {
@@ -156,4 +158,6 @@ interface Register {
 interface AccessToken {
   'access_token'?: string;
   msg?: string
+  created_at?: string;
+  expiration_date?: string;
 }

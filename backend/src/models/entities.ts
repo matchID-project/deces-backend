@@ -179,3 +179,17 @@ export type StrAndNumber = string | number;
 export interface Wikidict {
   id: string;
 }
+
+/**
+ * OTP Response
+ * @tsoaModel
+ * @example
+ * {
+ *   "valid": true,
+ *   "msg": "Adresse valide",
+ * }
+ */
+export interface sendOTPResponse {
+  valid: boolean;
+  msg: string
+}

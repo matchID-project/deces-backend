@@ -20,13 +20,14 @@ const swaggerDefinitionTemplate: any = {
     },
     contact: {
       name: "MatchID",
-      url: `http${process.env.API_SSL ? 's' : ''}://${process.env.API_URL}`,
+      url: `http${process.env.API_SSL && process.env.API_SSL === "1" ? 's' : ''}://${process.env.API_URL}`,
       email: `${process.env.API_EMAIL}`
     }
   },
   servers: [
     {
-      url: `http${process.env.API_SSL ? 's' : ''}://${process.env.API_URL}/deces/api/v1`
+      url: `http${process.env.API_SSL && process.env.API_SSL === "1" ? 's' : ''}://${process.env.API_URL}/deces/api/v1`,
+      description: "Backend API URL"
     }
   ]
 }

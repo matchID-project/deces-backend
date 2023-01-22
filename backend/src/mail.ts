@@ -1,5 +1,5 @@
 import nodemailer  from 'nodemailer';
-import { ReviewStatus } from './models/entities';
+import { ReviewStatus, sendOTPResponse } from './models/entities';
 import loggerStream from './logger';
 import axios from 'axios';
 
@@ -123,18 +123,4 @@ export const sendUpdateConfirmation = async (email:string, status: ReviewStatus,
     } catch (err) {
         return false;
     }
-}
-
-/**
- * OTP Response
- * @tsoaModel
- * @example
- * {
- *   "valid": true,
- *   "msg": "Adresse valide",
- * }
- */
-interface sendOTPResponse {
-  valid: boolean;
-  msg: string
 }
