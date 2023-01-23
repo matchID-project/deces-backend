@@ -48,7 +48,7 @@ export const sendOTP = async (email: string): Promise<sendOTPResponse> => {
       const provider = email.split("@")[1].toLowerCase();
       if (disposableMails.includes(provider)) {
         return {
-          msg: "Le courriel fourni appartient à un fournisseur d'addresses temporales",
+          msg: "Le courriel fourni appartient à un fournisseur d'addresses temporaires",
           valid: false
         };
       } else {
