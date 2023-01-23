@@ -1,5 +1,6 @@
 import * as jwt from "jsonwebtoken";
 import {Body, Controller, Get, Post, Route, Security, Tags, Header, Query} from 'tsoa';
+import { sendOTPResponse } from '../models/entities';
 import {userDB} from '../userDB';
 import crypto from 'crypto';
 import { validateOTP, sendOTP } from '../mail';
@@ -28,15 +29,17 @@ export class AuthController extends Controller {
    */
   @Tags('Auth')
   @Post('/register')
-  public register(
+  public async register(
     @Body() register: Register
-  ): any {
+  ): Promise<sendOTPResponse> {
     try {
-      sendOTP(register.user);
-      return { msg: "Check your mail and auth with OTP" };
+      return await sendOTP(register.user);
     } catch(e) {
       this.setStatus(422);
-      return { msg: "Coudn't send mail"}
+      return {
+        valid: false,
+        msg: "Coudn't send mail"
+      }
     }
   }
 
@@ -70,6 +73,7 @@ export class AuthController extends Controller {
    * Authentification confirmation endpoint
    * Checks if jwt is valid
    * @summary Route de vérification de validité de session
+   * @param refresh Renouveler une token déjà valide
    */
   @Security('jwt',['user'])
   @Tags('Auth')
@@ -78,7 +82,7 @@ export class AuthController extends Controller {
     @Header('Authorization') Authorization?: string,
     @Header('authorization') authorization?: string,
     @Query() refresh?: string
-  ): any {
+  ): AccessToken {
     const authHeader = Authorization || authorization;
     const token = authHeader.split(' ')[1];
     if (refresh && token) {
@@ -107,6 +111,7 @@ export class AuthController extends Controller {
       }
     } else {
       const decoded: any = jwt.verify(token, process.env.BACKEND_TOKEN_KEY)
+      // eslint-disable-next-line camelcase
       return {
         msg: "jwt is valid",
         created_at: decoded.jti,
@@ -154,4 +159,6 @@ interface Register {
 interface AccessToken {
   'access_token'?: string;
   msg?: string
+  created_at?: string;
+  expiration_date?: string;
 }

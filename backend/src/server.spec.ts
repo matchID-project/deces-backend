@@ -120,27 +120,27 @@ describe('server.ts - Express application', () => {
         .send({user:'user1@gmail.com', password: 'magicPass'})
       expect(token).to.have.status(200);
       expect(token.body).to.include.all.keys('access_token');
-      const token_verify = await chai.request(app)
+      const tokenVerify = await chai.request(app)
         .get(apiPath('auth'))
         .set('Authorization', `Bearer ${token.body.access_token as string}`)
-      expect(token_verify).to.have.status(200);
-      expect(token_verify.body).to.include.all.keys(['msg', 'created_at', 'expiration_date']);
+      expect(tokenVerify).to.have.status(200);
+      expect(tokenVerify.body).to.include.all.keys(['msg', 'created_at', 'expiration_date']);
       await new Promise(( resolve: any, reject ) => {
         setTimeout( async () => {
           try {
-            const refresh_token = await chai.request(app)
+            const refreshToken = await chai.request(app)
               .get(apiPath(`auth`))
               .query({refresh: true })
               .set('Authorization', `Bearer ${token.body.access_token as string}`)
-            expect(refresh_token).to.have.status(200);
-            expect(refresh_token.body).to.include.all.keys('access_token');
-            const refresh_token_verify = await chai.request(app)
+            expect(refreshToken).to.have.status(200);
+            expect(refreshToken.body).to.include.all.keys('access_token');
+            const refreshTokenVerify = await chai.request(app)
               .get(apiPath('auth'))
-              .set('Authorization', `Bearer ${refresh_token.body.access_token as string}`)
-            expect(refresh_token_verify).to.have.status(200);
-            expect(refresh_token_verify.body).to.include.all.keys(['msg', 'created_at', 'expiration_date']);
-            expect(refresh_token_verify.body.created_at).to.be.equal(token_verify.body.created_at)
-            expect(Number(refresh_token_verify.body.expiration_date)).to.be.greaterThan(Number(token_verify.body.expiration_date))
+              .set('Authorization', `Bearer ${refreshToken.body.access_token as string}`)
+            expect(refreshTokenVerify).to.have.status(200);
+            expect(refreshTokenVerify.body).to.include.all.keys(['msg', 'created_at', 'expiration_date']);
+            expect(refreshTokenVerify.body.created_at).to.be.equal(tokenVerify.body.created_at)
+            expect(Number(refreshTokenVerify.body.expiration_date)).to.be.greaterThan(Number(tokenVerify.body.expiration_date))
           } catch (e) {
             reject(e)
           }
