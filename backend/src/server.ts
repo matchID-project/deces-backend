@@ -44,7 +44,7 @@ const formatAsJson = (tokens: any, req: any, res: any) => {
       'remote-user': tokens['remote-user'](req, res),
       'server-date': tokens.date(req, res, 'iso'),
       'user':req.user && req.user.user && crypto.createHash('sha256').update(req.user.user).digest('hex').substring(0, 16),
-      'maildomain':req.user && req.user.user.replace(/.*@/,''),
+      'maildomain':req.user && req.user.user && req.user.user.replace(/.*@/,''),
       'response-time': +tokens['response-time'](req, res, 'iso'),
       method: tokens.method(req, res),
       url: tokens.url(req, res),

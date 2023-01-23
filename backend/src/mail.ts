@@ -1,6 +1,7 @@
 import nodemailer  from 'nodemailer';
 import { ReviewStatus, sendOTPResponse } from './models/entities';
 import loggerStream from './logger';
+import crypto from 'crypto';
 import { readFileSync } from 'fs';
 
 let disposableMails: string[] = [];
@@ -52,8 +53,9 @@ export const sendOTP = async (email: string): Promise<sendOTPResponse> => {
         };
       } else {
         generateOTP(email);
+        const hash = crypto.createHash('sha256').update(email).digest('hex').substring(0, 16)
         await transporter.sendMail({
-            subject: `Validez votre identité - ${process.env.APP_DNS}`,
+            subject: `Validez votre identité - ${process.env.APP_DNS} - ${hash}`,
             text: `Votre code, valide 10 minutes: ${OTP[email] as string}`,
             from: process.env.API_EMAIL,
             to: `${email}`,
