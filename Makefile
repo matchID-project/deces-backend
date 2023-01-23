@@ -382,7 +382,7 @@ wikidata-src: ${WIKIDATA_SRC}
 wikidata-links: ${WIKIDATA_LINKS}
 
 communes-push:
-	@echo "downloading communes geo data"
+	@echo "preparing communes geo data"
 	@sudo apt-get install gdal-bin
 	@curl --retry 5 -L -l 'https://www.data.gouv.fr/fr/datasets/r/0e117c06-248f-45e5-8945-0e79d9136165' -o communes-20220101.zip
 	@echo "finish downloading"
@@ -395,6 +395,7 @@ communes-push:
 		STORAGE_BUCKET=${STORAGE_BUCKET} STORAGE_ACCESS_KEY=${STORAGE_ACCESS_KEY} STORAGE_SECRET_KEY=${STORAGE_SECRET_KEY};\
 
 ${COMMUNES_JSON}: config
+	@echo "downloading communes geo data"
 	@make -C ${APP_PATH}/${GIT_TOOLS} storage-pull\
 		FILE=communes.json DATA_DIR=${BACKEND}/data\
 		STORAGE_BUCKET=${STORAGE_BUCKET} STORAGE_ACCESS_KEY=${STORAGE_ACCESS_KEY} STORAGE_SECRET_KEY=${STORAGE_SECRET_KEY};\
@@ -404,7 +405,7 @@ communes-pull: ${COMMUNES_JSON}
 communes: communes-pull
 
 disposable-mail-push:
-	@echo "downloading disposable mail resources"
+	@echo "preparing disposable mail resources"
 	@curl --retry 5 -L -l 'https://raw.githubusercontent.com/unkn0w/disposable-email-domain-list/main/domains.txt' -o ${DISPOSABLE_MAIL}.tmp1
 	@curl --retry 5 -L -l 'https://gist.githubusercontent.com/adamloving/4401361/raw/e81212c3caecb54b87ced6392e0a0de2b6466287/temporary-email-address-domains' -o ${DISPOSABLE_MAIL}.tmp2
 	@cat ${DISPOSABLE_MAIL}.tmp1 ${DISPOSABLE_MAIL}.tmp2 | sort | uniq > ${DISPOSABLE_MAIL}
@@ -414,6 +415,7 @@ disposable-mail-push:
 		STORAGE_BUCKET=${STORAGE_BUCKET} STORAGE_ACCESS_KEY=${STORAGE_ACCESS_KEY} STORAGE_SECRET_KEY=${STORAGE_SECRET_KEY};\
 
 ${DISPOSABLE_MAIL}: config
+	@echo "downloading disposable mail resources"
 	@make -C ${APP_PATH}/${GIT_TOOLS} storage-pull\
 		FILE=disposable-mail.txt DATA_DIR=${BACKEND}/data\
 		STORAGE_BUCKET=${STORAGE_BUCKET} STORAGE_ACCESS_KEY=${STORAGE_ACCESS_KEY} STORAGE_SECRET_KEY=${STORAGE_SECRET_KEY};\
