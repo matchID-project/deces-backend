@@ -6,15 +6,15 @@ import axios from 'axios';
 let disposableMails: string[];
 
 axios.get(
-  `https://gist.github.com/adamloving/4401361/raw/e81212c3caecb54b87ced6392e0a0de2b6466287/temporary-email-address-domains`,
-  {
-    headers: {
-      Accept: 'text/plain',
-    },
-  },
+  `https://raw.githubusercontent.com/unkn0w/disposable-email-domain-list/main/domains.txt`
 ).then(data => {
-  disposableMails = data.data.split("\n");
-})
+  axios.get(
+    `https://gist.github.com/adamloving/4401361/raw/e81212c3caecb54b87ced6392e0a0de2b6466287/temporary-email-address-domains`,
+    { headers: { Accept: 'text/plain'} },
+  ).then(data2 => {
+    disposableMails= (data.data + data2.data).split("\n");
+  });
+});
 
 const mailConfig = {
      host: process.env.SMTP_HOST,
