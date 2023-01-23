@@ -8,6 +8,7 @@ import { JsonWebTokenError } from 'jsonwebtoken';
 import morgan from 'morgan';
 import { RegisterRoutes } from './routes/routes';
 import loggerStream from './logger';
+import crypto from 'crypto';
 // import { router as bulk } from './controllers/bulk';
 import { router as documentation } from './controllers/documentation';
 // Manually telling tsoa which controllers to use in the app entry file, route generation faster
@@ -42,7 +43,8 @@ const formatAsJson = (tokens: any, req: any, res: any) => {
       'forwarded-address': tokens['fwd-addr'](req, res),
       'remote-user': tokens['remote-user'](req, res),
       'server-date': tokens.date(req, res, 'iso'),
-      'user':req.user && req.user.user,
+      'user':req.user && req.user.user && crypto.createHash('sha256').update(req.user.user).digest('hex').substring(0, 16),
+      'maildomain':req.user && req.user.user && req.user.user.replace(/.*@/,''),
       'response-time': +tokens['response-time'](req, res, 'iso'),
       method: tokens.method(req, res),
       url: tokens.url(req, res),

@@ -1,27 +1,24 @@
 import nodemailer  from 'nodemailer';
 import { ReviewStatus, sendOTPResponse } from './models/entities';
 import loggerStream from './logger';
-import axios from 'axios';
+import crypto from 'crypto';
+import { readFileSync } from 'fs';
 
-let disposableMails: string[];
+let disposableMails: string[] = [];
 
-axios.get(
-  `https://raw.githubusercontent.com/unkn0w/disposable-email-domain-list/main/domains.txt`
-).then(data => {
-  axios.get(
-    `https://gist.github.com/adamloving/4401361/raw/e81212c3caecb54b87ced6392e0a0de2b6466287/temporary-email-address-domains`,
-    { headers: { Accept: 'text/plain'} },
-  ).then(data2 => {
-    disposableMails= (data.data + data2.data).split("\n");
-  });
-});
+try {
+  disposableMails = readFileSync('data/disposable-mail.txt','utf8').split("\n");
+} catch(e) {
+  // eslint-disable-next-line no-console
+  console.log('Failed loading disposable email',e);
+}
 
 const mailConfig = {
-     host: process.env.SMTP_HOST,
-     port: Number(process.env.SMTP_PORT),
-     tls: {
-        rejectUnauthorized: process.env.SMTP_TLS_SELFSIGNED ? false : true,
-      },
+  host: process.env.SMTP_HOST,
+  port: Number(process.env.SMTP_PORT),
+  tls: {
+    rejectUnauthorized: process.env.SMTP_TLS_SELFSIGNED ? false : true,
+  },
  };
 const transporter = nodemailer.createTransport(mailConfig);
 
@@ -56,8 +53,9 @@ export const sendOTP = async (email: string): Promise<sendOTPResponse> => {
         };
       } else {
         generateOTP(email);
+        const hash = crypto.createHash('sha256').update(email).digest('hex').substring(0, 16)
         await transporter.sendMail({
-            subject: `Validez votre identité - ${process.env.APP_DNS}`,
+            subject: `Validez votre identité - ${process.env.APP_DNS} - ${hash}`,
             text: `Votre code, valide 10 minutes: ${OTP[email] as string}`,
             from: process.env.API_EMAIL,
             to: `${email}`,
@@ -73,7 +71,7 @@ export const sendOTP = async (email: string): Promise<sendOTPResponse> => {
             details: err
         });
         return {
-          msg: `Un erreur s'est produit`,
+          msg: `Erreur lors de l'envoi du code par mail`,
           valid: false
         };
     }

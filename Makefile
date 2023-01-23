@@ -82,6 +82,7 @@ export STORAGE_BUCKET=${DATASET}
 export AWS=${APP_PATH}/aws
 
 export COMMUNES_JSON=${BACKEND}/data/communes.json
+export DISPOSABLE_MAIL=${BACKEND}/data/disposable-mail.txt
 export DB_JSON=${BACKEND}/data/userDB.json
 export PROOFS=${BACKEND}/data/proofs
 
@@ -256,7 +257,7 @@ docker-load:
 #############
 
 # build
-backend-build-image: ${WIKIDATA_LINKS} ${COMMUNES_JSON} ${DB_JSON} ${PROOFS}
+backend-build-image: ${WIKIDATA_LINKS} ${COMMUNES_JSON} ${DISPOSABLE_MAIL} ${DB_JSON} ${PROOFS}
 	export EXEC_ENV=production; ${DC_BACKEND} build backend
 
 backend-build-all: network backend-build-image
@@ -339,7 +340,7 @@ backend-dev-test:
 	@echo Testing API parameters
 	@docker exec -i ${USE_TTY} ${APP}-development bash /deces-backend/tests/test_query_params.sh
 
-dev: network backend-dev-stop ${WIKIDATA_LINKS} ${COMMUNES_JSON} ${DB_JSON} ${PROOFS} smtp backend-dev
+dev: network backend-dev-stop ${WIKIDATA_LINKS} ${COMMUNES_JSON} ${DISPOSABLE_MAIL} ${DB_JSON} ${PROOFS} smtp backend-dev
 
 dev-stop: backend-dev-stop smtp-stop
 
@@ -381,7 +382,7 @@ wikidata-src: ${WIKIDATA_SRC}
 wikidata-links: ${WIKIDATA_LINKS}
 
 communes-push:
-	@echo "downloading communes geo data"
+	@echo "preparing communes geo data"
 	@sudo apt-get install gdal-bin
 	@curl --retry 5 -L -l 'https://www.data.gouv.fr/fr/datasets/r/0e117c06-248f-45e5-8945-0e79d9136165' -o communes-20220101.zip
 	@echo "finish downloading"
@@ -394,6 +395,7 @@ communes-push:
 		STORAGE_BUCKET=${STORAGE_BUCKET} STORAGE_ACCESS_KEY=${STORAGE_ACCESS_KEY} STORAGE_SECRET_KEY=${STORAGE_SECRET_KEY};\
 
 ${COMMUNES_JSON}: config
+	@echo "downloading communes geo data"
 	@make -C ${APP_PATH}/${GIT_TOOLS} storage-pull\
 		FILE=communes.json DATA_DIR=${BACKEND}/data\
 		STORAGE_BUCKET=${STORAGE_BUCKET} STORAGE_ACCESS_KEY=${STORAGE_ACCESS_KEY} STORAGE_SECRET_KEY=${STORAGE_SECRET_KEY};\
@@ -401,6 +403,24 @@ ${COMMUNES_JSON}: config
 communes-pull: ${COMMUNES_JSON}
 
 communes: communes-pull
+
+disposable-mail-push:
+	@echo "preparing disposable mail resources"
+	@curl --retry 5 -L -l 'https://raw.githubusercontent.com/unkn0w/disposable-email-domain-list/main/domains.txt' -o ${DISPOSABLE_MAIL}.tmp1
+	@curl --retry 5 -L -l 'https://gist.githubusercontent.com/adamloving/4401361/raw/e81212c3caecb54b87ced6392e0a0de2b6466287/temporary-email-address-domains' -o ${DISPOSABLE_MAIL}.tmp2
+	@cat ${DISPOSABLE_MAIL}.tmp1 ${DISPOSABLE_MAIL}.tmp2 | sort | uniq > ${DISPOSABLE_MAIL}
+	@rm ${DISPOSABLE_MAIL}.tmp1 ${DISPOSABLE_MAIL}.tmp2
+	@make -C ${APP_PATH}/${GIT_TOOLS} storage-push\
+		FILE=${DISPOSABLE_MAIL}\
+		STORAGE_BUCKET=${STORAGE_BUCKET} STORAGE_ACCESS_KEY=${STORAGE_ACCESS_KEY} STORAGE_SECRET_KEY=${STORAGE_SECRET_KEY};\
+
+${DISPOSABLE_MAIL}: config
+	@echo "downloading disposable mail resources"
+	@make -C ${APP_PATH}/${GIT_TOOLS} storage-pull\
+		FILE=disposable-mail.txt DATA_DIR=${BACKEND}/data\
+		STORAGE_BUCKET=${STORAGE_BUCKET} STORAGE_ACCESS_KEY=${STORAGE_ACCESS_KEY} STORAGE_SECRET_KEY=${STORAGE_SECRET_KEY};\
+
+disposable-mail-pull: ${DISPOSABLE_MAIL}
 
 ${PROOFS}:
 	mkdir -p ${PROOFS}
