@@ -111,6 +111,7 @@ export class AuthController extends Controller {
       }
     } else {
       const decoded: any = jwt.verify(token, process.env.BACKEND_TOKEN_KEY)
+      // eslint-disable-next-line camelcase
       return {
         msg: "jwt is valid",
         created_at: decoded.jti,
