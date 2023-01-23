@@ -35,6 +35,12 @@ describe('mail.ts - Sending emails', () => {
   it('Send test email fake smtp server', async () => {
     const res = await sendOTP("recipient@example.com")
     // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-    expect(res).to.be.true;
+    expect(res.valid).to.be.true;
+  })
+
+  it('Send test email fake smtp server to a disposable address', async () => {
+    const res = await sendOTP("recipient@xoxy.net")
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+    expect(res.valid).to.be.false;
   })
 })

@@ -43,7 +43,8 @@ const formatAsJson = (tokens: any, req: any, res: any) => {
       'forwarded-address': tokens['fwd-addr'](req, res),
       'remote-user': tokens['remote-user'](req, res),
       'server-date': tokens.date(req, res, 'iso'),
-      'user':req.user && req.user.user,
+      'user':req.user && req.user.user && crypto.createHash('sha256').update(req.user.user).digest('hex').substring(0, 16),
+      'maildomain':req.user && req.user.user && req.user.user.replace(/.*@/,''),
       'response-time': +tokens['response-time'](req, res, 'iso'),
       method: tokens.method(req, res),
       url: tokens.url(req, res),
@@ -51,7 +52,8 @@ const formatAsJson = (tokens: any, req: any, res: any) => {
       'status-code': +tokens.status(req, res),
       'content-length': +tokens.res(req, res, 'content-length'),
       referrer: tokens.referrer(req, res),
-      'user-agent': tokens['user-agent'](req, res)
+      'user-agent': tokens['user-agent'](req, res),
+      'job': tokens.res(req,res,'Job') && JSON.parse(tokens.res(req,res,'Job'))
     },
   })
 }

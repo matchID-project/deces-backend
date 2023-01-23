@@ -23,6 +23,8 @@ const timerRunBulkRequest = timer(runBulkRequest, 'runBulkRequest', 1);
 export const validFields: string[] = ['q', 'firstName', 'lastName', 'legalName', 'sex', 'birthDate', 'birthCity', 'birthLocationCode', 'birthPostalCode', 'birthDepartment', 'birthCountry',
 'birthGeoPoint', 'deathDate', 'deathCity', 'deathLocationCode', 'deathPostalCode', 'deathDepartment', 'deathCountry', 'deathGeoPoint', 'deathAge', 'lastSeenAliveDate', 'source',
 'size', 'fuzzy', 'block'];
+const validFieldsForColumnsCount = ['firstName', 'lastName', 'legalName', 'sex', 'birthDate', 'birthCity', 'birthLocationCode', 'birthPostalCode', 'birthDepartment', 'birthCountry',
+'birthGeoPoint', 'deathDate', 'deathCity', 'deathLocationCode', 'deathPostalCode', 'deathDepartment', 'deathCountry', 'deathGeoPoint', 'deathAge', 'lastSeenAliveDate']
 
 const log = (json:any) => {
   loggerStream.write(JSON.stringify({
@@ -33,6 +35,17 @@ const log = (json:any) => {
   }));
 }
 
+const formatJob = (job:any) => {
+  const duration: number = job && job.processedOn && job.finishedOn && (job.finishedOn - job.processedOn) / 1000;
+  return job && {
+    id: job.id,
+    rows: job.data && job.data.totalRows,
+    columns: validFieldsForColumnsCount.filter(c => job.data && job.data[c]).length,
+    waiting_time: job && job.processedOn && (job.processedOn - job.timestamp) / 1000,
+    processing_rate : duration ? Math.floor((job.data && job.data.totalRows || 0) / duration) : undefined,
+    processing_time: duration,
+  }
+}
 
 const encryptioniv = crypto.randomBytes(16);
 
@@ -494,6 +507,7 @@ export const returnBulkResults = async (response: Response, id: string, outputFo
         response.send({msg: 'Empty results'})
       } else if (outputFormat === 'json') {
         response.setHeader('Content-Type', 'application/json');
+        response.setHeader('Job', JSON.stringify(formatJob(job)));
         dataStream
           .pipe(ToLinesStream())
           .on('error', (e: any) => log({toLinesStream: e.toString(), jobId}))
@@ -503,6 +517,7 @@ export const returnBulkResults = async (response: Response, id: string, outputFo
         await finishedAsync(dataStream);
       } else if (outputFormat === 'csv') {
         response.setHeader('Content-Type', 'text/csv');
+        response.setHeader('Job', JSON.stringify(formatJob(job)));
         // pipe csvstream write to res
         dataStream
           .pipe(ToLinesStream())

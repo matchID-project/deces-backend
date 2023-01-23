@@ -1,13 +1,24 @@
 import nodemailer  from 'nodemailer';
-import { ReviewStatus } from './models/entities';
+import { ReviewStatus, sendOTPResponse } from './models/entities';
 import loggerStream from './logger';
+import crypto from 'crypto';
+import { readFileSync } from 'fs';
+
+let disposableMails: string[] = [];
+
+try {
+  disposableMails = readFileSync('data/disposable-mail.txt','utf8').split("\n");
+} catch(e) {
+  // eslint-disable-next-line no-console
+  console.log('Failed loading disposable email',e);
+}
 
 const mailConfig = {
-     host: process.env.SMTP_HOST,
-     port: Number(process.env.SMTP_PORT),
-     tls: {
-        rejectUnauthorized: process.env.SMTP_TLS_SELFSIGNED ? false : true,
-      },
+  host: process.env.SMTP_HOST,
+  port: Number(process.env.SMTP_PORT),
+  tls: {
+    rejectUnauthorized: process.env.SMTP_TLS_SELFSIGNED ? false : true,
+  },
  };
 const transporter = nodemailer.createTransport(mailConfig);
 
@@ -32,22 +43,37 @@ const generateOTP = (email: string) => {
     setTimeout(() => {delete OTP[email]}, 600000);
 }
 
-export const sendOTP = async (email: string): Promise<boolean> => {
+export const sendOTP = async (email: string): Promise<sendOTPResponse> => {
     try {
+      const provider = email.split("@")[1].toLowerCase();
+      if (disposableMails.includes(provider)) {
+        return {
+          msg: "Le courriel fourni appartient à un fournisseur d'addresses temporaires",
+          valid: false
+        };
+      } else {
         generateOTP(email);
+        const hash = crypto.createHash('sha256').update(email).digest('hex').substring(0, 16)
         await transporter.sendMail({
-            subject: `Validez votre identité - ${process.env.APP_DNS}`,
+            subject: `Validez votre identité - ${process.env.APP_DNS} - ${hash}`,
             text: `Votre code, valide 10 minutes: ${OTP[email] as string}`,
             from: process.env.API_EMAIL,
             to: `${email}`,
         } as any);
-        return true;
+        return {
+          msg: "Un code vous a été envoyé à l'adresse indiquée",
+          valid: true
+        };
+      }
     } catch (err) {
         log({
             error: "SendOTP error",
             details: err
         });
-        return false;
+        return {
+          msg: `Erreur lors de l'envoi du code par mail`,
+          valid: false
+        };
     }
 }
 
