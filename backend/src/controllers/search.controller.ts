@@ -2,7 +2,7 @@ import { Controller, Get, Post, Body, Route, Query, Response, Tags, Header, Requ
 import multer from 'multer';
 import forge from 'node-forge';
 import express from 'express';
-import { writeFile, createReadStream } from 'fs';
+import { writeFile, access, mkdir, createReadStream } from 'fs';
 import { promisify } from 'util';
 import { resultsHeader, jsonPath, prettyString } from '../processStream';
 import { runRequest } from '../runRequest';
@@ -17,6 +17,8 @@ import { sendUpdateConfirmation } from '../mail';
 // import getDataGouvCatalog from '../getDataGouvCatalog';
 
 const writeFileAsync = promisify(writeFile);
+const mkdirAsync = promisify(mkdir);
+const accessAsync = promisify(access);
 
 /**
  * @swagger

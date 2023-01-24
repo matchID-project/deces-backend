@@ -221,7 +221,7 @@ export const buildResult = (result: ResultRawES, requestInput: RequestInput): Re
           filteredResults.splice(filteredResults.map(x => x.id).indexOf(item.id), 1);
     }
   })
-  scoreResults(filteredRequest, filteredResults, {dateFormat: filteredRequest.dateFormat})
+  scoreResults(filteredRequest, filteredResults, {dateFormatA: filteredRequest.dateFormat})
   if (requestInput.sort && Object.values(requestInput.sort.value).map(x => Object.keys(x))[0].includes('score')) {
     if (Object.values(requestInput.sort.value).find(x => x.score).score === 'asc') {
       filteredResults = filteredResults.sort((a: Person, b: Person) => a.score - b.score)
