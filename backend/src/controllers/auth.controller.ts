@@ -56,14 +56,35 @@ export class AuthController extends Controller {
       // admin username may not be overrided through user db or any other mean
       if (jsonToken.password === process.env.BACKEND_TOKEN_PASSWORD) {
         const accessToken = jwt.sign({...jsonToken, scopes: ['admin','user']}, process.env.BACKEND_TOKEN_KEY, { expiresIn: "1d" })
-        return { 'access_token': accessToken }
+        const decoded: any = jwt.verify(accessToken, process.env.BACKEND_TOKEN_KEY)
+        return {
+          msg: "jwt properly generated",
+          access_token: accessToken,
+          created_at: decoded.jti,
+          expiration_date: decoded.exp.toString(),
+          renewal_limit_date: (Number(decoded.jti) + 2592000 * 11).toString()
+        }
       }
     } else if ((Object.keys(userDB).indexOf(jsonToken.user)>=0) && (userDB[jsonToken.user] === crypto.createHash('sha256').update(jsonToken.password).digest('hex'))) {
       const accessToken = jwt.sign({...jsonToken, scopes: ['user']}, process.env.BACKEND_TOKEN_KEY, { expiresIn: "30d", jwtid: Math.floor(Date.now() / 1000).toString()})
-      return { 'access_token': accessToken }
+      const decoded: any = jwt.verify(accessToken, process.env.BACKEND_TOKEN_KEY)
+      return {
+          msg: "jwt properly generated",
+          access_token: accessToken,
+          created_at: decoded.jti,
+          expiration_date: decoded.exp.toString(),
+          renewal_limit_date: (Number(decoded.jti) + 2592000 * 11).toString()
+      }
     } else if (validateOTP(jsonToken.user,jsonToken.password)) {
       const accessToken = jwt.sign({...jsonToken, scopes: ['user']}, process.env.BACKEND_TOKEN_KEY, { expiresIn: "30d", jwtid: Math.floor(Date.now() / 1000).toString() })
-      return { 'access_token': accessToken }
+      const decoded: any = jwt.verify(accessToken, process.env.BACKEND_TOKEN_KEY)
+      return {
+          msg: "jwt properly generated",
+          access_token: accessToken,
+          created_at: decoded.jti,
+          expiration_date: decoded.exp.toString(),
+          renewal_limit_date: (Number(decoded.jti) + 2592000 * 11).toString()
+      }
     }
     this.setStatus(401);
     return { msg: "Wrong username or password"}
@@ -87,7 +108,7 @@ export class AuthController extends Controller {
     const token = authHeader.split(' ')[1];
     if (refresh && token) {
       try {
-        const decoded: any = jwt.verify(token, process.env.BACKEND_TOKEN_KEY)
+        let decoded: any = jwt.verify(token, process.env.BACKEND_TOKEN_KEY)
         const now = Math.floor(Date.now() / 1000)
         // refresh until 11 month of creation
         const oneYearAftercreation = Number(decoded.jti) + 2592000 * 11;
@@ -95,8 +116,13 @@ export class AuthController extends Controller {
           delete decoded.exp;
           delete decoded.iat;
           const accessToken = jwt.sign(decoded, process.env.BACKEND_TOKEN_KEY, { expiresIn: "30d" });
+          decoded = jwt.verify(accessToken, process.env.BACKEND_TOKEN_KEY)
           return {
-            'access_token': accessToken
+            msg: "jwt has been properly renewed",
+            access_token: accessToken,
+            created_at: decoded.jti,
+            expiration_date: decoded.exp.toString(),
+            renewal_limit_date: oneYearAftercreation.toString()
           }
         } else {
           return { msg: "Token can't be refreshed for more than 1 year" }
@@ -115,7 +141,8 @@ export class AuthController extends Controller {
       return {
         msg: "jwt is valid",
         created_at: decoded.jti,
-        expiration_date: decoded.exp.toString()
+        expiration_date: decoded.exp.toString(),
+        renewal_limit_date: (Number(decoded.jti) + 2592000 * 11).toString()
       }
     }
   }
@@ -157,8 +184,9 @@ interface Register {
  * }
  */
 interface AccessToken {
-  'access_token'?: string;
+  access_token?: string;
   msg?: string
   created_at?: string;
   expiration_date?: string;
+  renewal_limit_date?: string;
 }

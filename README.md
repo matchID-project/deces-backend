@@ -1,6 +1,6 @@
 # API Personnes Décédées <img src="https://github.com/matchID-project/deces-ui/raw/dev/public/favicon.svg" width="180" align="right" />
 
-![Build status](https://github.com/matchID-project/deces-backend/workflows/Docker%20image%20build%20CI/badge.svg?branch=master) [![License: LGPL v3](https://img.shields.io/badge/License-LGPL%20v3-blue.svg)](https://www.gnu.org/licenses/lgpl-3.0) ![Docker Pulls](https://img.shields.io/docker/pulls/matchid/deces-backend?label=Docker%20pulls)
+![Build status](https://img.shields.io/github/actions/workflow/status/matchid-project/deces-backend/dockerimage.yml) [![License: LGPL v3](https://img.shields.io/badge/License-LGPL%20v3-blue.svg)](https://www.gnu.org/licenses/lgpl-3.0) ![Docker Pulls](https://img.shields.io/docker/pulls/matchid/deces-backend?label=Docker%20pulls)
 
 API for people who died in France from 1970.
 
