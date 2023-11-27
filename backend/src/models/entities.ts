@@ -134,6 +134,7 @@ export interface Modification {
 }
 
 export interface Person {
+    index?: string;
     score?: number;
     source?: string;
     sourceLine?: number;

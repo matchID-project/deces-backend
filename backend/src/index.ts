@@ -1,4 +1,8 @@
 import { app } from './server';
+import { initUpdateIndex, updateFieldsToIndex } from './updatedIds';
+
+initUpdateIndex();
+updateFieldsToIndex();
 
 const port = 8080;
 
