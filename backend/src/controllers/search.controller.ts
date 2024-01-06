@@ -39,12 +39,14 @@ export class SearchController extends Controller {
    * @param sex Sexe
    * @param birthDate Date de naissance au format\: JJ/MM/AAAA<br>  <li> Pour une date inconnue les valeurs sont 0000 pour AAAA; 00 pour MM et JJ</li><br> <li> Une recherche par tranche de date est également possible sous la forme: JJ/MM/AAAA - JJ/MM/AAAA</li>
    * @param birthCity Localité\: de naissance en claire (pour les personnes nées en France ou dans les DOM/TOM/COM)
+   * @param birthPostalCode Code postal du lieu de naissance
    * @param birthLocationCode Code INSEE du lieu de naissance
    * @param birthDepartment Code département du lieu de naissance
    * @param birthCountry Libellé de pays de naissance en clair (pour les personnes nées à l'étranger)
    * @param birthGeoPoint Coordonnées GPS du point de naissance
    * @param deathDate Date de décès au format\: JJ/MM/AAAA. <br> <li> Pour une date inconnue les valeurs sont 0000 pour AAAA; 00 pour MM et JJ</li>.<br> <li> Une recherche par tranche de date est également possible sous la forme: JJ/MM/AAAA - JJ/MM/AAAA</li>
    * @param deathCity Localité de décès en claire** (pour les personnes nées en France ou dans les DOM/TOM/COM)
+   * @param deathPostalCode Code postal du lieu de décès
    * @param deathLocationCode Code INSEE du lieu de décès
    * @param deathDepartment Code département du lieu de décès
    * @param deathCountry Pays du lieu de décès
