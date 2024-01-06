@@ -145,7 +145,7 @@ const JsonParseStream = () => {
 
 
 const pbkdf2 = (key: string) => {
-  return crypto.createHash('sha256').update(key).digest('base64').substr(0, 32);
+  return crypto.createHash('sha256').update(key).digest('base64').substring(0, 32);
   // WIP : pbkdf2
   // return crypto.pbkdf2Sync(key, salt, 16, 16, 'sha256');
 };
