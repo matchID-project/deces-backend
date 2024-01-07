@@ -1,6 +1,7 @@
 SHELL := /bin/bash
 
 export APP = deces-backend
+export APP_GROUP = matchID
 export APP_PATH := $(shell pwd)
 export APP_DNS?=deces.matchid.io
 export APP_VERSION	:= $(shell git describe --tags )
@@ -23,6 +24,7 @@ export DC_SMTP=${DC} -f ${DC_DIR}/docker-compose-smtp.yml
 export ES_HOST = elasticsearch
 export ES_PORT = 9200
 export ES_TIMEOUT = 60
+export ES_RESTORE_TIMEOUT = 600
 export ES_INDEX = deces
 export ES_DATA = ${APP_PATH}/esdata
 export ES_NODES = 1
@@ -66,6 +68,10 @@ export BACKUP_DIR = ${APP_PATH}/backup
 export DATAPREP_VERSION_FILE = ${APP_PATH}/.dataprep.sha1
 export DATA_VERSION_FILE = ${APP_PATH}/.data.sha1
 export FILES_TO_PROCESS?=deces-([0-9]{4}|2020-m[0-9]{2}).txt.gz
+export FILES_TO_PROCESS_TEST=deces-2020-m01.txt.gz # reference for test env
+export FILES_TO_PROCESS_DEV=deces-2020-m[0-1][0-9].txt.gz # reference for preprod env
+export REPOSITORY_BUCKET?=fichier-des-personnes-decedees-elasticsearch
+export REPOSITORY_BUCKET_DEV=fichier-des-personnes-decedees-elasticsearch-dev # reference for non-prod env
 
 export DC_IMAGE_NAME=${DC_PREFIX}
 export GIT_BRANCH ?= $(shell git branch | grep '*' | awk '{print $$2}')
@@ -99,6 +105,9 @@ export PERF_SCENARIO_V1=${PERF}/scenarios/test-backend-v1.yml
 export PERF_REPORTS=${PERF}/reports/
 export PERF_NAMES=${BACKEND}/tests/clients_test.csv
 
+-include ${APP_PATH}/${GIT_TOOLS}/artifacts.SCW
+export SCW_REGION?=fr-par
+export SCW_ENDPOINT?=s3.fr-par.scw.cloud
 dummy		    := $(shell touch artifacts)
 include ./artifacts
 
@@ -131,7 +140,7 @@ clean-remote:
 	@make -C ${APP_PATH}/${GIT_TOOLS} remote-clean > /dev/null 2>&1 || true
 
 clean-config:
-	@rm -rf ${APP_PATH}/${GIT_TOOLS} ${APP_PATH}/aws config > /dev/null 2>&1 || true
+	@rm -rf ${APP_PATH}/${GIT_TOOLS} ${APP_PATH}/aws config elasticsearch-repository-* > /dev/null 2>&1 || true
 
 clean-local: clean-data clean-config
 
@@ -173,59 +182,81 @@ backup-dir:
 backup-dir-clean:
 	@if [ -d "$(BACKUP_DIR)" ] ; then (rm -rf $(BACKUP_DIR) > /dev/null 2>&1 || true) ; fi
 
-elasticsearch: network vm_max
-	@echo docker-compose up elasticsearch with ${ES_NODES} nodes
-	@cat ${DC_FILE}-elasticsearch.yml | sed "s/%M/${ES_MEM}/g" > ${DC_FILE}-elasticsearch-huge.yml
-	@(if [ ! -d ${ES_DATA}/node1 ]; then sudo mkdir -p ${ES_DATA}/node1 ; sudo chmod g+rw ${ES_DATA}/node1/.; sudo chgrp 1000 ${ES_DATA}/node1/.; fi)
-	@(i=$(ES_NODES); while [ $${i} -gt 1 ]; \
-		do \
-			if [ ! -d ${ES_DATA}/node$$i ]; then (echo ${ES_DATA}/node$$i && sudo mkdir -p ${ES_DATA}/node$$i && sudo chmod g+rw ${ES_DATA}/node$$i/. && sudo chgrp 1000 ${ES_DATA}/node$$i/.); fi; \
-		cat ${DC_FILE}-elasticsearch-node.yml | sed "s/%N/$$i/g;s/%MM/${ES_MEM}/g;s/%M/${ES_MEM}/g" >> ${DC_FILE}-elasticsearch-huge.yml; \
-		i=`expr $$i - 1`; \
-	done;\
-	true)
-	${DC} -f ${DC_FILE}-elasticsearch-huge.yml up -d
-	@timeout=${ES_TIMEOUT} ; ret=1 ; until [ "$$timeout" -le 0 -o "$$ret" -eq "0"  ] ; do (docker exec -i ${USE_TTY} ${DC_PREFIX}-elasticsearch curl -s --fail -XGET localhost:9200/_cat/indices > /dev/null) ; ret=$$? ; if [ "$$ret" -ne "0" ] ; then echo "waiting for elasticsearch to start $$timeout" ; fi ; timeout=$$((timeout-1)); sleep 1 ; done ; exit $$ret
+elasticsearch-start: network vm_max
+	@echo docker-compose up matchID elasticsearch with ${ES_NODES} nodes
+	@(if [ ! -d ${ES_DATA}/node1 ]; then sudo mkdir -p ${ES_DATA}/node1 ; sudo chmod g+rw ${ES_DATA}/node1/.; sudo chown 1000:1000 ${ES_DATA}/node1/.; fi)
+	${DC} -f ${DC_FILE}-elasticsearch.yml up -d
 
+elasticsearch: elasticsearch-start
+	@timeout=${ES_TIMEOUT} ; ret=1 ; until [ "$$timeout" -le 0 -o "$$ret" -eq "0"  ] ; do (docker exec -i ${USE_TTY} ${DC_PREFIX}-elasticsearch curl -s --fail -XGET localhost:9200/ > /dev/null) ; ret=$$? ; if [ "$$ret" -ne "0" ] ; then echo -en "\rwaiting for elasticsearch API to start $$timeout" ; fi ; ((timeout--)); sleep 1 ; done ; echo ; exit $$ret
 
-elasticsearch-storage-pull: backup-dir ${DATAPREP_VERSION_FILE} ${DATA_VERSION_FILE}
-	@\
-	DATAPREP_VERSION=$$(cat ${DATAPREP_VERSION_FILE});\
-	DATA_VERSION=$$(cat ${DATA_VERSION_FILE});\
-	ES_BACKUP_FILE=${ES_BACKUP_BASENAME}_$${DATAPREP_VERSION}_$${DATA_VERSION}.tar;\
-	if [ ! -f "${BACKUP_DIR}/$$ES_BACKUP_FILE" ];then\
-		echo pulling ${STORAGE_BUCKET}/$$ES_BACKUP_FILE;\
-		${MAKE} -C ${APP_PATH}/${GIT_TOOLS} storage-pull\
-			FILE=$$ES_BACKUP_FILE DATA_DIR=${BACKUP_DIR}\
-			STORAGE_BUCKET=${STORAGE_BUCKET} STORAGE_ACCESS_KEY=${STORAGE_ACCESS_KEY} STORAGE_SECRET_KEY=${STORAGE_SECRET_KEY};\
-	fi
+elasticsearch-index-readiness:
+	@timeout=${ES_RESTORE_TIMEOUT} ; ret=1 ; until [ "$$timeout" -le 0 -o "$$ret" -eq "0"  ] ; do (docker exec -i ${USE_TTY} ${DC_PREFIX}-elasticsearch curl -s --fail -XGET localhost:9200/_cat/indices | grep -q green > /dev/null) ; ret=$$? ; if [ "$$ret" -ne "0" ] ; then echo -en "\rwaiting for elasticsearch index to be ready $$timeout" ; fi ; ((timeout--)); sleep 1 ; done ; echo ; exit $$ret
 
 elasticsearch-stop:
 	@echo docker-compose down matchID elasticsearch
 	@if [ -f "${DC_FILE}-elasticsearch-huge.yml" ]; then ${DC} -f ${DC_FILE}-elasticsearch-huge.yml down;fi
 
-elasticsearch-restore: elasticsearch-stop elasticsearch-storage-pull
-	@if [ -d "$(ES_DATA)" ] ; then (echo purging ${ES_DATA} && sudo rm -rf ${ES_DATA} && echo purge done) ; fi
+elasticsearch-repository-creds: elasticsearch-start
+	@if [ ! -f "elasticsearch-repository-plugin" ]; then\
+		echo installing elasticsearch repository plugin;\
+		docker exec -i ${USE_TTY} ${DC_PREFIX}-elasticsearch sh -c \
+			"echo ${STORAGE_ACCESS_KEY} | bin/elasticsearch-keystore add --stdin --force s3.client.default.access_key";\
+		docker exec -i ${USE_TTY} ${DC_PREFIX}-elasticsearch sh -c \
+			"echo ${STORAGE_SECRET_KEY} | bin/elasticsearch-keystore add --stdin --force s3.client.default.secret_key";\
+		docker restart ${DC_PREFIX}-elasticsearch;\
+		timeout=${ES_TIMEOUT} ; ret=1 ; until [ "$$timeout" -le 0 -o "$$ret" -eq "0"  ] ; do (docker exec -i ${USE_TTY} ${DC_PREFIX}-elasticsearch curl -s --fail -XGET localhost:9200/ > /dev/null) ; ret=$$? ; if [ "$$ret" -ne "0" ] ; then echo -en "\rwaiting for elasticsearch to start $$timeout" ; fi ; ((timeout--)); sleep 1 ; done ;\
+		echo; touch elasticsearch-repository-plugin ; exit $$ret;\
+	fi;
+
+elasticsearch-repository-config: elasticsearch-repository-creds
+	@if [ ! -f "elasticsearch-repository-config" ]; then\
+		echo creating elasticsearch repository ${APP_GROUP} in s3 bucket ${REPOSITORY_BUCKET} && \
+		docker exec -i ${USE_TTY} ${DC_PREFIX}-elasticsearch \
+			curl -s -XPUT "localhost:9200/_snapshot/${APP_GROUP}" -H 'Content-Type: application/json' \
+				-d '{"type": "s3","settings": {"bucket": "${REPOSITORY_BUCKET}","client": "default","region": "${SCW_REGION}","endpoint": "${SCW_ENDPOINT}","path_style_access": true,"protocol": "https"}}' \
+			| tee /tmp/elasticsearch-repository-config \
+			| grep -q '"acknowledged":true' \
+		&& touch elasticsearch-repository-config \
+		|| ( cat /tmp/elasticsearch-repository-config \
+			&& rm /tmp/elasticsearch-repository-config \
+			&& exit 1 );\
+	fi
+
+elasticsearch-restore: elasticsearch-repository-config ${DATAPREP_VERSION_FILE} ${DATA_VERSION_FILE}
 	@\
 	DATAPREP_VERSION=$$(cat ${DATAPREP_VERSION_FILE});\
 	DATA_VERSION=$$(cat ${DATA_VERSION_FILE});\
-	ESBACKUPFILE=${ES_BACKUP_BASENAME}_$${DATAPREP_VERSION}_$${DATA_VERSION}.tar;\
-	if [ ! -f "${BACKUP_DIR}/$$ESBACKUPFILE" ];then\
-		(echo no such archive "${BACKUP_DIR}/$$ESBACKUPFILE" && exit 1);\
-	else\
-		echo restoring from ${BACKUP_DIR}/$$ESBACKUPFILE to ${ES_DATA} && \
-		sudo tar xf ${BACKUP_DIR}/$$ESBACKUPFILE -C $$(dirname ${ES_DATA}) && \
-		echo backup restored;\
-	fi;
+	ES_BACKUP_NAME=${ES_BACKUP_BASENAME}_$${DATAPREP_VERSION}_$${DATA_VERSION};\
+	echo restoring snapshot $${ES_BACKUP_NAME} from elasticsearch repository;\
+	(\
+		docker exec -i ${USE_TTY} ${DC_PREFIX}-elasticsearch \
+			curl -s -XPOST localhost:9200/_snapshot/${APP_GROUP}/$${ES_BACKUP_NAME}/_restore?wait_for_completion=true -H 'Content-Type: application/json'\
+			-d '{"indices": "${ES_INDEX}","ignore_unavailable": true,"include_global_state": false}' \
+		> /dev/null 2>&1\
+	) && echo "snapshot $${ES_BACKUP_NAME} restored from elasticsearch repository" && touch elasticsearch-repository-restore
+
+elasticsearch-restore-async: elasticsearch-repository-config ${DATAPREP_VERSION_FILE} ${DATA_VERSION_FILE}
+	@\
+	DATAPREP_VERSION=$$(cat ${DATAPREP_VERSION_FILE});\
+	DATA_VERSION=$$(cat ${DATA_VERSION_FILE});\
+	ES_BACKUP_NAME=${ES_BACKUP_BASENAME}_$${DATAPREP_VERSION}_$${DATA_VERSION};\
+	echo restoring snapshot $${ES_BACKUP_NAME} from elasticsearch repository;\
+	(\
+		docker exec -i ${USE_TTY} ${DC_PREFIX}-elasticsearch \
+			curl -s -XPOST localhost:9200/_snapshot/${APP_GROUP}/$${ES_BACKUP_NAME}/_restore -H 'Content-Type: application/json'\
+			-d '{"indices": "${ES_INDEX}","ignore_unavailable": true,"include_global_state": false}' \
+		> /dev/null 2>&1\
+	) && echo "snapshot $${ES_BACKUP_NAME} restore initiated from elasticsearch repository" && touch elasticsearch-repository-restore
 
 elasticsearch-clean: elasticsearch-stop
-	@sudo rm -rf ${ES_DATA} > /dev/null 2>&1 || true
+	@sudo rm -rf elasticsearch-repository-* ${ES_DATA} > /dev/null 2>&1 || true
 
 # deploy
 
-deploy-local: config elasticsearch-storage-pull elasticsearch-restore elasticsearch docker-check up backup-dir-clean
+deploy-local: config elasticsearch-restore-async docker-check up
 
-deploy-dependencies: config elasticsearch-storage-pull elasticsearch-restore elasticsearch docker-check elasticsearch backup-dir-clean backend/tests/clients_test.csv
+deploy-dependencies: config elasticsearch-restore-async docker-check backend/tests/clients_test.csv elasticsearch-index-readiness
 
 # DOCKER
 
@@ -439,7 +470,7 @@ smtp-stop:
 #  Start  #
 ###########
 
-start: elasticsearch backend-start
+start: elasticsearch elasticsearch-index-readiness backend-start
 	@sleep 2 && docker-compose logs
 
 up: start
