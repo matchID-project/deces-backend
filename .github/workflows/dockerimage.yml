@@ -17,6 +17,7 @@ jobs:
         run: make deploy-dependencies
         env:
           FILES_TO_PROCESS: deces-2020-m01.txt.gz
+          REPOSITORY_BUCKET: fichier-des-personnes-decedees-elasticsearch-dev
           STORAGE_ACCESS_KEY: ${{ secrets.aws_access_key_id }}
           STORAGE_SECRET_KEY: ${{ secrets.aws_secret_access_key }}
       - name: ✅ Execute mocha tests
@@ -50,6 +51,7 @@ jobs:
         run: make deploy-dependencies backend-perf-clinic
         env:
           FILES_TO_PROCESS: deaths.txt.gz
+          REPOSITORY_BUCKET: fichier-des-personnes-decedees-elasticsearch-dev
           STORAGE_ACCESS_KEY: ${{ secrets.aws_access_key_id }}
           STORAGE_SECRET_KEY: ${{ secrets.aws_secret_access_key }}
       - name: ⚗ Run artillery tests
