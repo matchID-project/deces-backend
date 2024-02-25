@@ -90,7 +90,7 @@ module.exports = {
         "@typescript-eslint/no-unsafe-return": "off",
         "@typescript-eslint/no-floating-promises": "off",
         "@typescript-eslint/restrict-plus-operands": "off",
-        "camelcase": "warn",
+        "camelcase": "off",
         "complexity": "off",
         "constructor-super": "error",
         "eqeqeq": [

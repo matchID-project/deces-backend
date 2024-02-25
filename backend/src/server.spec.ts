@@ -125,7 +125,7 @@ describe('server.ts - Express application', () => {
         .set('Authorization', `Bearer ${token.body.access_token as string}`)
       expect(tokenVerify).to.have.status(200);
       expect(tokenVerify.body).to.include.all.keys(['msg', 'created_at', 'expiration_date']);
-      await new Promise(( resolve: any, reject ) => {
+      const promise = new Promise(( resolve: any, reject ) => {
         setTimeout( async () => {
           try {
             const refreshToken = await chai.request(app)
@@ -147,6 +147,7 @@ describe('server.ts - Express application', () => {
           resolve()
         }, 3000 );
       });
+      await promise
     }).timeout(10000);
   })
 

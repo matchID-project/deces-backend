@@ -477,7 +477,7 @@ export const csvHandle = async (request: Request, options: Options): Promise<any
 
 export const returnBulkResults = async (response: Response, id: string, outputFormat: string, order: string): Promise<void> => {
   const jobId = crypto.createHash('sha256').update(id).digest('hex');
-  const job: Job<any>|any = await jobQueue.getJob(jobId);
+  const job: any = await jobQueue.getJob(jobId);
   const jobsActive = await jobQueue.getJobs(['active', 'failed'], 0, 100, true);
   const jobStatus = await job.getState();
   if (job && jobStatus === 'completed') {
@@ -612,7 +612,7 @@ export const returnBulkResults = async (response: Response, id: string, outputFo
 
 export const deleteThreadJob = async (response: Response, id: string): Promise<void> => {
   const jobId = crypto.createHash('sha256').update(id).digest('hex');
-  let job: Job<any>|any= await jobQueue.getJob(jobId)
+  let job: any= await jobQueue.getJob(jobId)
   if (!job) {
     job = await jobQueue.getJob(id)
   }
