@@ -277,7 +277,7 @@ export class SearchController extends Controller {
         let proof;
         const message = updateRequest.message;
         delete updateRequest.message;
-        if (request.files && request.files.length > 0) {
+        if (request.files && request.files.length as number > 0) {
           const [ file ]: any = request.files
           proof = file.path
         } else if (updateRequest.proof) {

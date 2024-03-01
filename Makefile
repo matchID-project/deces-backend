@@ -319,8 +319,8 @@ backend-test:
 db-json-fake:
 	echo '{"user1@gmail.com": "7cd61af92058569476e9d91fea601ba85fa02258b6263cfa188c15957f4752f3"}' > ${DB_JSON}
 
-backend-test-mocha: db-json-fake smtp
-	@echo Testing API with mocha tests
+backend-test-vitest: db-json-fake smtp
+	@echo Testing API with vitest tests
 	@if [ ! -f "${BACKEND}/src/routes/routes.ts" ]; then export EXEC_ENV=development; \
 		export BACKEND_LOG_LEVEL=error; \
 		${DC_BACKEND} -f ${DC_FILE}-dev-backend.yml run --rm backend npm run tsoa;fi

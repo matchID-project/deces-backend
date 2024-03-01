@@ -20,8 +20,8 @@ jobs:
           REPOSITORY_BUCKET: fichier-des-personnes-decedees-elasticsearch-dev
           STORAGE_ACCESS_KEY: ${{ secrets.aws_access_key_id }}
           STORAGE_SECRET_KEY: ${{ secrets.aws_secret_access_key }}
-      - name: ✅ Execute mocha tests
-        run: make backend-test-mocha
+      - name: ✅ Execute vitest tests
+        run: make backend-test-vitest
       - name: 🚀 Push the docker image
         if: github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/master'
         run: make docker-push GIT_BRANCH="${GITHUB_REF#refs/heads/}"
