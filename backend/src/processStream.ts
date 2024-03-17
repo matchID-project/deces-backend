@@ -173,7 +173,7 @@ export const processCsv =  async (job: Job<any>, jobFile: JobInput): Promise<any
       quote: job.data.quote,
       skipLines: job.data.skipLines
     };
-    const writeStream: any = fs.createWriteStream(`${jobId}.out.enc`);
+    const writeStream: any = fs.createWriteStream(`${process.env.JOBS}/${jobId}.out.enc`);
     const gzipStream =  createGzip();
     const encryptStream = crypto.createCipheriv('aes-256-cbc', pbkdf2(job.data.randomKey), encryptioniv);
     const jsonStringStream: any = JsonStringifyStream();
@@ -432,7 +432,7 @@ interface Options {
 workerJobs.on('completed', (job: Job) => {
     if (!stopJob.includes(job.id)) {
       setTimeout(() => {
-        fs.unlink(`${job.id}.out.enc`, (err: Error) => {if (err) log({unlinkOutputDeleteError: err});});
+        fs.unlink(`${process.env.JOBS}/${job.id}.out.enc`, (err: Error) => {if (err) log({unlinkOutputDeleteError: err});});
       }, Number(process.env.BACKEND_TMPFILE_PERSISTENCE || "3600000")) // Delete results after 1 hour
     }
 });
@@ -493,11 +493,11 @@ export const returnBulkResults = async (response: Response, id: string, outputFo
           // return {msg: `Job ${id} was cancelled`};
         }
       }
-      const size = fs.statSync(`${jobId}.out.enc`).size;
+      const size = fs.statSync(`${process.env.JOBS}/${jobId}.out.enc`).size;
       let sourceHeader: any;
       let mapping: any;
       const decryptStream = crypto.createDecipheriv('aes-256-cbc', pbkdf2(id), encryptioniv);
-      const dataStream = fs.createReadStream(`${jobId}.out.enc`)
+      const dataStream = fs.createReadStream(`${process.env.JOBS}/${jobId}.out.enc`)
         .pipe(decryptStream)
         .on('error', (e: any) => log({decryptGetResultsError: e, jobId}))
         .pipe(createGunzip())
@@ -622,7 +622,7 @@ export const deleteThreadJob = async (response: Response, id: string): Promise<v
     setTimeout(() => {
       job.remove()
       // lazily remove encrypted files
-      fs.unlink(`${jobId}.out.enc`, (e) => {
+      fs.unlink(`${process.env.JOBS}/${jobId}.out.enc`, (e) => {
         if (e) {
           log({unlinkOutputDeleteError: e, jobId})
         }

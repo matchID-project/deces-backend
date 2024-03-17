@@ -87,17 +87,19 @@ export DATASET=fichier-des-personnes-decedees
 export STORAGE_BUCKET=${DATASET}
 export AWS=${APP_PATH}/aws
 
-export COMMUNES_JSON=${BACKEND}/data/communes.json
-export DISPOSABLE_MAIL=${BACKEND}/data/disposable-mail.txt
-export DB_JSON=${BACKEND}/data/userDB.json
-export PROOFS=${BACKEND}/data/proofs
+export DATA_DIR=${BACKEND}/data
+export COMMUNES_JSON=${DATA_DIR}/communes.json
+export DISPOSABLE_MAIL=${DATA_DIR}/disposable-mail.txt
+export DB_JSON=${DATA_DIR}/userDB.json
+export PROOFS=${DATA_DIR}/proofs
+export JOBS=${DATA_DIR}/jobs
 
 export DATAGOUV_CATALOG_URL = https://www.data.gouv.fr/api/1/datasets/${DATASET}/
 export DATAGOUV_RESOURCES_URL = https://static.data.gouv.fr/resources/${DATASET}
 export DATAGOUV_PROXY_PATH = /${API_PATH}/api/v0/getDataGouvFile
 
 export WIKIDATA_SRC= ${BACKEND}/tests/wikidata_dead_french.csv
-export WIKIDATA_LINKS=${BACKEND}/data/wikidata.json
+export WIKIDATA_LINKS=${DATA_DIR}/wikidata.json
 
 # test artillery
 export PERF=${BACKEND}/tests/performance
@@ -288,7 +290,7 @@ docker-load:
 #############
 
 # build
-backend-build-image: ${WIKIDATA_LINKS} ${COMMUNES_JSON} ${DISPOSABLE_MAIL} ${DB_JSON} ${PROOFS}
+backend-build-image: ${WIKIDATA_LINKS} ${COMMUNES_JSON} ${DISPOSABLE_MAIL} ${DB_JSON} ${PROOFS} ${JOBS}
 	export EXEC_ENV=production; ${DC_BACKEND} build backend
 
 backend-build-all: network backend-build-image
@@ -369,7 +371,7 @@ backend-dev-test:
 	@echo Testing API parameters
 	@docker exec -i ${USE_TTY} ${APP}-development bash /deces-backend/tests/test_query_params.sh
 
-dev: network backend-dev-stop ${WIKIDATA_LINKS} ${COMMUNES_JSON} ${DISPOSABLE_MAIL} ${DB_JSON} ${PROOFS} smtp backend-dev
+dev: network backend-dev-stop ${WIKIDATA_LINKS} ${COMMUNES_JSON} ${DISPOSABLE_MAIL} ${DB_JSON} ${PROOFS} ${JOBS} smtp backend-dev
 
 dev-stop: backend-dev-stop smtp-stop
 
@@ -453,6 +455,9 @@ disposable-mail-pull: ${DISPOSABLE_MAIL}
 
 ${PROOFS}:
 	mkdir -p ${PROOFS}
+
+${JOBS}:
+	mkdir -p ${JOBS}
 
 ${DB_JSON}:
 	@echo "initiating void db";\
