@@ -442,7 +442,7 @@ export const csvHandle = async (request: Request, options: Options): Promise<any
   const jobId = crypto.createHash('sha256').update(options.randomKey).digest('hex');
   const gzipStream =  createGzip();
   const encryptStream =  crypto.createCipheriv('aes-256-cbc', pbkdf2(options.randomKey), encryptioniv);
-  const writeStream: any = fs.createWriteStream(`${jobId}.in.enc`)
+  const writeStream: any = fs.createWriteStream(`${process.env.JOBS}/${jobId}.in.enc`)
   const readStream = new Readable().on('data', (buffer: any) => {
     // count lines from buffer without duplicating it
     let idx = -1;
@@ -466,7 +466,7 @@ export const csvHandle = async (request: Request, options: Options): Promise<any
   readStream.push((request.files as any)[0].buffer);
   readStream.push(null);
   await finishedAsync(writeStream);
-  inputsArray.push({id: jobId, file: `${jobId}.in.enc`, size: options.totalRows}) // Use key hash as job identifier
+  inputsArray.push({id: jobId, file: `${process.env.JOBS}/${jobId}.in.enc`, size: options.totalRows}) // Use key hash as job identifier
   await jobQueue.add(jobId,
     {...options},
     {jobId}
@@ -627,7 +627,7 @@ export const deleteThreadJob = async (response: Response, id: string): Promise<v
           log({unlinkOutputDeleteError: e, jobId})
         }
       });
-      fs.unlink(`${jobId}.in.enc`, (e) => {
+      fs.unlink(`${process.env.JOBS}/${jobId}.in.enc`, (e) => {
         if (e) {
           log({unlinkInputDeleteError: e, jobId})
         }
