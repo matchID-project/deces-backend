@@ -55,8 +55,15 @@ services:
       - DATAGOUV_PROXY_PATH=${DATAGOUV_PROXY_PATH}
       - ES_URL=${ES_HOST}:${ES_PORT}
       - ES_INDEX=${ES_INDEX}
+      - COMMUNES_JSON=data/communes.json
+      - DISPOSABLE_MAIL=data/disposable-mail.txt
+      - DB_JSON=data/userDB.json
+      - PROOFS=data/proofs
+      - JOBS=data/jobs
+      - WIKIDATA_LINKS=data/wikidata.json
     volumes:
       - ${PROOFS}:/${APP}/data/proofs
+      - ${JOBS}:/${APP}/data/jobs
     restart: always
     depends_on:
       - "redis"

@@ -25,7 +25,7 @@ const walk = (directory: string): string[]=> {
 
 const rawData: any = {};
 try {
-    const jsonFiles = walk('./data/proofs')
+    const jsonFiles = walk(`${process.env.PROOFS}`)
     jsonFiles.forEach((jsonFile: string) => {
       // data/proof/{id} => id=2
       const id = jsonFile.split("/")[2];
