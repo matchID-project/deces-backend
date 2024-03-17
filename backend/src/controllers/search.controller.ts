@@ -303,11 +303,11 @@ export class SearchController extends Controller {
           correctionData.message = message;
         }
         try {
-          await accessAsync(`./data/proofs/${id}`);
+          await accessAsync(`${process.env.PROOFS}/${id}`);
         } catch(err) {
-          await mkdirAsync(`./data/proofs/${id}`, { recursive: true });
+          await mkdirAsync(`${process.env.PROOFS}/${id}`, { recursive: true });
         }
-        await writeFileAsync(`./data/proofs/${id}/${date}_${id}.json`, JSON.stringify(correctionData));
+        await writeFileAsync(`${process.env.PROOFS}/${id}/${date}_${id}.json`, JSON.stringify(correctionData));
         if (!updatedFields[id]) { updatedFields[id] = [] }
         updatedFields[id].push(correctionData);
         return { msg: "Update stored" };
@@ -335,7 +335,7 @@ export class SearchController extends Controller {
                 update.auth = auth;
                 count[review.status]++;
                 update.review = review;
-                await writeFileAsync(`./data/proofs/${id}/${update.date as string}_${id}.json`, JSON.stringify(update));
+                await writeFileAsync(`${process.env.PROOFS}/${id}/${update.date as string}_${id}.json`, JSON.stringify(update));
                 if (!review.silent) {
                   await sendUpdateConfirmation(update.author, review.status, review.message, id);
                 }
@@ -426,7 +426,7 @@ export class SearchController extends Controller {
           cb(new Error('Only PDF upload is allowed'), null)
         }
         const { id } = req.params;
-        const dir = `./data/proofs/${id as string}`;
+        const dir = `${process.env.PROOFS}/${id as string}`;
         try {
           await accessAsync(dir);
         } catch(err) {

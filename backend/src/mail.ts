@@ -7,7 +7,7 @@ import { readFileSync } from 'fs';
 let disposableMails: string[] = [];
 
 try {
-  disposableMails = readFileSync('data/disposable-mail.txt','utf8').split("\n");
+  disposableMails = readFileSync(`${process.env.DISPOSABLE_MAIL}`,'utf8').split("\n");
 } catch(e) {
   // eslint-disable-next-line no-console
   console.log('Failed loading disposable email',e);
