@@ -123,6 +123,7 @@ describe('server.ts - Express application', () => {
       expect(tokenVerify.status).toBe(200);
       expect(tokenVerify.body).to.include.all.keys(['msg', 'created_at', 'expiration_date']);
       const promise = new Promise(( resolve: any, reject ) => {
+        // eslint-disable-next-line @typescript-eslint/no-misused-promises
         setTimeout( async () => {
           try {
             const refreshToken = await server
