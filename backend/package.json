@@ -38,8 +38,7 @@
     "swagger-ui-svelte": "^0.0.13",
     "tsoa": "^6.0.1",
     "util": "^0.12.5",
-    "winston": "^3.11.0",
-    "zlib": "^1.0.5"
+    "winston": "^3.11.0"
   },
   "devDependencies": {
     "@types/express": "^4.17.21",
