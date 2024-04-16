@@ -4,6 +4,18 @@ import loggerStream from './logger';
 import crypto from 'crypto';
 import { readFileSync } from 'fs';
 
+interface MailConfig {
+  host: string;
+  port: number;
+  tls: {
+    rejectUnauthorized: boolean;
+  };
+  auth?: {
+    user: string;
+    pass: string;
+  };
+}
+
 let disposableMails: string[] = [];
 
 try {
@@ -13,13 +25,21 @@ try {
   console.log('Failed loading disposable email',e);
 }
 
-const mailConfig = {
+const mailConfig: MailConfig = {
   host: process.env.SMTP_HOST,
   port: Number(process.env.SMTP_PORT),
   tls: {
     rejectUnauthorized: process.env.SMTP_TLS_SELFSIGNED ? false : true,
   },
  };
+
+if (process.env.SMTP_PWD !== undefined) {
+  mailConfig.auth = {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PWD
+  }
+}
+
 const transporter = nodemailer.createTransport(mailConfig);
 
 const log = (json:any) => {

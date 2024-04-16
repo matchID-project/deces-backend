@@ -8,7 +8,7 @@ import { runBulkRequest } from './runRequest';
 import { buildResultSingle, ResultRawES } from './models/result';
 import { scoreResults } from './score';
 import { ScoreParams } from './models/entities'
-import { createGzip, createGunzip } from 'zlib';
+import { createGzip, createGunzip } from 'node:zlib';
 import loggerStream from './logger';
 import crypto from 'crypto';
 import { promisify } from 'util';
