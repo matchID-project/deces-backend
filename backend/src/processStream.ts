@@ -8,7 +8,7 @@ import { runBulkRequest } from './runRequest';
 import { buildResultSingle, ResultRawES } from './models/result';
 import { scoreResults } from './score';
 import { ScoreParams } from './models/entities'
-import { createGzip, createGunzip } from 'zlib';
+import { createGzip, createGunzip } from 'node:zlib';
 import loggerStream from './logger';
 import crypto from 'crypto';
 import { promisify } from 'util';
@@ -173,7 +173,7 @@ export const processCsv =  async (job: Job<any>, jobFile: JobInput): Promise<any
       quote: job.data.quote,
       skipLines: job.data.skipLines
     };
-    const writeStream: any = fs.createWriteStream(`${jobId}.out.enc`);
+    const writeStream: any = fs.createWriteStream(`${process.env.JOBS}/${jobId}.out.enc`);
     const gzipStream =  createGzip();
     const encryptStream = crypto.createCipheriv('aes-256-cbc', pbkdf2(job.data.randomKey), encryptioniv);
     const jsonStringStream: any = JsonStringifyStream();
@@ -432,7 +432,7 @@ interface Options {
 workerJobs.on('completed', (job: Job) => {
     if (!stopJob.includes(job.id)) {
       setTimeout(() => {
-        fs.unlink(`${job.id}.out.enc`, (err: Error) => {if (err) log({unlinkOutputDeleteError: err});});
+        fs.unlink(`${process.env.JOBS}/${job.id}.out.enc`, (err: Error) => {if (err) log({unlinkOutputDeleteError: err});});
       }, Number(process.env.BACKEND_TMPFILE_PERSISTENCE || "3600000")) // Delete results after 1 hour
     }
 });
@@ -442,7 +442,7 @@ export const csvHandle = async (request: Request, options: Options): Promise<any
   const jobId = crypto.createHash('sha256').update(options.randomKey).digest('hex');
   const gzipStream =  createGzip();
   const encryptStream =  crypto.createCipheriv('aes-256-cbc', pbkdf2(options.randomKey), encryptioniv);
-  const writeStream: any = fs.createWriteStream(`${jobId}.in.enc`)
+  const writeStream: any = fs.createWriteStream(`${process.env.JOBS}/${jobId}.in.enc`)
   const readStream = new Readable().on('data', (buffer: any) => {
     // count lines from buffer without duplicating it
     let idx = -1;
@@ -466,7 +466,7 @@ export const csvHandle = async (request: Request, options: Options): Promise<any
   readStream.push((request.files as any)[0].buffer);
   readStream.push(null);
   await finishedAsync(writeStream);
-  inputsArray.push({id: jobId, file: `${jobId}.in.enc`, size: options.totalRows}) // Use key hash as job identifier
+  inputsArray.push({id: jobId, file: `${process.env.JOBS}/${jobId}.in.enc`, size: options.totalRows}) // Use key hash as job identifier
   await jobQueue.add(jobId,
     {...options},
     {jobId}
@@ -477,7 +477,7 @@ export const csvHandle = async (request: Request, options: Options): Promise<any
 
 export const returnBulkResults = async (response: Response, id: string, outputFormat: string, order: string): Promise<void> => {
   const jobId = crypto.createHash('sha256').update(id).digest('hex');
-  const job: Job<any>|any = await jobQueue.getJob(jobId);
+  const job: any = await jobQueue.getJob(jobId);
   const jobsActive = await jobQueue.getJobs(['active', 'failed'], 0, 100, true);
   const jobStatus = await job.getState();
   if (job && jobStatus === 'completed') {
@@ -493,11 +493,11 @@ export const returnBulkResults = async (response: Response, id: string, outputFo
           // return {msg: `Job ${id} was cancelled`};
         }
       }
-      const size = fs.statSync(`${jobId}.out.enc`).size;
+      const size = fs.statSync(`${process.env.JOBS}/${jobId}.out.enc`).size;
       let sourceHeader: any;
       let mapping: any;
       const decryptStream = crypto.createDecipheriv('aes-256-cbc', pbkdf2(id), encryptioniv);
-      const dataStream = fs.createReadStream(`${jobId}.out.enc`)
+      const dataStream = fs.createReadStream(`${process.env.JOBS}/${jobId}.out.enc`)
         .pipe(decryptStream)
         .on('error', (e: any) => log({decryptGetResultsError: e, jobId}))
         .pipe(createGunzip())
@@ -612,7 +612,7 @@ export const returnBulkResults = async (response: Response, id: string, outputFo
 
 export const deleteThreadJob = async (response: Response, id: string): Promise<void> => {
   const jobId = crypto.createHash('sha256').update(id).digest('hex');
-  let job: Job<any>|any= await jobQueue.getJob(jobId)
+  let job: any= await jobQueue.getJob(jobId)
   if (!job) {
     job = await jobQueue.getJob(id)
   }
@@ -622,12 +622,12 @@ export const deleteThreadJob = async (response: Response, id: string): Promise<v
     setTimeout(() => {
       job.remove()
       // lazily remove encrypted files
-      fs.unlink(`${jobId}.out.enc`, (e) => {
+      fs.unlink(`${process.env.JOBS}/${jobId}.out.enc`, (e) => {
         if (e) {
           log({unlinkOutputDeleteError: e, jobId})
         }
       });
-      fs.unlink(`${jobId}.in.enc`, (e) => {
+      fs.unlink(`${process.env.JOBS}/${jobId}.in.enc`, (e) => {
         if (e) {
           log({unlinkInputDeleteError: e, jobId})
         }

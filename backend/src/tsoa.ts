@@ -28,7 +28,8 @@ import { generateRoutes, generateSpec, ExtendedRoutesConfig, ExtendedSpecConfig 
     routesDir: './src/routes',
     middleware: 'express',
     noImplicitAdditionalProperties: "silently-remove-extras",
-    authenticationModule: "./src/authentification.ts"
+    authenticationModule: "./src/authentification.ts",
+    bodyCoercion: true
   };
 
   await generateSpec(specOptions);

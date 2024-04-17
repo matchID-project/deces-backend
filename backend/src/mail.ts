@@ -4,22 +4,42 @@ import loggerStream from './logger';
 import crypto from 'crypto';
 import { readFileSync } from 'fs';
 
+interface MailConfig {
+  host: string;
+  port: number;
+  tls: {
+    rejectUnauthorized: boolean;
+  };
+  auth?: {
+    user: string;
+    pass: string;
+  };
+}
+
 let disposableMails: string[] = [];
 
 try {
-  disposableMails = readFileSync('data/disposable-mail.txt','utf8').split("\n");
+  disposableMails = readFileSync(`${process.env.DISPOSABLE_MAIL}`,'utf8').split("\n");
 } catch(e) {
   // eslint-disable-next-line no-console
   console.log('Failed loading disposable email',e);
 }
 
-const mailConfig = {
+const mailConfig: MailConfig = {
   host: process.env.SMTP_HOST,
   port: Number(process.env.SMTP_PORT),
   tls: {
     rejectUnauthorized: process.env.SMTP_TLS_SELFSIGNED ? false : true,
   },
  };
+
+if (process.env.SMTP_PWD !== undefined) {
+  mailConfig.auth = {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PWD
+  }
+}
+
 const transporter = nodemailer.createTransport(mailConfig);
 
 const log = (json:any) => {

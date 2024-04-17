@@ -125,7 +125,7 @@ export class BulkController extends Controller {
   public async uploadCsv(@Request() request: express.Request): Promise<any> {
     await this.handleFile(request);
     // file will be in request.randomFileIsHere, it is a buffer
-    if (request.files && request.files.length > 0) {
+    if (request.files && request.files.length as number > 0) {
       // Use random number as enctyption key
       const bytes = forge.random.getBytesSync(32);
       const randomKey = forge.util.bytesToHex(bytes);

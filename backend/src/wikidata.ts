@@ -3,7 +3,7 @@ import { Wikidict } from './models/entities';
 
 const dic: any = {};
 try {
-    const rawdata = JSON.parse(readFileSync('data/wikidata.json','utf8'));
+    const rawdata = JSON.parse(readFileSync(`${process.env.WIKIDATA_LINKS}`,'utf8'));
     rawdata.forEach((item: Wikidict) => {dic[item.id] = {...item}; delete dic[item.id].id})
 } catch(e) {
     // eslint-disable-next-line no-console

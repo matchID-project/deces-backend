@@ -1,8 +1,7 @@
 import { BulkController } from './bulk.controller'
 import { writeToBuffer } from '@fast-csv/format';
+import { describe, expect, it } from 'vitest'
 import express from 'express';
-import { expect } from 'chai';
-import 'mocha';
 
 describe('bulk.controller.ts', () => {
   const controller = new BulkController()

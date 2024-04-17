@@ -1,8 +1,7 @@
 import { SearchController } from './search.controller';
 import { PersonCompare } from '../models/entities';
 import express from 'express';
-import { expect } from 'chai';
-import 'mocha';
+import { describe, expect, it } from 'vitest'
 
 describe('search.controller.ts - GET request', () => {
   const controller = new SearchController()

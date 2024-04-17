@@ -1,7 +1,6 @@
 import nodemailer  from 'nodemailer';
 import { sendOTP } from './mail';
-import { expect } from 'chai';
-import 'mocha';
+import { describe, expect, it } from 'vitest'
 
 describe('mail.ts - Sending emails', () => {
 
@@ -30,7 +29,7 @@ describe('mail.ts - Sending emails', () => {
     } catch (e) {
       throw new Error(e)
     }
-  }).timeout(10000);
+  }, 10000);
 
   it('Send test email fake smtp server', async () => {
     const res = await sendOTP("recipient@example.com")

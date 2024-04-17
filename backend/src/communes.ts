@@ -69,7 +69,7 @@ const getLatLon = (array: any) => {
 
 const dic: any = {};
 try {
-  const rawdata = JSON.parse(readFileSync('data/communes.json','utf8'));
+  const rawdata = JSON.parse(readFileSync(`${process.env.COMMUNES_JSON}`,'utf8'));
 
   rawdata.features.filter((feature : any) => feature.geometry && feature.geometry.coordinates)
     .forEach((feature: any) => {

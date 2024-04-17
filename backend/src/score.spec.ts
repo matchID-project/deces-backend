@@ -1,6 +1,5 @@
 import { ScoreResult } from './score';
-import { expect } from 'chai';
-import 'mocha';
+import { describe, expect, it } from 'vitest'
 
 describe('score.ts - Score function', () => {
 

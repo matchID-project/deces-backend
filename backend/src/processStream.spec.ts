@@ -1,6 +1,5 @@
 import { processChunk } from './processStream';
-import { expect } from 'chai';
-import 'mocha';
+import { describe, expect, it } from 'vitest'
 
 describe('processStream.ts - Process chunk', () => {
   it('Precise request should return only one result', async () => {
