@@ -2,7 +2,7 @@ import { RequestBody } from './models/requestInput';
 import { Person, Location, Name, RequestField, ScoreParams } from './models/entities';
 import { distance } from 'fastest-levenshtein';
 import damlev from 'damlev';
-import fuzz from 'fuzzball';
+import * as fuzz from "fuzzball";
 import { dateTransformMask, isDateRange, isDateLimit, dateTransform } from './masks';
 import soundex from '@jollie/soundex-fr';
 import loggerStream from './logger';
@@ -93,7 +93,7 @@ const fuzzballPartialTokenSortRatio = (a: string, b: string) => {
     return 0.01 * fuzz.token_sort_ratio(a,b);
 }
 
-const fuzzballTokenSetRatio = (a: string, b: string) => {
+export const fuzzballTokenSetRatio = (a: string, b: string) => {
     return 0.01 * fuzz.token_set_ratio(a,b);
 }
 

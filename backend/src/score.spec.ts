@@ -1,7 +1,12 @@
-import { ScoreResult } from './score';
+import { ScoreResult, fuzzballTokenSetRatio } from './score';
 import { describe, expect, it } from 'vitest'
 
 describe('score.ts - Score function', () => {
+
+  it('fuzzball token set ratio', () => {
+    const score = fuzzballTokenSetRatio("fuzzy was a bear", "a fuzzy bear fuzzy was");
+    expect(score).eq(1)
+  })
 
   it('should return 0.8 as global score', () => {
     const score = new ScoreResult({
