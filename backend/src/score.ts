@@ -65,12 +65,11 @@ const levRatio = (tokenA: string, tokenB: string, option?: any): number => {
     if (!tokenA || !tokenB) { return 0 }
     if (tokenA === tokenB) {
         return 1
-    } else {
-        if (tokenA.length < tokenB.length) {
-            return levRatio(tokenB, tokenA, option)
-        }
-        return round((1 - (lev(tokenA, tokenB) / tokenA.length)));
     }
+    if (tokenA.length < tokenB.length) {
+      return levRatio(tokenB, tokenA, option)
+    }
+    return round((1 - (lev(tokenA, tokenB) / tokenA.length)));
 }
 
 const fuzzyRatio = (tokenA: string, tokenB: string, option?: any): number => {
@@ -89,11 +88,11 @@ const fuzzyRatio = (tokenA: string, tokenB: string, option?: any): number => {
     return round(s);
 };
 
-const fuzzballPartialTokenSortRatio = (a: string, b: string) => {
+const fuzzballPartialTokenSortRatio = (a: string, b: string): number => {
     return 0.01 * fuzz.token_sort_ratio(a,b);
 }
 
-export const fuzzballTokenSetRatio = (a: string, b: string) => {
+export const fuzzballTokenSetRatio = (a: string, b: string): number => {
     return 0.01 * fuzz.token_set_ratio(a,b);
 }
 
@@ -104,23 +103,20 @@ export const fuzzballTokenSetRatio = (a: string, b: string) => {
 const fuzzMixRatio = (a: string, b: string) => {
     if (Array.isArray(tokenize(a)) || Array.isArray(tokenize(b))) {
         return 0.01 * fuzz.token_set_ratio(a,b);
-    } else {
-        return levRatio(a,b);
     }
+    return levRatio(a,b);
 }
 
 const tokenize = (sentence: string|string[], tokenizeArray?: boolean): string|string[] => {
     if (typeof(sentence) === 'string') {
         const s = sentence.split(/,\s*|\s+/);
         return s.length === 1 ? s[0] : s ;
+    }
+    if (tokenizeArray && Array.isArray(sentence)) {
+        return ((sentence).map(s => tokenize(s)) as any).flat();
     } else {
-        if (tokenizeArray && Array.isArray(sentence)) {
-            return ((sentence).map(s => tokenize(s)) as any).flat();
-        } else {
-            // default dont tokenize if string[]
-            return sentence;
-        }
-
+        // default dont tokenize if string[]
+        return sentence;
     }
 }
 
