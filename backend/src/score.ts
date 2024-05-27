@@ -459,7 +459,7 @@ const scoreCountry = (countryA: string|string[]|RequestField, countryB: string|s
 
 let scoreLocation = (locA: Location, locB: Location, event?: string, explain?: any): any => {
     const score: any = {};
-    const BisFrench = (locB.countryCode && (locB.countryCode === 'FRA'));
+    const isLocationInFrance = (locB.countryCode && (locB.countryCode === 'FRA'));
     if (locA.code && locB.code) {
         score.code = scoreLocationCode(locA.code, locB.codeHistory as string|string[]);
     }
@@ -469,7 +469,7 @@ let scoreLocation = (locA: Location, locB: Location, event?: string, explain?: a
     if (locA.latitude && locA.longitude) {
       score.geo = scoreGeo(locA.latitude, locA.longitude, locB.latitude, locB.longitude)
     }
-    if (BisFrench) {
+    if (isLocationInFrance) {
         updateObjProp(explain, `${event}Country`, 'France')
         if (normalize(locA.country as string|string[])) {
             score.country = scoreCountry(locA.country, tokenize(locB.country as string));
@@ -549,8 +549,8 @@ let scoreLocation = (locA: Location, locB: Location, event?: string, explain?: a
 }
 
 
-const parseYMD = (dateString: string): Date => {
-    return new Date(+dateString.substring(0,4),+dateString.substring(4,2) - 1,+dateString.substring(6,2));
+export const parseYMD = (dateString: string): Date => {
+  return new Date(+dateString.substring(0,4), +dateString.substring(4,6) - 1, +dateString.substring(6,8));
 }
 
 const scoreDateRaw = (dateRangeA: any, dateStringB: string, foreignDate: boolean, event: string, explain: any): number => {
@@ -558,6 +558,7 @@ const scoreDateRaw = (dateRangeA: any, dateStringB: string, foreignDate: boolean
         return blindDateScore;
     }
     if (typeof(dateRangeA) === 'string') {
+        dateRangeA = dateRangeA.trim();
         if (/^\s*$/.test(dateRangeA)) {
             return blindDateScore;
         }

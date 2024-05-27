@@ -1,4 +1,4 @@
-import { ScoreResult, fuzzballTokenSetRatio } from './score';
+import { ScoreResult, fuzzballTokenSetRatio, parseYMD } from './score';
 import { describe, expect, it } from 'vitest'
 
 describe('score.ts - Score function', () => {
@@ -6,6 +6,19 @@ describe('score.ts - Score function', () => {
   it('fuzzball token set ratio', () => {
     const score = fuzzballTokenSetRatio("fuzzy was a bear", "a fuzzy bear fuzzy was");
     expect(score).eq(1)
+  })
+
+  it('test parse year month day function', () => {
+    const parsedDate = parseYMD("20220304");
+    // returns the month (from 0 to 11)
+    const month = parsedDate.getMonth() + 1
+    // returns the day of the month (from 1 to 31)
+    const day = parsedDate.getDate()
+    // returns the year (four digits)
+    const year = parsedDate.getFullYear()
+    expect(month).eq(3)
+    expect(day).eq(4)
+    expect(year).eq(2022)
   })
 
   it('should return 0.8 as global score', () => {
