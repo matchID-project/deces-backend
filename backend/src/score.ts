@@ -2,7 +2,7 @@ import { RequestBody } from './models/requestInput';
 import { Person, Location, Name, RequestField, ScoreParams } from './models/entities';
 import { distance } from 'fastest-levenshtein';
 import damlev from 'damlev';
-import fuzz from 'fuzzball';
+import * as fuzz from "fuzzball";
 import { dateTransformMask, isDateRange, isDateLimit, dateTransform } from './masks';
 import soundex from '@jollie/soundex-fr';
 import loggerStream from './logger';
@@ -65,12 +65,11 @@ const levRatio = (tokenA: string, tokenB: string, option?: any): number => {
     if (!tokenA || !tokenB) { return 0 }
     if (tokenA === tokenB) {
         return 1
-    } else {
-        if (tokenA.length < tokenB.length) {
-            return levRatio(tokenB, tokenA, option)
-        }
-        return round((1 - (lev(tokenA, tokenB) / tokenA.length)));
     }
+    if (tokenA.length < tokenB.length) {
+      return levRatio(tokenB, tokenA, option)
+    }
+    return round((1 - (lev(tokenA, tokenB) / tokenA.length)));
 }
 
 const fuzzyRatio = (tokenA: string, tokenB: string, option?: any): number => {
@@ -89,11 +88,11 @@ const fuzzyRatio = (tokenA: string, tokenB: string, option?: any): number => {
     return round(s);
 };
 
-const fuzzballPartialTokenSortRatio = (a: string, b: string) => {
+const fuzzballPartialTokenSortRatio = (a: string, b: string): number => {
     return 0.01 * fuzz.token_sort_ratio(a,b);
 }
 
-const fuzzballTokenSetRatio = (a: string, b: string) => {
+export const fuzzballTokenSetRatio = (a: string, b: string): number => {
     return 0.01 * fuzz.token_set_ratio(a,b);
 }
 
@@ -104,23 +103,20 @@ const fuzzballTokenSetRatio = (a: string, b: string) => {
 const fuzzMixRatio = (a: string, b: string) => {
     if (Array.isArray(tokenize(a)) || Array.isArray(tokenize(b))) {
         return 0.01 * fuzz.token_set_ratio(a,b);
-    } else {
-        return levRatio(a,b);
     }
+    return levRatio(a,b);
 }
 
 const tokenize = (sentence: string|string[], tokenizeArray?: boolean): string|string[] => {
     if (typeof(sentence) === 'string') {
         const s = sentence.split(/,\s*|\s+/);
         return s.length === 1 ? s[0] : s ;
+    }
+    if (tokenizeArray && Array.isArray(sentence)) {
+        return ((sentence).map(s => tokenize(s)) as any).flat();
     } else {
-        if (tokenizeArray && Array.isArray(sentence)) {
-            return ((sentence).map(s => tokenize(s)) as any).flat();
-        } else {
-            // default dont tokenize if string[]
-            return sentence;
-        }
-
+        // default dont tokenize if string[]
+        return sentence;
     }
 }
 
@@ -459,7 +455,7 @@ const scoreCountry = (countryA: string|string[]|RequestField, countryB: string|s
 
 let scoreLocation = (locA: Location, locB: Location, event?: string, explain?: any): any => {
     const score: any = {};
-    const BisFrench = locB.countryCode && (locB.countryCode === 'FRA');
+    const isLocationInFrance = (locB.countryCode && (locB.countryCode === 'FRA'));
     if (locA.code && locB.code) {
         score.code = scoreLocationCode(locA.code, locB.codeHistory as string|string[]);
     }
@@ -469,7 +465,7 @@ let scoreLocation = (locA: Location, locB: Location, event?: string, explain?: a
     if (locA.latitude && locA.longitude) {
       score.geo = scoreGeo(locA.latitude, locA.longitude, locB.latitude, locB.longitude)
     }
-    if (BisFrench) {
+    if (isLocationInFrance) {
         updateObjProp(explain, `${event}Country`, 'France')
         if (normalize(locA.country as string|string[])) {
             score.country = scoreCountry(locA.country, tokenize(locB.country as string));
@@ -539,7 +535,7 @@ let scoreLocation = (locA: Location, locB: Location, event?: string, explain?: a
         if (normalize(locA.city as string|string[]) && locB.city) {
             const sCity = scoreCity(locA.city, locB.city as string|string[]);
             score.city = score.country >= perfectScoreThreshold ? Math.max(minNotFrCityScore, sCity) : sCity
-            updateObjProp(explain, `${event}City.country`, 'BrithCountry not France')
+            updateObjProp(explain, `${event}City.country`, 'BirthCountry not France')
             if (cityNorm(locA.city as string) as string in communesDict) updateObjProp(explain, `${event}City.surface`, `${communesDict[cityNorm(locA.city as string) as string].surface} m2`)
             updateObjProp(explain, `${event}City.score`, score.city)
         }
@@ -548,20 +544,18 @@ let scoreLocation = (locA: Location, locB: Location, event?: string, explain?: a
     return score;
 }
 
-// const emptyDate = /^\s*$/;
 
-const parseYMD = (dateString: string): Date => {
-    return new Date(+dateString.substr(0,4),+dateString.substr(4,2) - 1,+dateString.substr(6,2));
+export const parseYMD = (dateString: string): Date => {
+  return new Date(+dateString.substring(0,4), +dateString.substring(4,6) - 1, +dateString.substring(6,8));
 }
 
 const scoreDateRaw = (dateRangeA: any, dateStringB: string, foreignDate: boolean, event: string, explain: any): number => {
-    // if (dateStringB === "00000000" || !dateStringB || !dateRangeA) {
     if (/^00000000$/.test(dateStringB) || !dateStringB || !dateRangeA) {
         return blindDateScore;
     }
     if (typeof(dateRangeA) === 'string') {
-        // if (emptyDate.test(dateRangeA)) {
-            if (/^\s*$/.test(dateRangeA)) {
+        dateRangeA = dateRangeA.trim();
+        if (/^\s*$/.test(dateRangeA)) {
             return blindDateScore;
         }
         const dr = isDateRange(dateRangeA) || isDateLimit(dateRangeA);
@@ -780,6 +774,7 @@ export const personFromRequest = (item: RequestBody): Person => {
       // deathDate has priority over lastSeenAliveDate
       ...item.lastSeenAliveDate && { date: `>${item.lastSeenAliveDate}`},
       ...item.deathDate && { date: item.deathDate as string },
+      ...item.deathAge && { date: item.deathAge as string },
       ...(item.deathCity || item.deathLocationCode || item.deathDepartment || item.deathCountry || item.deathGeoPoint) && { location: {
         ...item.deathCity && { city: item.deathCity },
         ...item.deathLocationCode && { code: item.deathLocationCode },
