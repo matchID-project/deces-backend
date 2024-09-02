@@ -64,7 +64,7 @@ VOLUME /${app_path}/tests
 VOLUME /${app_path}/data
 
 COPY tsconfig.json ./
-COPY .eslintrc.js ./
+COPY eslint.config.mjs ./
 
 # Expose the listening port of your app
 EXPOSE ${port}
@@ -79,9 +79,9 @@ FROM development AS build
 ADD src ./src
 
 COPY tsconfig.json ./
-COPY .eslintrc.js ./
+COPY eslint.config.mjs ./
 
-RUN npm run build && tar czvf dist.tar.gz dist
+RUN npm run build --verbose && tar czvf dist.tar.gz dist
 
 ###############################
 # Step 4: "production" target #

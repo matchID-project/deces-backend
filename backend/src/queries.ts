@@ -69,12 +69,12 @@ export const fuzzyShouldTermQuery = (field: string, value: string, fuzzy: boolea
 };
 
 export const nameQuery = (field: NameFields, value: Name, fuzzy: boolean, must: boolean): Query => {
-    // eslint-disable-next-line camelcase
+
     const min_should = ((value.last && value.first) ? 2 : 1) - (must ? 0 : 1);
     if (fuzzy) {
         return {
             bool: {
-                // eslint-disable-next-line camelcase
+
                 minimum_should_match: 1,
                 should: [
                     {
@@ -84,7 +84,7 @@ export const nameQuery = (field: NameFields, value: Name, fuzzy: boolean, must: 
                                 value.last && fuzzyShouldTermQuery(field.last as string, value.last as string, fuzzy, must),
                                 value.legal && fuzzyShouldTermQuery(field.legal as string, value.legal as string, fuzzy, must)
                             ].filter(x => x),
-                            // eslint-disable-next-line camelcase
+
                             minimum_should_match: min_should,
                             boost: 2
                         },
@@ -95,7 +95,7 @@ export const nameQuery = (field: NameFields, value: Name, fuzzy: boolean, must: 
                                 firstNameQuery([field.first.first, field.first.all], value.last as string, fuzzy, must),
                                 fuzzyShouldTermQuery(field.last as string, value.first as string, fuzzy, must)
                             ],
-                            // eslint-disable-next-line camelcase
+
                             minimum_should_match: min_should,
                             boost: 0.5
                         }
@@ -106,7 +106,7 @@ export const nameQuery = (field: NameFields, value: Name, fuzzy: boolean, must: 
     } else {
         return {
             bool: {
-                // eslint-disable-next-line camelcase
+
                 minimum_should_match: min_should,
                 should: [
                     value.first && matchQuery(field.first.first, value.first as string, false, must),
@@ -234,11 +234,11 @@ export const geoPointQuery = (field: string, value: GeoPoint, fuzzy: boolean, mu
         return {
             bool: {
                 must: {
-                    // eslint-disable-next-line camelcase
+
                     match_all: {}
                 },
                 filter : {
-                    // eslint-disable-next-line camelcase
+
                     geo_distance: {
                         distance,
                         [field] : {

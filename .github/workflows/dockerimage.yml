@@ -11,8 +11,6 @@ jobs:
       - uses: actions/checkout@v1
       - name: 🐋 Build the master docker image
         run: make backend-build-all
-        env:
-          NPM_VERBOSE: ""
       - name: 👷 Make deploy local
         run: make deploy-dependencies
         env:
