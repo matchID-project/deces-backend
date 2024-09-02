@@ -1,7 +1,7 @@
 #######################
 # Step 1: Base target #
 #######################
-FROM node:20-slim as base
+FROM node:20-slim AS base
 ARG http_proxy
 ARG https_proxy
 ARG no_proxy
@@ -34,7 +34,7 @@ RUN [ -z "${NPM_LATEST}" ] || npm i npm@latest -g
 ################################
 # Step 2: "development" target #
 ################################
-FROM base as development
+FROM base AS development
 ARG app_ver
 ARG app_path
 ARG app_name
@@ -74,7 +74,7 @@ CMD ["npm","run", "dev"]
 ##########################
 # Step 3: "build" target #
 ##########################
-FROM development as build
+FROM development AS build
 
 ADD src ./src
 
@@ -86,7 +86,7 @@ RUN npm run build && tar czvf dist.tar.gz dist
 ###############################
 # Step 4: "production" target #
 ###############################
-FROM node:20-alpine3.18 as production
+FROM node:20-alpine3.18 AS production
 ARG app_path
 ARG port
 ARG app_ver
