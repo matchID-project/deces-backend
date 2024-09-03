@@ -69,14 +69,14 @@ COPY eslint.config.mjs ./
 # Expose the listening port of your app
 EXPOSE ${port}
 
-CMD ["npm","run", "dev"]
+CMD ["npm","run", "dev", "--verbose"]
 
 ##########################
 # Step 3: "build" target #
 ##########################
 FROM development AS build
 
-ADD src ./src
+COPY src ./src
 
 COPY tsconfig.json ./
 COPY eslint.config.mjs ./
@@ -96,8 +96,8 @@ ENV NODE_ENV=production
 WORKDIR /$app_path
 
 COPY package.json ./
-ADD tests ./tests
-ADD data ./data
+COPY tests ./tests
+COPY data ./data
 
 # Install production dependencies and clean cache
 RUN npm install --production && \
