@@ -325,9 +325,9 @@ backend-test-vitest: db-json-fake smtp
 	@echo Testing API with vitest tests
 	@if [ ! -f "${BACKEND}/src/routes/routes.ts" ]; then export EXEC_ENV=development; \
 		export BACKEND_LOG_LEVEL=error; \
-		${DC_BACKEND} -f ${DC_FILE}-dev-backend.yml run --rm backend npm run tsoa;fi
+		${DC_BACKEND} -f ${DC_FILE}-dev-backend.yml run --rm backend npm run tsoa --verbose;fi
 	@export EXEC_ENV=development; export BACKEND_LOG_LEVEL=error; \
-		${DC_BACKEND} -f ${DC_FILE}-dev-backend.yml run --rm backend npm run test
+		${DC_BACKEND} -f ${DC_FILE}-dev-backend.yml run --rm backend npm run test --verbose
 
 backend/tests/clients_test.csv:
 	curl -L https://github.com/matchID-project/examples/raw/master/data/clients_test.csv -o backend/tests/clients_test.csv

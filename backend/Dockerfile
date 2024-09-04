@@ -1,7 +1,7 @@
 #######################
 # Step 1: Base target #
 #######################
-FROM node:20-slim as base
+FROM node:20-slim AS base
 ARG http_proxy
 ARG https_proxy
 ARG no_proxy
@@ -34,7 +34,7 @@ RUN [ -z "${NPM_LATEST}" ] || npm i npm@latest -g
 ################################
 # Step 2: "development" target #
 ################################
-FROM base as development
+FROM base AS development
 ARG app_ver
 ARG app_path
 ARG app_name
@@ -64,29 +64,29 @@ VOLUME /${app_path}/tests
 VOLUME /${app_path}/data
 
 COPY tsconfig.json ./
-COPY .eslintrc.js ./
+COPY eslint.config.mjs ./
 
 # Expose the listening port of your app
 EXPOSE ${port}
 
-CMD ["npm","run", "dev"]
+CMD ["npm","run", "dev", "--verbose"]
 
 ##########################
 # Step 3: "build" target #
 ##########################
-FROM development as build
+FROM development AS build
 
-ADD src ./src
+COPY src ./src
 
 COPY tsconfig.json ./
-COPY .eslintrc.js ./
+COPY eslint.config.mjs ./
 
-RUN npm run build && tar czvf dist.tar.gz dist
+RUN npm run build --verbose && tar czvf dist.tar.gz dist
 
 ###############################
 # Step 4: "production" target #
 ###############################
-FROM node:20-alpine3.18 as production
+FROM node:20-alpine3.18 AS production
 ARG app_path
 ARG port
 ARG app_ver
@@ -96,8 +96,8 @@ ENV NODE_ENV=production
 WORKDIR /$app_path
 
 COPY package.json ./
-ADD tests ./tests
-ADD data ./data
+COPY tests ./tests
+COPY data ./data
 
 # Install production dependencies and clean cache
 RUN npm install --production && \
