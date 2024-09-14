@@ -466,10 +466,15 @@ export const csvHandle = async (request: Request, options: Options): Promise<any
   readStream.push((request.files as any)[0].buffer);
   readStream.push(null);
   await finishedAsync(writeStream);
-  inputsArray.push({id: jobId, file: `${process.env.JOBS}/${jobId}.in.enc`, size: options.totalRows}) // Use key hash as job identifier
+  inputsArray.push({
+    id: jobId,
+    file: `${process.env.JOBS}/${jobId}.in.enc`,
+    size: options.totalRows,
+    priority: Math.round(options.totalRows/1000)+1
+  }) // Use key hash as job identifier
   await jobQueue.add(jobId,
     {...options},
-    {jobId}
+    {jobId, priority: Math.round(options.totalRows/1000)+1}
   )
   // res.send({msg: 'started', id: randomKey});
   return {msg: 'started', id: options.randomKey};
@@ -649,6 +654,7 @@ interface JobInput {
   id: string;
   file: string;
   size: number;
+  priority: number
 }
 
 interface StopJobReason {
