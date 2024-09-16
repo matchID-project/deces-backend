@@ -439,41 +439,47 @@ export const csvHandle = async (request: Request, options: Options): Promise<any
   const gzipStream =  createGzip();
   const encryptStream =  crypto.createCipheriv('aes-256-cbc', pbkdf2(options.randomKey), encryptioniv);
   const writeStream: any = fs.createWriteStream(`${process.env.JOBS}/${jobId}.in.enc`)
-  const readStream = new Readable().on('data', (buffer: any) => {
-    // count lines from buffer without duplicating it
-    let idx = -1;
-    options.totalRows--; // Because the loop will run once for idx=-1
-    do {
-      const idxR = buffer.indexOf("\r", idx+1);
-      const idxN = buffer.indexOf("\n", idx+1);
-      options.totalRows++;
-      if (idxR !== -1 && idxN !== -1) {
-        idx = idxR < idxN ? idxR : idxN
-      } else if (idxR !== -1) {
-        idx = idxR
-      } else if (idxN !== -1) {
-        idx = idxN
-      } else {
-        idx = -1
-      }
-    } while (idx !== -1);
-  });
-  pipelineAsync(readStream, gzipStream, encryptStream, writeStream);
-  readStream.push((request.files as any)[0].buffer);
-  readStream.push(null);
-  await finishedAsync(writeStream);
-  inputsArray.push({
-    id: jobId,
-    file: `${process.env.JOBS}/${jobId}.in.enc`,
-    size: options.totalRows,
-    priority: Math.round(options.totalRows/1000)+1
-  }) // Use key hash as job identifier
-  await jobQueue.add(jobId,
-    {...options},
-    {jobId, priority: Math.round(options.totalRows/1000)+1}
-  )
-  // res.send({msg: 'started', id: randomKey});
-  return {msg: 'started', id: options.randomKey};
+  const jobsActive = await jobQueue.getJobs(['active', 'prioritized', 'wait'], 0, 100, true);
+  const jobsUser = jobsActive.filter((job: any) => job.data.user === options.user);
+  if ((jobsUser && jobsUser.length === 0) || (options.user === process.env.BACKEND_TOKEN_USER)) {
+    const readStream = new Readable().on('data', (buffer: any) => {
+      // count lines from buffer without duplicating it
+      let idx = -1;
+      options.totalRows--; // Because the loop will run once for idx=-1
+      do {
+        const idxR = buffer.indexOf("\r", idx+1);
+        const idxN = buffer.indexOf("\n", idx+1);
+        options.totalRows++;
+        if (idxR !== -1 && idxN !== -1) {
+          idx = idxR < idxN ? idxR : idxN
+        } else if (idxR !== -1) {
+          idx = idxR
+        } else if (idxN !== -1) {
+          idx = idxN
+        } else {
+          idx = -1
+        }
+      } while (idx !== -1);
+    });
+    pipelineAsync(readStream, gzipStream, encryptStream, writeStream);
+    readStream.push((request.files as any)[0].buffer);
+    readStream.push(null);
+    await finishedAsync(writeStream);
+    inputsArray.push({
+      id: jobId,
+      file: `${process.env.JOBS}/${jobId}.in.enc`,
+      size: options.totalRows,
+      priority: Math.round(options.totalRows/1000)+1
+    }) // Use key hash as job identifier
+    await jobQueue.add(jobId,
+      {...options},
+      {jobId, priority: Math.round(options.totalRows/1000)+1}
+    )
+    // res.send({msg: 'started', id: randomKey});
+    return {msg: 'started', id: options.randomKey};
+  } else {
+    return {msg: `already running or waiting ${jobsUser.length} jobs`}
+  }
 }
 
 export const returnBulkResults = async (response: Response, id: string, outputFormat: string, order: string): Promise<void> => {
