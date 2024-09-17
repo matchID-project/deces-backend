@@ -429,7 +429,7 @@ workerJobs.on('completed', (job: Job) => {
     if (!stopJob.includes(job.id)) {
       setTimeout(() => {
         fs.unlink(`${process.env.JOBS}/${job.id}.out.enc`, (err: Error) => {if (err) log({unlinkOutputDeleteError: err});});
-      }, Number(process.env.BACKEND_TMPFILE_PERSISTENCE || "3600000")) // Delete results after 1 hour
+      }, Number(job.data.tmpfilePersistence || "28800000")) // Delete results after 8 hour
     }
 });
 
