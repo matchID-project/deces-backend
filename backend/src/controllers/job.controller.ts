@@ -48,6 +48,7 @@ export class JobsController extends Controller {
     @Query() jobId?: string,
     @Query() jobsType?: JobType,
   ): Promise<any> {
+    const scopes = (request as any).user && (request as any).user.scopes
     const user = (request as any).user && (request as any).user.user
     const jobQueue = new Queue(queueName,  {
       connection: {
@@ -57,9 +58,14 @@ export class JobsController extends Controller {
     const jobsTypeList: JobType[] = ['completed', 'failed', 'active', 'delayed', 'waiting', 'waiting-children', 'paused', 'repeat', 'wait', 'prioritized']
     if (jobsTypeList.includes(jobsType)) {
       const jobs = await jobQueue.getJobs(jobsType);
-      const jobsUser = jobs.filter((job: any) => job.data.user === user);
-      jobsUser.forEach((j: any) => delete j.data.randomKey)
-      return { jobsUser };
+      let jobsUser;
+      if (scopes.includes('admin')) {
+        jobsUser = jobs;
+      } else {
+        jobsUser = jobs.filter((job: any) => job.data.user === user);
+      }
+      jobsUser.forEach((j: any) => j.data.randomKey = undefined)
+      return { jobs: jobsUser };
     } else if (jobId) {
       const job = await jobQueue.getJob(jobId)
       delete job.data.randomKey
@@ -72,10 +78,15 @@ export class JobsController extends Controller {
       let jobs:any = []
       for (const jobType of jobsTypeList) {
         const jobsTmp = await jobQueue.getJobs(jobType);
-        const jobsTmpUser = jobsTmp.filter((job: any) => job.data.user === user);
+        let jobsTmpUser
+        if (scopes.includes('admin')) {
+          jobsTmpUser = jobsTmp;
+        } else {
+          jobsTmpUser = jobsTmp.filter((job: any) => job.data.user === user);
+        }
         jobsTmp.forEach((j: any) => {
           j.status = jobType
-          delete j.data.randomKey
+          j.data.randomKey = undefined
         });
         jobs = [...jobs, ...jobsTmpUser]
       }
