@@ -105,6 +105,32 @@ export const validateOTP = (email:string,otp:string): boolean => {
     return false;
 }
 
+export const sendJobUpdate = async (email:string, content: string, jobId: string): Promise<boolean> => {
+    try {
+        const message: any = {
+            from: process.env.API_EMAIL,
+            to: `${email}`,
+        }
+        message.subject = `Traitement sur un fichier - ${process.env.APP_DNS}`;
+        message.text = `${content ? 'Traitment fichier: ' + content : ''}\nVous pouvez consulter son status <a href="https://${process.env.APP_DNS}/deces/api/v1/search/csv/${jobId}"></a>ici.<br>`
+        message.html = `<html style="font-family:Helvetica;">
+              <h4> Traitement d'un fichier </h4>
+              Vous avez lancé une tache d'appariement,<br>
+              <br>
+              ${content ? '<br>' + content + '<br>' : ''}<br>
+              Vous pouvez consulter son status <a href="https://${process.env.APP_DNS}/deces/api/v1/search/csv/${jobId}">en utilisant ce lien</a>.<br>
+              <br>
+              l'équipe matchID
+              </html>
+              `
+        await transporter.sendMail(message);
+        return true;
+    } catch (err) {
+        return false;
+    }
+}
+
+
 export const sendUpdateConfirmation = async (email:string, status: ReviewStatus, rejectMsg: string, id: string): Promise<boolean> => {
     try {
         const message: any = {

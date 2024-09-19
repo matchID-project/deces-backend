@@ -5,6 +5,7 @@ import { Queue, Worker, Job, QueueEvents } from 'bullmq';
 import { RequestInput } from './models/requestInput';
 import { buildRequest } from './buildRequest';
 import { runBulkRequest } from './runRequest';
+import { sendJobUpdate } from './mail';
 import { buildResultSingle, ResultRawES } from './models/result';
 import { scoreResults } from './score';
 import { ScoreParams } from './models/entities'
@@ -475,9 +476,10 @@ export const csvHandle = async (request: Request, options: Options): Promise<any
       {...options},
       {jobId, priority: Math.round(options.totalRows/1000)+1}
     )
-    // res.send({msg: 'started', id: randomKey});
+    await sendJobUpdate(options.user, "L'appariement a bien commencé", options.randomKey);
     return {msg: 'started', id: options.randomKey};
   } else {
+    await sendJobUpdate(options.user, "Vous avez déjà un job qui tourne", options.randomKey);
     return {msg: `already running or waiting ${jobsUser.length} jobs`}
   }
 }
