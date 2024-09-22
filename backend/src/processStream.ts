@@ -426,10 +426,12 @@ interface Options {
   [Key: string]: any;
 }
 
-workerJobs.on('completed', (job: Job) => {
+workerJobs.on('completed', async (job: Job) => {
+    await sendJobUpdate(job.data.user, "L'appariement est terminé", job.data.randomKey);
     if (!stopJob.includes(job.id)) {
-      setTimeout(() => {
+      setTimeout(async () => {
         fs.unlink(`${process.env.JOBS}/${job.id}.out.enc`, (err: Error) => {if (err) log({unlinkOutputDeleteError: err});});
+        await sendJobUpdate(job.data.user, "Le fichier a été supprimé", job.data.randomKey);
       }, Number(job.data.tmpfilePersistence || "28800000")) // Delete results after 8 hour
     }
 });
