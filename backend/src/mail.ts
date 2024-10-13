@@ -112,13 +112,13 @@ export const sendJobUpdate = async (email:string, content: string, jobId: string
             to: `${email}`,
         }
         message.subject = `Traitement sur un fichier - ${process.env.APP_DNS}`;
-        message.text = `${content ? 'Traitment fichier: ' + content : ''}\nVous pouvez consulter son status <a href="https://${process.env.APP_DNS}/deces/api/v1/search/csv/${jobId}"></a>ici.<br>`
+        message.text = `${content ? 'Traitment fichier: ' + content : ''}\nVous pouvez consulter le status du traitement <a href="${process.env.APP_URL}/link/${jobId}"></a>ici.<br>`
         message.html = `<html style="font-family:Helvetica;">
               <h4> Traitement d'un fichier </h4>
               Vous avez lancé une tache d'appariement,<br>
               <br>
               ${content ? '<br>' + content + '<br>' : ''}<br>
-              Vous pouvez consulter son status <a href="https://${process.env.APP_DNS}/deces/api/v1/search/csv/${jobId}">en utilisant ce lien</a>.<br>
+              Vous pouvez consulter le status du traitement <a href="${process.env.APP_URL}/link?job=${jobId}">en utilisant ce lien</a>.<br>
               <br>
               l'équipe matchID
               </html>
@@ -142,9 +142,9 @@ export const sendUpdateConfirmation = async (email:string, status: ReviewStatus,
             message.attachment = { data: `<html style="font-family:Helvetica;">
             <h4> Merci de votre contibution !</h4>
             Votre proposition de correction a été acceptée.<br>
-            Retrouvez <a href="https://${process.env.APP_DNS}/id/${id}"> la fiche modifiée </a>.<br>
+            Retrouvez <a href="${process.env.APP_URL}/id/${id}"> la fiche modifiée </a>.<br>
             <br>
-            Vous pouvez à tout moment <a href="https://${process.env.APP_DNS}/edits">revenir sur vos contributions</a>.<br>
+            Vous pouvez à tout moment <a href="${process.env.APP_URL}/edits">revenir sur vos contributions</a>.<br>
             <br>
             l'équipe matchID
             </html>
@@ -156,7 +156,7 @@ export const sendUpdateConfirmation = async (email:string, status: ReviewStatus,
             <br>
             Néanmoins les éléments fournis ne nous ont pas permis de retenir votre proposition à ce stade.<br>
             ${rejectMsg ? '<br>' + rejectMsg + '<br>' : ''}<br>
-            Vous pourrez de nouveau soumettre une nouvelle proposition sur la fiche: <a href="https://${process.env.APP_DNS}/edits#${id}"></a>.<br>
+            Vous pourrez de nouveau soumettre une nouvelle proposition sur la fiche: <a href="${process.env.APP_URL}/edits#${id}"></a>.<br>
             <br>
             l'équipe matchID
             </html>
