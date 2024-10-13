@@ -112,7 +112,7 @@ export const sendJobUpdate = async (email:string, content: string, jobId: string
             to: `${email}`,
         }
         message.subject = `Traitement sur un fichier - ${process.env.APP_DNS}`;
-        message.text = `${content ? 'Traitment fichier: ' + content : ''}\nVous pouvez consulter le status du traitement <a href="${process.env.APP_URL}/link/${jobId}"></a>ici.<br>`
+        message.text = `${content ? 'Traitement fichier: ' + content : ''}\nVous pouvez consulter le status du traitement <a href="${process.env.APP_URL}/link?job=${jobId}"></a>ici.<br>`
         message.html = `<html style="font-family:Helvetica;">
               <h4> Traitement d'un fichier </h4>
               Vous avez lancé une tache d'appariement,<br>
@@ -156,7 +156,7 @@ export const sendUpdateConfirmation = async (email:string, status: ReviewStatus,
             <br>
             Néanmoins les éléments fournis ne nous ont pas permis de retenir votre proposition à ce stade.<br>
             ${rejectMsg ? '<br>' + rejectMsg + '<br>' : ''}<br>
-            Vous pourrez de nouveau soumettre une nouvelle proposition sur la fiche: <a href="${process.env.APP_URL}/edits#${id}"></a>.<br>
+            Vous pourrez de nouveau soumettre une nouvelle proposition sur la fiche <a href="${process.env.APP_URL}/edits#${id}">ici</a>.<br>
             <br>
             l'équipe matchID
             </html>
