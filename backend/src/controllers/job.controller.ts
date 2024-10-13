@@ -61,15 +61,19 @@ export class JobsController extends Controller {
       let jobsUser;
       if (scopes.includes('admin')) {
         jobsUser = jobs;
+        // admin should not see randomKey
+        jobsUser.forEach((j: any) => j.data.randomKey = undefined)
       } else {
+        // user only see their jobs, and get their randomKey to be able to get their files
         jobsUser = jobs.filter((job: any) => job.data.user === user);
       }
-      jobsUser.forEach((j: any) => j.data.randomKey = undefined)
       return { jobs: jobsUser };
     } else if (jobId) {
       const job = await jobQueue.getJob(jobId)
-      delete job.data.randomKey
       if (job) {
+        if (scopes.includes('admin')) {
+          job.data.randomKey = undefined;
+        }
         return { job };
       } else {
         return { msg: 'job not found' };
@@ -78,15 +82,17 @@ export class JobsController extends Controller {
       let jobs:any = []
       for (const jobType of jobsTypeList) {
         const jobsTmp = await jobQueue.getJobs(jobType);
-        let jobsTmpUser
+        let jobsTmpUser;
         if (scopes.includes('admin')) {
           jobsTmpUser = jobsTmp;
         } else {
           jobsTmpUser = jobsTmp.filter((job: any) => job.data.user === user);
         }
-        jobsTmp.forEach((j: any) => {
-          j.status = jobType
-          j.data.randomKey = undefined
+        jobsTmpUser.forEach((j: any) => {
+          j.status = jobType;
+          if (scopes.includes('admin')) {
+            j.data.randomKey = undefined;
+          }
         });
         jobs = [...jobs, ...jobsTmpUser]
       }
