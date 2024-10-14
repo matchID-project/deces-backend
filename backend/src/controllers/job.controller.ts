@@ -1,5 +1,6 @@
+import express from 'express';
 import { Queue, JobType } from 'bullmq';
-import { Controller, Get, Route, Tags, Path, Query, Security } from 'tsoa';
+import { Controller, Get, Route, Tags, Path, Query, Request, Security } from 'tsoa';
 
 /**
  * @swagger
@@ -38,29 +39,41 @@ export class JobsController extends Controller {
    * @param queueName Name of queue
    * @param jobsType Jobs type or Id
    */
-  @Security("jwt", ["admin"])
+  @Security("jwt", ["user"])
   @Tags('Jobs')
   @Get('{queueName}')
   public async getJobs(
-
+    @Request() request: express.Request,
     @Path() queueName: 'jobs',
     @Query() jobId?: string,
     @Query() jobsType?: JobType,
   ): Promise<any> {
+    const scopes = (request as any).user && (request as any).user.scopes
+    const user = (request as any).user && (request as any).user.user
     const jobQueue = new Queue(queueName,  {
       connection: {
         host: 'redis'
       }
     });
-    const jobsTypeList: JobType[] = ['completed', 'failed', 'active', 'delayed', 'waiting', 'waiting-children', 'paused', 'repeat', 'wait']
+    const jobsTypeList: JobType[] = ['completed', 'failed', 'active', 'delayed', 'waiting', 'waiting-children', 'paused', 'repeat', 'wait', 'prioritized']
     if (jobsTypeList.includes(jobsType)) {
       const jobs = await jobQueue.getJobs(jobsType);
-      jobs.forEach((j: any) => delete j.data.randomKey)
-      return { jobs };
+      let jobsUser;
+      if (scopes.includes('admin')) {
+        jobsUser = jobs;
+        // admin should not see randomKey
+        jobsUser.forEach((j: any) => j.data.randomKey = undefined)
+      } else {
+        // user only see their jobs, and get their randomKey to be able to get their files
+        jobsUser = jobs.filter((job: any) => job.data.user === user);
+      }
+      return { jobs: jobsUser };
     } else if (jobId) {
       const job = await jobQueue.getJob(jobId)
-      delete job.data.randomKey
       if (job) {
+        if (scopes.includes('admin')) {
+          job.data.randomKey = undefined;
+        }
         return { job };
       } else {
         return { msg: 'job not found' };
@@ -69,11 +82,19 @@ export class JobsController extends Controller {
       let jobs:any = []
       for (const jobType of jobsTypeList) {
         const jobsTmp = await jobQueue.getJobs(jobType);
-        jobsTmp.forEach((j: any) => {
-          j.status = jobType
-          delete j.data.randomKey
+        let jobsTmpUser;
+        if (scopes.includes('admin')) {
+          jobsTmpUser = jobsTmp;
+        } else {
+          jobsTmpUser = jobsTmp.filter((job: any) => job.data.user === user);
+        }
+        jobsTmpUser.forEach((j: any) => {
+          j.status = jobType;
+          if (scopes.includes('admin')) {
+            j.data.randomKey = undefined;
+          }
         });
-        jobs = [...jobs, ...jobsTmp]
+        jobs = [...jobs, ...jobsTmpUser]
       }
       return { jobs };
     }

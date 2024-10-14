@@ -5,6 +5,7 @@ import { Queue, Worker, Job, QueueEvents } from 'bullmq';
 import { RequestInput } from './models/requestInput';
 import { buildRequest } from './buildRequest';
 import { runBulkRequest } from './runRequest';
+import { sendJobUpdate } from './mail';
 import { buildResultSingle, ResultRawES } from './models/result';
 import { scoreResults } from './score';
 import { ScoreParams } from './models/entities'
@@ -155,70 +156,66 @@ interface MapField {
 }
 
 export const processCsv =  async (job: Job<any>, jobFile: JobInput): Promise<any> => {
-  try {
-    // const inputHeaders: string[] = [];
-    // let outputHeaders: any;
-    const mapField:MapField = {};
-    const jobId = crypto.createHash('sha256').update(job.data.randomKey).digest('hex');
+  // const inputHeaders: string[] = [];
+  // let outputHeaders: any;
+  const mapField:MapField = {};
+  const jobId = crypto.createHash('sha256').update(job.data.randomKey).digest('hex');
 
-    validFields.forEach(key => mapField[job.data[key] || key] = key );
+  validFields.forEach(key => mapField[job.data[key] || key] = key );
 
-    const csvOptions: any = {
-      objectMode: true,
-      delimiter: job.data.sep,
-      headers: true,
-      ignoreEmpty: true,
-      encoding: 'utf8',
-      escape: job.data.escape,
-      quote: job.data.quote,
-      skipLines: job.data.skipLines
-    };
-    const writeStream: any = fs.createWriteStream(`${process.env.JOBS}/${jobId}.out.enc`);
-    const gzipStream =  createGzip();
-    const encryptStream = crypto.createCipheriv('aes-256-cbc', pbkdf2(job.data.randomKey), encryptioniv);
-    const jsonStringStream: any = JsonStringifyStream();
-    const converterStream = iconv.decodeStream(job.data.encoding.replace('windows-','win'));
-    const processStream: any = new ProcessStream(job, mapField, {});
-    const csvStream: any = parse(csvOptions);
-    const gunzipStream: any = createGunzip();
-    const decryptStream: any = crypto.createDecipheriv('aes-256-cbc', pbkdf2(job.data.randomKey), encryptioniv);
-    const readStream: any = fs.createReadStream(jobFile.file)
-      .pipe(decryptStream)
-      .on('error', (e: any) => log({decryptProcessingError: e.toString(), jobId}))
-      .pipe(gunzipStream)
-      .on('error', (e: any) => log({gunzipProcessingError: e.toString(), jobId}))
-      .pipe(converterStream)
-      .on('error', (e: any) => log({decodingProcessingError: e.toString(), jobId}))
-      .pipe(csvStream)
-      .on('error', (e: any) => {
-        log({csvProcessingError: e.toString(), jobId})
-        readStream.close()
-        stopJob.push(job.id);
-        stopJobReason.push({id: job.id, msg: e.toString()})
-      })
-      .pipe(processStream)
-      .on('error', (e: any) => {
-        log({matchingProcessingError: e.toString(), jobId})
-        readStream.close()
-        stopJob.push(job.id);
-        stopJobReason.push({id: job.id, msg: e.toString()})
-      })
-      .pipe(jsonStringStream)
-      .on('error', (e: any) => log({stringifyProcessingError: e.toString(), jobId}))
-      .pipe(gzipStream)
-      .on('error', (e: any) => log({gzipProcessingError: e.toString(), jobId}))
-      .pipe(encryptStream)
-      .on('error', (e: any) => log({encryptProcessingError: e.toString(), jobId}))
-      .pipe(writeStream)
-      .on('error', (e: any) => log({writeProcessingError: e.toString(), jobId}));
-    setTimeout(() => {
-        // lazily removes inputfile index as soon as pipeline begins
-        fs.unlink(jobFile.file, (e: any) => { if (e) log({unlinkInputProcessingError: e, jobId}) });
-    }, 1000);
-    await finishedAsync(writeStream);
-  } catch(e) {
-    throw(e);
-  }
+  const csvOptions: any = {
+    objectMode: true,
+    delimiter: job.data.sep,
+    headers: true,
+    ignoreEmpty: true,
+    encoding: 'utf8',
+    escape: job.data.escape,
+    quote: job.data.quote,
+    skipLines: job.data.skipLines
+  };
+  const writeStream: any = fs.createWriteStream(`${process.env.JOBS}/${jobId}.out.enc`);
+  const gzipStream =  createGzip();
+  const encryptStream = crypto.createCipheriv('aes-256-cbc', pbkdf2(job.data.randomKey), encryptioniv);
+  const jsonStringStream: any = JsonStringifyStream();
+  const converterStream = iconv.decodeStream(job.data.encoding.replace('windows-','win'));
+  const processStream: any = new ProcessStream(job, mapField, {});
+  const csvStream: any = parse(csvOptions);
+  const gunzipStream: any = createGunzip();
+  const decryptStream: any = crypto.createDecipheriv('aes-256-cbc', pbkdf2(job.data.randomKey), encryptioniv);
+  const readStream: any = fs.createReadStream(jobFile.file)
+    .pipe(decryptStream)
+    .on('error', (e: any) => log({decryptProcessingError: e.toString(), jobId}))
+    .pipe(gunzipStream)
+    .on('error', (e: any) => log({gunzipProcessingError: e.toString(), jobId}))
+    .pipe(converterStream)
+    .on('error', (e: any) => log({decodingProcessingError: e.toString(), jobId}))
+    .pipe(csvStream)
+    .on('error', (e: any) => {
+      log({csvProcessingError: e.toString(), jobId})
+      readStream.close()
+      stopJob.push(job.id);
+      stopJobReason.push({id: job.id, msg: e.toString()})
+    })
+    .pipe(processStream)
+    .on('error', (e: any) => {
+      log({matchingProcessingError: e.toString(), jobId})
+      readStream.close()
+      stopJob.push(job.id);
+      stopJobReason.push({id: job.id, msg: e.toString()})
+    })
+    .pipe(jsonStringStream)
+    .on('error', (e: any) => log({stringifyProcessingError: e.toString(), jobId}))
+    .pipe(gzipStream)
+    .on('error', (e: any) => log({gzipProcessingError: e.toString(), jobId}))
+    .pipe(encryptStream)
+    .on('error', (e: any) => log({encryptProcessingError: e.toString(), jobId}))
+    .pipe(writeStream)
+    .on('error', (e: any) => log({writeProcessingError: e.toString(), jobId}));
+  setTimeout(() => {
+    // lazily removes inputfile index as soon as pipeline begins
+    fs.unlink(jobFile.file, (e: any) => { if (e) log({unlinkInputProcessingError: e, jobId}) });
+  }, 1000);
+  await finishedAsync(writeStream);
   if (stopJob.includes(job.id)) {
     return stopJobError;
   }  else {
@@ -429,11 +426,13 @@ interface Options {
   [Key: string]: any;
 }
 
-workerJobs.on('completed', (job: Job) => {
+workerJobs.on('completed', async (job: Job) => {
+    await sendJobUpdate(job.data.user, "L'appariement est terminé", job.data.randomKey);
     if (!stopJob.includes(job.id)) {
-      setTimeout(() => {
+      setTimeout(async () => {
         fs.unlink(`${process.env.JOBS}/${job.id}.out.enc`, (err: Error) => {if (err) log({unlinkOutputDeleteError: err});});
-      }, Number(process.env.BACKEND_TMPFILE_PERSISTENCE || "3600000")) // Delete results after 1 hour
+        await sendJobUpdate(job.data.user, "Le fichier a été supprimé", job.data.randomKey);
+      }, Number(job.data.tmpfilePersistence || "28800000")) // Delete results after 8 hour
     }
 });
 
@@ -443,42 +442,54 @@ export const csvHandle = async (request: Request, options: Options): Promise<any
   const gzipStream =  createGzip();
   const encryptStream =  crypto.createCipheriv('aes-256-cbc', pbkdf2(options.randomKey), encryptioniv);
   const writeStream: any = fs.createWriteStream(`${process.env.JOBS}/${jobId}.in.enc`)
-  const readStream = new Readable().on('data', (buffer: any) => {
-    // count lines from buffer without duplicating it
-    let idx = -1;
-    options.totalRows--; // Because the loop will run once for idx=-1
-    do {
-      const idxR = buffer.indexOf("\r", idx+1);
-      const idxN = buffer.indexOf("\n", idx+1);
-      options.totalRows++;
-      if (idxR !== -1 && idxN !== -1) {
-        idx = idxR < idxN ? idxR : idxN
-      } else if (idxR !== -1) {
-        idx = idxR
-      } else if (idxN !== -1) {
-        idx = idxN
-      } else {
-        idx = -1
-      }
-    } while (idx !== -1);
-  });
-  pipelineAsync(readStream, gzipStream, encryptStream, writeStream);
-  readStream.push((request.files as any)[0].buffer);
-  readStream.push(null);
-  await finishedAsync(writeStream);
-  inputsArray.push({id: jobId, file: `${process.env.JOBS}/${jobId}.in.enc`, size: options.totalRows}) // Use key hash as job identifier
-  await jobQueue.add(jobId,
-    {...options},
-    {jobId}
-  )
-  // res.send({msg: 'started', id: randomKey});
-  return {msg: 'started', id: options.randomKey};
+  const jobsActive = await jobQueue.getJobs(['active', 'prioritized', 'wait'], 0, 100, true);
+  const jobsUser = jobsActive.filter((job: any) => job.data.user === options.user);
+  if ((jobsUser && jobsUser.length === 0) || (options.user === process.env.BACKEND_TOKEN_USER)) {
+    const readStream = new Readable().on('data', (buffer: any) => {
+      // count lines from buffer without duplicating it
+      let idx = -1;
+      options.totalRows--; // Because the loop will run once for idx=-1
+      do {
+        const idxR = buffer.indexOf("\r", idx+1);
+        const idxN = buffer.indexOf("\n", idx+1);
+        options.totalRows++;
+        if (idxR !== -1 && idxN !== -1) {
+          idx = idxR < idxN ? idxR : idxN
+        } else if (idxR !== -1) {
+          idx = idxR
+        } else if (idxN !== -1) {
+          idx = idxN
+        } else {
+          idx = -1
+        }
+      } while (idx !== -1);
+    });
+    pipelineAsync(readStream, gzipStream, encryptStream, writeStream);
+    readStream.push((request.files as any)[0].buffer);
+    readStream.push(null);
+    await finishedAsync(writeStream);
+    inputsArray.push({
+      id: jobId,
+      file: `${process.env.JOBS}/${jobId}.in.enc`,
+      size: options.totalRows,
+      priority: Math.round(options.totalRows/1000)+1
+    }) // Use key hash as job identifier
+    await jobQueue.add(jobId,
+      {...options},
+      {jobId, priority: Math.round(options.totalRows/1000)+1}
+    )
+    await sendJobUpdate(options.user, "L'appariement a bien commencé", options.randomKey);
+    return {msg: 'started', id: options.randomKey};
+  } else {
+    request.res.status(429).send({msg: `There is already ${jobsUser.length} running or waiting jobs`});
+    return;
+  }
 }
 
 export const returnBulkResults = async (response: Response, id: string, outputFormat: string, order: string): Promise<void> => {
   const jobId = crypto.createHash('sha256').update(id).digest('hex');
   const job: any = await jobQueue.getJob(jobId);
-  const jobsActive = await jobQueue.getJobs(['active', 'failed'], 0, 100, true);
+  const jobsActive = await jobQueue.getJobs(['active'], 0, 100, true);
   const jobStatus = await job.getState();
   if (job && jobStatus === 'completed') {
     try {
@@ -570,24 +581,22 @@ export const returnBulkResults = async (response: Response, id: string, outputFo
           .on('error', (e: any) => log({httpGetResultsError: e, jobId}));
         await finishedAsync(dataStream);
       } else {
-        // return {msg: 'Not available format'}
         response.send({msg: 'Not available format'})
       }
     } catch(e) {
-      // return {msg: 'Job succeeded but results expired'}
       response.send({msg: 'Job succeeded but results expired'})
     }
   } else if (job && jobStatus === 'failed') {
     response.status(400).send({status: jobStatus, msg: job.stacktrace.join(' ')});
     return
   } else if (job && jobStatus === 'active') {
-    // return {status: 'active', id, progress: job.progress};
     response.send({status: 'active', id, progress: job.progress});
-  } else if (job && jobStatus === 'wait') {
-    const jobsWaiting = await jobQueue.getJobs(['wait'], 0, 100, true);
-    const remainingRowsActive = jobsActive.reduce((acc: number, val: any) => {
-      return Math.round(acc + ((100.0 - val.progress.percentage) * val.progress.rows) / val.progress.percentage)
-    }, 0)
+  } else if (job && ['wait', 'prioritized'].includes(jobStatus)) {
+    const jobsWaiting = await jobQueue.getJobs(['wait', 'prioritized'], 0, 100, true);
+    const remainingRowsActive = jobsActive.map((val: any) => {
+      const remainingRows = ((100.0 - val.progress.percentage) * val.progress.rows) / val.progress.percentage
+      return {priority: val.opts.priority, progress: val.progress.percentage, remainingRows, rows: val.progress.rows}
+    })
     const jobsWaitingBefore = jobsWaiting.reduce((acc: number, val: any) => {
       if (val.timestamp < job.timestamp) {
         return acc + 1
@@ -603,8 +612,7 @@ export const returnBulkResults = async (response: Response, id: string, outputFo
         return acc
       }
     }, 0)
-    // return {status: 'wait', id, remainingRowsActive, remainingRowsWaiting, activeJobs: jobsActive.length, waitingJobs: jobsWaitingBefore};
-    response.send({status: 'wait', id, remainingRowsActive, remainingRowsWaiting, activeJobs: jobsActive.length, waitingJobs: jobsWaitingBefore});
+    response.send({status: 'wait', id, remainingRowsActive, remainingRowsWaiting, activeJobs: jobsActive.length, waitingJobs: jobsWaitingBefore, priority: job.opts.priority});
   } else {
     response.send({msg: 'job doesn\'t exists'});
   }
@@ -649,6 +657,7 @@ interface JobInput {
   id: string;
   file: string;
   size: number;
+  priority: number
 }
 
 interface StopJobReason {
