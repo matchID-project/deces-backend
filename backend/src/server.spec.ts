@@ -10,6 +10,24 @@ import supertest from 'supertest';
 const server = supertest(app)
 const finishedAsync:any = promisify(finished);
 
+const csv2Buffer = async (filePath: string, nrows: number) => {
+  let data = '';
+  let index: number;
+  const readStream: any = fs.createReadStream(filePath,  {encoding: 'utf8'})
+  readStream
+    .on('data', (chunk: string) => {
+      index = chunk.indexOf('\n');
+      data += chunk;
+      // if (index > 10) {
+      //   readStream.close()
+      // }
+    })
+  await finishedAsync(readStream, {}).catch(() => {
+    // do nothing: closed stream
+  });
+  return Buffer.from(data.split('\n').slice(0, nrows).join('\n'), 'utf8');
+}
+
 describe('server.ts - Express application', () => {
   let totalPersons: number;
   const apiPath = (api: string): string => {
@@ -382,27 +400,11 @@ describe('server.ts - Express application', () => {
   describe.sequential('/search/csv Bulk', () => {
     test.sequential('delete job', async () => {
       let res;
-      let data = '';
-      let index: number;
-      const nrows = 5000;
-      const readStream: any = fs.createReadStream('/deces-backend/tests/clients_test.csv',  {encoding: 'utf8'})
-      readStream
-        .on('data', (chunk: string) => {
-          index = chunk.indexOf('\n');
-          data += chunk;
-          if (index > 10) {
-            readStream.close()
-          }
-        })
-      await finishedAsync(readStream, {}).catch(() => {
-        // do nothing: closed stream
-      });
-      const buf = Buffer.from(data.split('\n').slice(0, nrows).join('\n'), 'utf8');
-
       const token = await server
         .post(apiPath(`auth`))
         .send({user:'user1@gmail.com', password: 'magicPass'})
 
+      const buf  = await csv2Buffer('/deces-backend/tests/clients_test.csv', 5000)
       res = await server
         .post(apiPath('search/csv'))
         .set('Authorization', `Bearer ${token.body.access_token as string}`)
@@ -440,27 +442,12 @@ describe('server.ts - Express application', () => {
 
     test.sequential('run bulk job', async () => {
       let res;
-      let data = '';
       const nrows = 100;
-      let index: number;
-      const readStream: any = fs.createReadStream('/deces-backend/tests/clients_test.csv',  {encoding: 'utf8'})
-      readStream
-        .on('data', (chunk: string) => {
-          index = chunk.indexOf('\n');
-          data += chunk;
-          if (index > 10) {
-            readStream.close()
-          }
-        })
-      await finishedAsync(readStream, {}).catch(() => {
-        // do nothing: closed stream
-      });
-      const buf = Buffer.from(data.split('\n').slice(0, nrows).join('\n'), 'utf8');
-
       const token = await server
         .post(apiPath(`auth`))
         .send({user:'user1@gmail.com', password: 'magicPass'})
 
+      const buf = await csv2Buffer('/deces-backend/tests/clients_test.csv', nrows);
       res = await server
         .post(apiPath('search/csv'))
         .set('Authorization', `Bearer ${token.body.access_token as string}`)
@@ -836,6 +823,69 @@ describe('server.ts - Express application', () => {
            expect(rowCount).to.eql(3);
          });
     });
+
+    test.sequential('priority', async () => {
+      let res;
+      let buf;
+      const token = await server
+        .post(apiPath(`auth`))
+        .send({user: process.env.BACKEND_TOKEN_USER, password: process.env.BACKEND_TOKEN_PASSWORD})
+
+      res = await server
+        .get(apiPath('queue/jobs'))
+        .set('Authorization', `Bearer ${token.body.access_token as string}`)
+
+      buf  = await csv2Buffer('/deces-backend/tests/clients_test.csv', 3000)
+      res = await server
+        .post(apiPath('search/csv'))
+        .set('Authorization', `Bearer ${token.body.access_token as string}`)
+        .field('sep', ';')
+        .field('firstName', 'Prenom')
+        .field('lastName', 'Nom')
+        .field('birthDate', 'Date')
+        .field('chunkSize', 20)
+        .attach('csv', buf, 'file.csv')
+      const { body : { id: jobId1 } }: { body: { id: string} } = res
+      buf  = await csv2Buffer('/deces-backend/tests/clients_test.csv', 3000)
+      res = await server
+        .post(apiPath('search/csv'))
+        .set('Authorization', `Bearer ${token.body.access_token as string}`)
+        .field('sep', ';')
+        .field('firstName', 'Prenom')
+        .field('lastName', 'Nom')
+        .field('birthDate', 'Date')
+        .field('chunkSize', 20)
+        .attach('csv', buf, 'file.csv')
+      const { body : { id: jobId2 } }: { body: { id: string} } = res
+      buf  = await csv2Buffer('/deces-backend/tests/clients_test.csv', 500)
+      res = await server
+        .post(apiPath('search/csv'))
+        .set('Authorization', `Bearer ${token.body.access_token as string}`)
+        .field('sep', ';')
+        .field('firstName', 'Prenom')
+        .field('lastName', 'Nom')
+        .field('birthDate', 'Date')
+        .field('chunkSize', 20)
+        .attach('csv', buf, 'file.csv')
+      const { body : { id: jobId3 } }: { body: { id: string} } = res
+      while (['created', 'wait', 'started', 'active'].includes(res.body.status) || res.body.msg === 'started') {
+        res = await server
+          .get(apiPath(`search/csv/${jobId2}`))
+          .set('Authorization', `Bearer ${token.body.access_token as string}`)
+        res = await server
+          .get(apiPath(`search/csv/${jobId1}`))
+          .set('Authorization', `Bearer ${token.body.access_token as string}`)
+        res = await server
+          .get(apiPath(`search/csv/${jobId3}`))
+          .set('Authorization', `Bearer ${token.body.access_token as string}`)
+        }
+
+      res = await server
+        .get(apiPath('queue/jobs?jobsType=wait'))
+        .set('Authorization', `Bearer ${token.body.access_token as string}`)
+      expect(res.status).toBe(200);
+      expect(res.body.jobs.length).to.eql(0);
+    }, 30000);
 
 
   })

@@ -96,11 +96,11 @@ export interface RequestBody {
   */
  birthCity?: string;
  /**
-  * Code INSEE du lieu de naissance (commune pour les personnes nées en France ou dans les DOM/TOM/COM, ou code pays)
+  * Code postal du lieu de naissance (commune pour les personnes nées en France ou dans les DOM/TOM/COM, ou code pays)
   */
  birthPostalCode?: string;
  /**
-  * Code postal du lieu de naissance (commune pour les personnes nées en France ou dans les DOM/TOM/COM, ou code pays)
+  * Code INSEE du lieu de naissance (commune pour les personnes nées en France ou dans les DOM/TOM/COM, ou code pays)
   */
  birthLocationCode?: string;
  /**
@@ -122,11 +122,11 @@ export interface RequestBody {
  /**
   * Libellé de la commune de décès (pour les personnes nées en France ou dans les DOM/TOM/COM)
   */
- deathPostalCode?: string;
+ deathCity?: string;
  /**
   * Code postal du lieu de décès (commune pour les personnes décédées en France ou dans les DOM/TOM/COM, ou code pays)
   */
- deathCity?: string;
+ deathPostalCode?: string;
  /**
   * Code INSEE du lieu de décès (commune pour les personnes décédées en France ou dans les DOM/TOM/COM, ou code pays)
   */

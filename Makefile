@@ -39,6 +39,7 @@ export PORT=8084
 export BACKEND=${APP_PATH}/backend
 export BACKEND_PORT=8080
 export BACKEND_HOST=backend
+export APP_URL?=https://${APP_DNS}
 export API_URL?=localhost:${PORT}
 export API_EMAIL?=matchid.project@gmail.com
 export API_SSL?=1
@@ -325,9 +326,9 @@ backend-test-vitest: db-json-fake smtp
 	@echo Testing API with vitest tests
 	@if [ ! -f "${BACKEND}/src/routes/routes.ts" ]; then export EXEC_ENV=development; \
 		export BACKEND_LOG_LEVEL=error; \
-		${DC_BACKEND} -f ${DC_FILE}-dev-backend.yml run --rm backend npm run tsoa;fi
+		${DC_BACKEND} -f ${DC_FILE}-dev-backend.yml run --rm backend npm run tsoa --verbose;fi
 	@export EXEC_ENV=development; export BACKEND_LOG_LEVEL=error; \
-		${DC_BACKEND} -f ${DC_FILE}-dev-backend.yml run --rm backend npm run test
+		${DC_BACKEND} -f ${DC_FILE}-dev-backend.yml run --rm backend npm run test --verbose
 
 backend/tests/clients_test.csv:
 	curl -L https://github.com/matchID-project/examples/raw/master/data/clients_test.csv -o backend/tests/clients_test.csv

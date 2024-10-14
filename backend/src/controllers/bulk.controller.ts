@@ -147,6 +147,7 @@ export class BulkController extends Controller {
       options.candidateNumber = options.candidateNumber || 1;
       options.pruneScore = options.pruneScore !== undefined ? parseFloat(options.pruneScore) : undefined;
       options.mapField = {};
+      options.tmpfilePersistence = Math.max(60000, options.tmpfilePersistence || process.env.BACKEND_TMPFILE_PERSISTENCE);
       validFields.forEach(key => options.mapField[options[key] || key] = key );
       return await csvHandle(request, options)
     } else {

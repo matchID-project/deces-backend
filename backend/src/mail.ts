@@ -105,6 +105,32 @@ export const validateOTP = (email:string,otp:string): boolean => {
     return false;
 }
 
+export const sendJobUpdate = async (email:string, content: string, jobId: string): Promise<boolean> => {
+    try {
+        const message: any = {
+            from: process.env.API_EMAIL,
+            to: `${email}`,
+        }
+        message.subject = `Traitement sur un fichier - ${process.env.APP_DNS}`;
+        message.text = `${content ? 'Traitement fichier: ' + content : ''}\nVous pouvez consulter le status du traitement <a href="${process.env.APP_URL}/link?job=${jobId}"></a>ici.<br>`
+        message.html = `<html style="font-family:Helvetica;">
+              <h4> Traitement d'un fichier </h4>
+              Vous avez lancé une tache d'appariement,<br>
+              <br>
+              ${content ? '<br>' + content + '<br>' : ''}<br>
+              Vous pouvez consulter le status du traitement <a href="${process.env.APP_URL}/link?job=${jobId}">en utilisant ce lien</a>.<br>
+              <br>
+              l'équipe matchID
+              </html>
+              `
+        await transporter.sendMail(message);
+        return true;
+    } catch (err) {
+        return false;
+    }
+}
+
+
 export const sendUpdateConfirmation = async (email:string, status: ReviewStatus, rejectMsg: string, id: string): Promise<boolean> => {
     try {
         const message: any = {
@@ -116,9 +142,9 @@ export const sendUpdateConfirmation = async (email:string, status: ReviewStatus,
             message.attachment = { data: `<html style="font-family:Helvetica;">
             <h4> Merci de votre contibution !</h4>
             Votre proposition de correction a été acceptée.<br>
-            Retrouvez <a href="https://${process.env.APP_DNS}/id/${id}"> la fiche modifiée </a>.<br>
+            Retrouvez <a href="${process.env.APP_URL}/id/${id}"> la fiche modifiée </a>.<br>
             <br>
-            Vous pouvez à tout moment <a href="https://${process.env.APP_DNS}/edits">revenir sur vos contributions</a>.<br>
+            Vous pouvez à tout moment <a href="${process.env.APP_URL}/edits">revenir sur vos contributions</a>.<br>
             <br>
             l'équipe matchID
             </html>
@@ -130,7 +156,7 @@ export const sendUpdateConfirmation = async (email:string, status: ReviewStatus,
             <br>
             Néanmoins les éléments fournis ne nous ont pas permis de retenir votre proposition à ce stade.<br>
             ${rejectMsg ? '<br>' + rejectMsg + '<br>' : ''}<br>
-            Vous pourrez de nouveau soumettre une nouvelle proposition sur la fiche: <a href="https://${process.env.APP_DNS}/edits#${id}"></a>.<br>
+            Vous pourrez de nouveau soumettre une nouvelle proposition sur la fiche <a href="${process.env.APP_URL}/edits#${id}">ici</a>.<br>
             <br>
             l'équipe matchID
             </html>

@@ -53,7 +53,7 @@ const buildAdaptativeBlockMatch = (searchInput: RequestInput) => {
                 fuzzyTermQuery(searchInput.birthDate.field as string, searchInput.birthDate.mask.transform(searchInput.birthDate.value, searchInput.dateFormat) as string, 1, false),
                 prefixQuery(searchInput.birthDate.field as string, (searchInput.birthDate.mask.transform(searchInput.birthDate.value, searchInput.dateFormat) as string).substring(0,4), false, false)
               ],
-              // eslint-disable-next-line camelcase
+
               minimum_should_match: 1
             }
           }
@@ -80,13 +80,13 @@ const buildAdaptativeBlockMatch = (searchInput: RequestInput) => {
       }
     }
     return {
-        // eslint-disable-next-line camelcase
+
         function_score : {
           query: {
             bool: {
               must: queryMust,
               should: queryShould,
-              // eslint-disable-next-line camelcase
+
               minimum_should_match: 1
             }
           }
@@ -117,7 +117,7 @@ const buildSimpleMatch = (searchInput: string) => {
   date = date.length ? [date[0]] : null;
   const names = searchTerm.filter( x => /[a-z]+/i.exec(x)).filter( x => !/^(el|d|le|de|la|los)$/i.exec(x));
 
-  // eslint-disable-next-line camelcase
+
   const defaultQuery = { match_all: {} }
 
   let namesQuery:any
@@ -129,7 +129,7 @@ const buildSimpleMatch = (searchInput: string) => {
         must: [
           {
             match: {
-              // eslint-disable-next-line camelcase
+
               PRENOMS_NOM: {
                 query: names.join(" "),
                 fuzziness: "auto"
@@ -140,13 +140,13 @@ const buildSimpleMatch = (searchInput: string) => {
         should: [
           {
             match: {
-              // eslint-disable-next-line camelcase
+
               PRENOM_NOM: names.join(" "),
             }
           },
           {
             match: {
-              // eslint-disable-next-line camelcase
+
               PRENOM_NOM: {
                 query: names.join(" "),
                 fuzziness: "auto"
@@ -162,7 +162,7 @@ const buildSimpleMatch = (searchInput: string) => {
       namesQuery.bool.must.push(
         {
           bool: {
-            // eslint-disable-next-line camelcase
+
             minimum_should_match: 1,
             should: [
               {
@@ -287,12 +287,12 @@ const buildSimpleMatch = (searchInput: string) => {
   if (date) {
     dateQuery = {
       bool: {
-        // eslint-disable-next-line camelcase
+
         minimum_should_match: 1,
         should: [
           {
             match: {
-              // eslint-disable-next-line camelcase
+
               DATE_NAISSANCE: {
                 query: date[0],
                 fuzziness: "auto"
@@ -301,7 +301,7 @@ const buildSimpleMatch = (searchInput: string) => {
           },
           {
             match: {
-              // eslint-disable-next-line camelcase
+
               DATE_DECES: {
                 query: date[0],
                 fuzziness: "auto"
@@ -316,7 +316,7 @@ const buildSimpleMatch = (searchInput: string) => {
   const query = dateQuery
     ? namesQuery
       ? {
-          // eslint-disable-next-line camelcase
+
           function_score: {
             query: {
               bool: {
@@ -348,7 +348,7 @@ const buildFieldRequest = (key: string, searchInput: RequestInput, must: boolean
 
 const buildAdvancedMatch = (searchInput: RequestInput) => {
   return {
-    // eslint-disable-next-line camelcase
+
     function_score: {
       query: {
         bool: {
@@ -361,7 +361,7 @@ const buildAdvancedMatch = (searchInput: RequestInput) => {
                         .filter(key => searchInput.block.scope.includes(key))
                         .map(key => buildFieldRequest(key, searchInput, false))
                         .filter(x => x),
-                  // eslint-disable-next-line camelcase
+
                   minimum_should_match: searchInput.block.minimum_match
                 },
               },
@@ -420,10 +420,10 @@ const buildAggregation = (aggs: string[], aggsSize: number, afterKey: number): a
   const aggregationRequest: any = {};
   if ((aggs.length === 1) && ["birthDate", "deathDate"].includes(aggs[0])) {
     aggregationRequest[aggs[0]] = {
-      // eslint-disable-next-line camelcase
+
       'date_histogram': {
         field: referenceSort[aggs[0]],
-        // eslint-disable-next-line camelcase
+
         'calendar_interval': 'month',
         format: 'yyyyMMdd'
       }
@@ -443,10 +443,10 @@ const buildAggregation = (aggs: string[], aggsSize: number, afterKey: number): a
       const aggregation: any = {}
       if (["birthDate", "deathDate"].includes(agg)) {
         aggregation[agg] = {
-          // eslint-disable-next-line camelcase
+
           'date_histogram': {
             field: referenceSort[agg],
-            // eslint-disable-next-line camelcase
+
             'calendar_interval': 'month',
             format: 'yyyyMMdd'
           }
@@ -494,7 +494,7 @@ export const buildRequest = (requestInput: RequestInput): BodyResponse|ScrolledR
   if (requestInput.scrollId && requestInput.scroll) {
     body = {
       scroll: requestInput.scroll,
-      // eslint-disable-next-line camelcase
+
       scroll_id: requestInput.scrollId
     }
   } else {
@@ -502,9 +502,9 @@ export const buildRequest = (requestInput: RequestInput): BodyResponse|ScrolledR
       // Static query Configuration
       // --------------------------
       // https://www.elastic.co/guide/en/elasticsearch/reference/7.x/search-request-highlighting.html
-      // eslint-disable-next-line camelcase
+
       min_score: ((requestInput.fullText && requestInput.fullText.value) ? 5: 0),
-      // eslint-disable-next-line camelcase
+
       track_total_hits: requestInput.block ? false : true,
       // highlight: {
       //   fragment_size: 200,

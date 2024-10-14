@@ -50,7 +50,7 @@ const isAsync = (func: any) => {
     return /=>\s*__awaiter/.test(func.toString().trim());
 }
 
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
+
 export default (fn: any, name: string, showEveryLines?: number): any => {
   if (!active) {
       return fn;
@@ -68,7 +68,7 @@ export default (fn: any, name: string, showEveryLines?: number): any => {
   if (isAsync(fn)) {
     return async function decorated (...args: any[]) {
         const start = process.hrtime();
-        // eslint-disable-next-line prefer-rest-params
+
         const result = await fn.apply(this, args);
         const diff = process.hrtime(start);
         const ms = (diff[0] * 1e9 + diff[1])/1000000;
@@ -83,7 +83,7 @@ export default (fn: any, name: string, showEveryLines?: number): any => {
   } else {
     return function decorated (...args: any[]) {
         const start = process.hrtime();
-        // eslint-disable-next-line prefer-rest-params
+
         const result = fn.apply(this, args);
         const diff = process.hrtime(start);
         const ms = (diff[0] * 1e9 + diff[1])/1000000;
