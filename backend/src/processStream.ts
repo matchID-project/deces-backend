@@ -481,8 +481,8 @@ export const csvHandle = async (request: Request, options: Options): Promise<any
     await sendJobUpdate(options.user, "L'appariement a bien commencé", options.randomKey);
     return {msg: 'started', id: options.randomKey};
   } else {
-    await sendJobUpdate(options.user, "Vous avez déjà un job qui tourne", options.randomKey);
-    return {msg: `already running or waiting ${jobsUser.length} jobs`}
+    request.res.status(429).send({msg: `There is already ${jobsUser.length} running or waiting jobs`});
+    return;
   }
 }
 
