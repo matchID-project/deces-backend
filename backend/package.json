@@ -19,7 +19,7 @@
   "dependencies": {
     "@jollie/soundex-fr": "^1.0.8",
     "axios": "^1.7.7",
-    "bullmq": "^5.12.12",
+    "bullmq": "^5.13.2",
     "damlev": "^1.0.0",
     "express": "^4.19.2",
     "fast-csv": "^5.0.1",
