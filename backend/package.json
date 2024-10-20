@@ -36,7 +36,7 @@
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
     "swagger-ui-svelte": "^0.0.13",
-    "tsoa": "^6.4.0",
+    "tsoa": "^6.5.0",
     "util": "^0.12.5",
     "winston": "^3.14.2"
   },
