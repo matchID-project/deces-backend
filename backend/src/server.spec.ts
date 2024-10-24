@@ -846,17 +846,7 @@ describe('server.ts - Express application', () => {
         .field('chunkSize', 20)
         .attach('csv', buf, 'file.csv')
       const { body : { id: jobId1 } }: { body: { id: string} } = res
-      buf  = await csv2Buffer('/deces-backend/tests/clients_test.csv', 3000)
-      res = await server
-        .post(apiPath('search/csv'))
-        .set('Authorization', `Bearer ${token.body.access_token as string}`)
-        .field('sep', ';')
-        .field('firstName', 'Prenom')
-        .field('lastName', 'Nom')
-        .field('birthDate', 'Date')
-        .field('chunkSize', 20)
-        .attach('csv', buf, 'file.csv')
-      const { body : { id: jobId2 } }: { body: { id: string} } = res
+      let statusJob1;
       buf  = await csv2Buffer('/deces-backend/tests/clients_test.csv', 500)
       res = await server
         .post(apiPath('search/csv'))
@@ -867,18 +857,22 @@ describe('server.ts - Express application', () => {
         .field('birthDate', 'Date')
         .field('chunkSize', 20)
         .attach('csv', buf, 'file.csv')
-      const { body : { id: jobId3 } }: { body: { id: string} } = res
+      const { body : { id: jobId2 } }: { body: { id: string} } = res
+      let statusJob2;
       while (['created', 'wait', 'started', 'active'].includes(res.body.status) || res.body.msg === 'started') {
-        res = await server
-          .get(apiPath(`search/csv/${jobId2}`))
-          .set('Authorization', `Bearer ${token.body.access_token as string}`)
         res = await server
           .get(apiPath(`search/csv/${jobId1}`))
           .set('Authorization', `Bearer ${token.body.access_token as string}`)
+        statusJob1 = res.body.status
         res = await server
-          .get(apiPath(`search/csv/${jobId3}`))
+          .get(apiPath(`search/csv/${jobId2}`))
           .set('Authorization', `Bearer ${token.body.access_token as string}`)
+        statusJob2 = res.body.status
         }
+
+      // smaller job finish faster
+      expect(statusJob1).toBe('active');
+      expect(statusJob2).not.toBe('active');
 
       res = await server
         .get(apiPath('queue/jobs?jobsType=wait'))

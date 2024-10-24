@@ -171,7 +171,7 @@ export const processCsv =  async (job: Job<any>, jobFile: JobInput): Promise<any
     encoding: 'utf8',
     escape: job.data.escape,
     quote: job.data.quote,
-    skipLines: job.data.skipLines
+    skipLines: job.data.skipLines,
   };
   const writeStream: any = fs.createWriteStream(`${process.env.JOBS}/${jobId}.out.enc`);
   const gzipStream =  createGzip();
@@ -387,7 +387,8 @@ export class ProcessStream extends Transform {
         candidateNumber: this.candidateNumber
       }, {
         attempts: 2,
-        jobId
+        jobId,
+        priority: this.job.opts.priority
       })
     await job.waitUntilFinished(chunkEvents)
     const jobResult = await Job.fromId(chunkQueue, job.id)
