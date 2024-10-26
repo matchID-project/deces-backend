@@ -93,7 +93,7 @@ app.use((
   req: ExRequest,
   res: ExResponse,
   next: NextFunction
-): ExResponse | void => {
+): any => {
   if (err instanceof ValidateError) {
     log({
         error: "Validation Failed",
