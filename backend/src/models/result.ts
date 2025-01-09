@@ -241,7 +241,8 @@ export const buildResult = (result: ResultRawES, requestInput: RequestInput): Re
 
 }
 
-export const buildResultSingle = (item: ResultRawHit): Person => {
+export const buildResultSingle = (item: ResultRawHit): Person|undefined => {
+  if (item === undefined) return {}
   const result: Person = {
     score: item._score,
     // source: dataCatalog[item._source.SOURCE],
