@@ -407,6 +407,7 @@ export class SearchController extends Controller {
         }
       })
     }
+    if (Object.keys(updates).length === 0) return []
     const bulkRequest = Object.keys(updates).map((id: any) =>
       [JSON.stringify({index: "deces"}), JSON.stringify(buildRequest(new RequestInput({id})))]
     );
