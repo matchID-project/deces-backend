@@ -407,12 +407,14 @@ export class SearchController extends Controller {
         }
       })
     }
+    if (Object.keys(updates).length === 0) return []
     const bulkRequest = Object.keys(updates).map((id: any) =>
       [JSON.stringify({index: "deces"}), JSON.stringify(buildRequest(new RequestInput({id})))]
     );
     const msearchRequest = bulkRequest.map((x: any) => x.join('\n\r')).join('\n\r') + '\n';
     const result =  await runBulkRequest(msearchRequest);
-    return result.data.responses.map((r:any) => buildResultSingle(r.hits.hits[0]))
+    return  result.data.responses.map((r:any) => buildResultSingle(r.hits.hits[0]))
+      .filter((r:any) => Object.keys(r).length > 0)
       .map((r:any) => {
         delete r.score;
         delete r.scores;
