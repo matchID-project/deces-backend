@@ -16,7 +16,8 @@ import { generateRoutes, generateSpec, ExtendedRoutesConfig, ExtendedSpecConfig 
         flow: "password",
         tokenUrl: "/deces/api/v1/auth",
         scopes: {
-          admin: "administration access"
+          admin: "administration access",
+          user: "user access"
         }
       },
     }

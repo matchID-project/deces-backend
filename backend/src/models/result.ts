@@ -155,6 +155,7 @@ export interface ResultRawES {
 }
 
 export interface ResultRawHit {
+  _index: 'deces'|'deces-updates';
   _score: number;
   _id: string;
   _source: {
@@ -215,6 +216,15 @@ export const buildResult = (result: ResultRawES, requestInput: RequestInput): Re
     }
   })
   let filteredResults = result.hits.hits.map(buildResultSingle)
+
+  filteredResults
+    .forEach((value, index, self) => {
+      const firstIndex = self.findIndex((item) => item.id === value.id);
+      if (index !== firstIndex && value.index !== self[firstIndex].index) {
+        self.splice(firstIndex, 1);
+      }
+    })
+
   scoreResults(filteredRequest, filteredResults, {dateFormatA: filteredRequest.dateFormat})
   if (requestInput.sort && Object.values(requestInput.sort.value).map(x => Object.keys(x))[0].includes('score')) {
     if (Object.values(requestInput.sort.value).find(x => x.score).score === 'asc') {
@@ -244,6 +254,7 @@ export const buildResult = (result: ResultRawES, requestInput: RequestInput): Re
 export const buildResultSingle = (item: ResultRawHit): Person|undefined => {
   if (item === undefined) return {}
   const result: Person = {
+    index: item._index,
     score: item._score,
     // source: dataCatalog[item._source.SOURCE],
     source: item._source.SOURCE,
@@ -299,9 +310,9 @@ export const buildResultSingle = (item: ResultRawHit): Person|undefined => {
       const update: any = {...u};
       // WIP quick n dirty anonymization
       const { author } = u;
-      update.author = author && author.substring(0,2)
+      update.author = author ? author.substring(0,2)
         + '...' + author.replace(/@.*/,'').substring(author.replace(/@.*/,'').length-2)
-        + '@' + author.replace(/.*@/,'');
+        + '@' + author.replace(/.*@/,'') : "";
       return update;
     });
   }

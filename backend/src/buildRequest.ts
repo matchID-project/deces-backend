@@ -389,7 +389,7 @@ const buildFrom = (current: number, resultsPerPage: number) => {
   return (current - 1) * resultsPerPage;
 }
 
-const referenceSort: any = {
+export const referenceSort: any = {
   score: "_score",
   firstName: "PRENOM.raw",
   lastName: "NOM.raw",

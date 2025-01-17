@@ -1,7 +1,12 @@
 import { SearchController } from './search.controller';
 import { PersonCompare } from '../models/entities';
 import express from 'express';
-import { describe, expect, it } from 'vitest'
+import { initUpdateIndex } from '../updatedIds';
+import { describe, expect, it, beforeAll } from 'vitest'
+
+beforeAll(async () => {
+  await initUpdateIndex();
+})
 
 describe('search.controller.ts - GET request', () => {
   const controller = new SearchController()
@@ -90,7 +95,7 @@ describe('search.controller.ts - POST id', () => {
   it('update id', async () => {
     const body = {
       'author_id': 'Ked3oh@oPho3m.com',
-      lastName: 'Aiph7u',
+      lastName: 'Aeboox9e',
       proof: 'https://somwhere.in.the.internet',
     }
     const req = {

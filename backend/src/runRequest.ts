@@ -6,9 +6,9 @@ export const runRequest = async (body: BodyResponse|ScrolledResponse, scroll: st
   if (body.scroll_id) {
     endpoint = '_search/scroll'
   } else if (scroll) {
-    endpoint = `deces/_search?scroll=${scroll}`
+    endpoint = `deces,deces-updates/_search?scroll=${scroll}`
   } else {
-    endpoint = 'deces/_search'
+    endpoint = 'deces,deces-updates/_search'
   }
   const response = await axios(`http://elasticsearch:9200/${endpoint}`, {
     method: 'post',

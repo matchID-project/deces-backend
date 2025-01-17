@@ -19,6 +19,15 @@ import iconv from 'iconv-lite';
 
 import timer from './timer';
 
+const log = (json:any) => {
+    loggerStream.write(JSON.stringify({
+      "backend": {
+        "server-date": new Date(Date.now()).toISOString(),
+        ...json
+      }
+    }));
+}
+
 const timerRunBulkRequest = timer(runBulkRequest, 'runBulkRequest', 1);
 
 export const validFields: string[] = ['q', 'firstName', 'lastName', 'legalName', 'sex', 'birthDate', 'birthCity', 'birthLocationCode', 'birthPostalCode', 'birthDepartment', 'birthCountry',
@@ -26,15 +35,6 @@ export const validFields: string[] = ['q', 'firstName', 'lastName', 'legalName',
 'size', 'fuzzy', 'block'];
 const validFieldsForColumnsCount = ['firstName', 'lastName', 'legalName', 'sex', 'birthDate', 'birthCity', 'birthLocationCode', 'birthPostalCode', 'birthDepartment', 'birthCountry',
 'birthGeoPoint', 'deathDate', 'deathCity', 'deathLocationCode', 'deathPostalCode', 'deathDepartment', 'deathCountry', 'deathGeoPoint', 'deathAge', 'lastSeenAliveDate']
-
-const log = (json:any) => {
-  loggerStream.write(JSON.stringify({
-    "backend": {
-      "server-date": new Date(Date.now()).toISOString(),
-      ...json
-    }
-  }));
-}
 
 const formatJob = (job:any) => {
   const duration: number = job && job.processedOn && job.finishedOn && (job.finishedOn - job.processedOn) / 1000;
@@ -134,7 +134,6 @@ const JsonParseStream = () => {
     objectMode: true,
     transform(row: any, encoding: string, callback: (e?: any) => void) {
         try {
-          // loggerStream.write(`jsonParse ${row}\n`);
           this.push(JSON.parse(row));
           callback();
         } catch(e) {
