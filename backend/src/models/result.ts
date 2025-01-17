@@ -220,8 +220,14 @@ export const buildResult = (result: ResultRawES, requestInput: RequestInput): Re
   filteredResults
     .forEach((value, index, self) => {
       const firstIndex = self.findIndex((item) => item.id === value.id);
-      if (index !== firstIndex && value.index !== self[firstIndex].index) {
-        self.splice(firstIndex, 1);
+      if (index !== firstIndex) {
+        // Prioritize 'deces-updates' index over 'deces'
+        const shouldRemoveFirst = self[firstIndex].index === 'deces' && value.index === 'deces-updates';
+        if (shouldRemoveFirst) {
+          self.splice(firstIndex, 1);
+        } else if (value.index === 'deces') {
+          self.splice(index, 1);
+        }
       }
     })
 
@@ -310,8 +316,10 @@ export const buildResultSingle = (item: ResultRawHit): Person|undefined => {
       const update: any = {...u};
       // WIP quick n dirty anonymization
       const { author } = u;
-      update.author = author ? author.substring(0,2)
-        + '...' + author.replace(/@.*/,'').substring(author.replace(/@.*/,'').length-2)
+      update.author = author ? 
+        (author.length > 8 ? 
+          author.substring(0,2) + '...' + author.replace(/@.*/,'').substring(author.replace(/@.*/,'').length-2)
+          : '...') 
         + '@' + author.replace(/.*@/,'') : "";
       return update;
     });

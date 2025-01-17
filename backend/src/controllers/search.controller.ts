@@ -263,7 +263,12 @@ export class SearchController extends Controller {
     @Request() request: express.Request
   ): Promise<any> {
     const date = new Date(Date.now()).toISOString()
-    await this.storeProof(request);
+    try {
+      await this.storeProof(request);
+    } catch (err) {
+      this.setStatus(400);
+      return { msg: err.message };
+    }
     // get user & rights from Security
     const author = (request as any).user && (request as any).user.user
     const isAdmin = (request as any).user && (request as any).user.scopes && (request as any).user.scopes.includes('admin');

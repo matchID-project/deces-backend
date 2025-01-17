@@ -84,7 +84,7 @@ export const initUpdateIndex =  async (): Promise<boolean> => {
 }
 
 export const updateFieldsToIndex =  async (updates: any): Promise<boolean> => {
-  if (Object.keys(updates).length === 0) return
+  if (Object.keys(updates).length === 0) return true
   const updateList: any = await resultsFromUpdates(updates)
   const bulkRequest = updateList.map((row: any) => { // TODO: type
     if (row.hits.hits.length > 0) {
@@ -212,7 +212,7 @@ export const addModification = async (id: string, modification: Modification, da
     await writeFileAsync(`${process.env.PROOFS}/${id}/${date}_${id}.json`, JSON.stringify(modification));
     if (!updatedFields[id]) { updatedFields[id] = [] }
     updatedFields[id].push(modification);
-    updateFieldsToIndex({[id]: updatedFields[id]});
+    await updateFieldsToIndex({[id]: updatedFields[id]});
     return true;
   } catch(e) {
     log({ msg: "Update failed", error: e.message, id, modification });
