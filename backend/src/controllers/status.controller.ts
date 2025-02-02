@@ -1,11 +1,14 @@
 import { Controller, Get, Route, Response, Tags  } from 'tsoa';
 import { HealthcheckResponse } from '../models/result';
+import { wikidata } from '../wikidata';
+import { buildResultSingle } from '../models/result';
 import axios from 'axios';
 
 let uniqRecordsCount: number;
 let lastDataset: string;
 let lastRecordDate: string;
 let updateDate: string;
+let todayDeces: [];
 
 /**
  * @swagger
@@ -53,6 +56,16 @@ export class StatusController extends Controller {
         updateDate = response.data.trim().replace(/T.*/,'').replaceAll('-','').replace(/(\d{4})(\d{2})(\d{2})/,"$3/$2/$1")
       }
     }
+    if (! todayDeces) {
+      let today = new Date().toISOString().split('T')[0].replaceAll("-","")
+      const response = await axios(`http://elasticsearch:9200/deces/_search?q=DATE_DECES:${today}`);
+      const records = response.data.hits.hits.filter((item: any) => item._id in wikidata)
+      if (records.length > 0) {
+        todayDeces = records.map((item: any) => buildResultSingle(item))
+      } else {
+        todayDeces = []
+      }
+    }
 
 
     return {
@@ -60,7 +73,8 @@ export class StatusController extends Controller {
       uniqRecordsCount,
       lastRecordDate,
       lastDataset,
-      updateDate
+      updateDate,
+      todayDeces
     }
   }
 }
