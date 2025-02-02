@@ -57,14 +57,7 @@ export class StatusController extends Controller {
       }
     }
     if (! todayDeces) {
-      let today = new Date().toISOString().split('T')[0].replaceAll("-","")
-      const response = await axios(`http://elasticsearch:9200/deces/_search?q=DATE_DECES:${today}`);
-      const records = response.data.hits.hits.filter((item: any) => item._id in wikidata)
-      if (records.length > 0) {
-        todayDeces = records.map((item: any) => buildResultSingle(item))
-      } else {
-        todayDeces = []
-      }
+      todayDeces = await resetTodayDeces()
     }
 
 
@@ -78,3 +71,32 @@ export class StatusController extends Controller {
     }
   }
 }
+
+const resetTodayDeces = async () => {
+  let today = new Date().toISOString().split('T')[0].replaceAll("-","")
+  const response = await axios(`http://elasticsearch:9200/deces/_search?q=DATE_DECES:${today}`);
+  const records = response.data.hits.hits.filter((item: any) => item._id in wikidata)
+  if (records.length > 0) {
+    return records.map((item: any) => buildResultSingle(item))
+  } else {
+    return []
+  }
+}
+
+const resetAtMidnight = () => {
+    const now = new Date();
+    const night = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate() + 1,
+        0, 0, 0
+    );
+    const msToMidnight = night.getTime() - now.getTime();
+
+    setTimeout(() => {
+        resetTodayDeces();
+        resetAtMidnight();
+    }, msToMidnight);
+}
+
+resetAtMidnight();
