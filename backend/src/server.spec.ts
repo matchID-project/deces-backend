@@ -4,11 +4,17 @@ import { Person } from './models/entities';
 import { promisify } from 'util';
 import { parseString } from '@fast-csv/parse';
 import { writeToBuffer } from '@fast-csv/format';
+import { initUpdateIndex } from './updatedIds';
 import fs from "fs";
-import { describe, expect, it, test } from 'vitest'
+import { describe, expect, it, test, beforeAll } from 'vitest'
 import supertest from 'supertest';
 const server = supertest(app)
 const finishedAsync:any = promisify(finished);
+
+
+beforeAll(async () => {
+  await initUpdateIndex();
+})
 
 const csv2Buffer = async (filePath: string, nrows: number) => {
   let data = '';
@@ -41,8 +47,8 @@ describe('server.ts - Express application', () => {
     expect(res.body.msg).toEqual("OK");
   });
 
-  describe('/id/{id}', () => {
-    it('search', async () => {
+  describe.sequential('/id/{id}', () => {
+    test.sequential('search', async () => {
       let res = await server
         .get(apiPath('search'))
         .query({q: 'Georges Duboeuf'})
@@ -55,12 +61,12 @@ describe('server.ts - Express application', () => {
       expect(res.body.response.persons[0].links.wikidata).to.include('Q3102639');
     });
 
-    it('update', async () => {
+    test.sequential('update add modification to updates', async () => {
       const token = await server
         .post(apiPath(`auth`))
         .send({user:'user1@gmail.com', password: 'magicPass'})
       const buf = Buffer.from('weird pdf', 'base64')
-      const res = await server
+      let res = await server
         .post(apiPath(`id/VhfumwT3QnUq`))
         .set('Authorization', `Bearer ${token.body.access_token as string}`)
         .field('author_id', 'Ked3oh@oPho3m.com')
@@ -68,6 +74,36 @@ describe('server.ts - Express application', () => {
         .attach('pdf', buf, 'file.pdf')
       expect(res.status).toBe(200);
       expect(res.body.msg).to.equal('Update stored');
+
+      await new Promise(f => setTimeout(f, 1000));
+      res = await server
+        .get(apiPath('search'))
+        .query({ lastName: 'Aiph7u' })
+      expect(res.status).toBe(200);
+      expect(res.body.response.persons.length).to.above(0);
+      expect(res.body.response.persons[0].name.first).to.include('Georges');
+    });
+
+    test.sequential('update get all updates (admin)', async () => {
+      const token = await server
+        .post(apiPath(`auth`))
+        .send({user:process.env.BACKEND_TOKEN_USER, password: process.env.BACKEND_TOKEN_PASSWORD})
+      const res = await server
+        .get(apiPath('updated'))
+        .set('Authorization', `Bearer ${token.body.access_token as string}`)
+      expect(res.status).toBe(200);
+      expect(res.body.length).to.above(0);
+    });
+
+    test.sequential('update get author updates', async () => {
+      const token = await server
+        .post(apiPath(`auth`))
+        .send({user:'user1@gmail.com', password: 'magicPass'})
+      const res = await server
+        .get(apiPath('updated'))
+        .set('Authorization', `Bearer ${token.body.access_token as string}`)
+      expect(res.status).toBe(200);
+      expect(res.body.length).to.above(0);
     });
   })
 
