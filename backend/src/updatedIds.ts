@@ -99,18 +99,23 @@ export const updateFieldsToIndex =  async (updates: any): Promise<boolean> => {
     }
   }).filter((x: any) => x);
   const updateRequest = bulkRequest.map((x: any) => x.join('\n\r')).join('\n\r') + '\n';
-  const response = await axios(`http://elasticsearch:9200/${updateIndex}/_bulk`, {
-    method: 'POST',
-    data: updateRequest,
-    headers: {
-      'Content-Type': 'application/x-ndjson',
-      'Cache-Control': 'no-cache'
+  try {
+    const response = await axios(`http://elasticsearch:9200/${updateIndex}/_bulk`, {
+      method: 'POST',
+      data: updateRequest,
+      headers: {
+        'Content-Type': 'application/x-ndjson',
+        'Cache-Control': 'no-cache'
+      }
+    });
+    if (response.status === 200 && !response.data.errors) {
+      return true
+    } else {
+      log({msg: `Error adding documents to ${updateIndex}`, stack: JSON.stringify(response.data)});
+      return false
     }
-  });
-  if (response.status === 200 && !response.data.errors) {
-    return true
-  } else {
-    log({msg: `Error adding documents to ${updateIndex}`, stack: JSON.stringify(response.data)});
+  } catch(e) {
+    log({msg: `Error adding documents to ${updateIndex}`, stack: e.message});
     return false
   }
 }
