@@ -688,6 +688,7 @@ export const prettyString = (json: Json|Json[]|number|string): string => {
   }
   if (typeof(json) === 'object') {
     if (Array.isArray(json)) {
+      /* eslint-disable-next-line @typescript-eslint/no-base-to-string */
       return json.join(', ');
     }
     return JSON.stringify(json);
