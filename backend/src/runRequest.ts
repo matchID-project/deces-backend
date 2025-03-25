@@ -54,20 +54,22 @@ export const runRequest = async (body: BodyResponse|ScrolledResponse, scroll: st
 
       // if all attempts failed, or it is another error, return an error
       return {
-        hits: {
-          total: {
-            value: 1
-          },
-          hits: [
-            {
-              _id: 0,
-              _source: {
-                status: error.response?.status || 500,
-                statusText: error.response?.statusText || 'Internal Server Error',
-                error: true
+        data: {
+          hits: {
+            total: {
+              value: 1
+            },
+            hits: [
+              {
+                _id: 0,
+                _source: {
+                  status: error.response?.status || 500,
+                  statusText: error.response?.statusText || 'Internal Server Error',
+                  error: true
+                }
               }
-            }
-          ]
+            ]
+          }
         }
       };
     }
@@ -107,20 +109,24 @@ export const runBulkRequest = async (body: any): Promise<any> => { // TODO defin
   });
   if (response.status >= 400) {
     return {
-      hits: {
-        total: {
-          value: 1
-        },
-        hits: [
-          {
-            _id: 0,
-            _source: {
-              status: response.status,
-              statusText: response.statusText,
-              error: true
-            }
+      data: {
+        responses: [{
+          hits: {
+            total: {
+              value: 1
+            },
+            hits: [
+              {
+                _id: 0,
+                _source: {
+                  status: response.status,
+                  statusText: response.statusText,
+                  error: true
+                }
+              }
+            ]
           }
-        ]
+        }]
       }
     };
   } else {
