@@ -213,7 +213,7 @@ export class AggregationController extends Controller {
           afterBucket.forEach((bucketItem: any) => response.write("," + JSON.stringify(bucketItem)))
         }
       }
-      response.write(`],"delay": ${delay as string}}}`)
+      response.write(`],"delay": ${String(delay)}}}`)
       response.end();
     }
   }
