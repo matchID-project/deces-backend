@@ -77,20 +77,18 @@ export const runRequest = async (body: BodyResponse|ScrolledResponse, scroll: st
 
   if (response.status >= 400) {
     return {
-      hits: {
-        total: {
-          value: 1
+      data: {
+        took: 0,
+        hits: {
+          total: {
+            value: 1
+          },
+          max_score: 0,
+          hits: [],
         },
-        hits: [
-          {
-            _id: 0,
-            _source: {
-              status: response.status,
-              statusText: response.statusText,
-              error: true
-            }
-          }
-        ]
+        status: response.status,
+        statusText: response.statusText,
+        error: true,
       }
     };
   } else {
