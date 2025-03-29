@@ -161,7 +161,7 @@ export interface ResultRawES {
     [key: string]: any;
     'doc_count_error_upper_bound': number;
     'sum_other_doc_count': number;
-    myBuckets: {
+    bucketResults: {
       buckets: BucketItem[];
       after_key: number;
     }

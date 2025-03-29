@@ -123,13 +123,13 @@ export class AggregationController extends Controller {
       this.setStatus(result.data.status);
       return  { msg: result.data.error };
     }
-    if (result.data.aggregations.myBuckets) {
-      afterKey = result.data.aggregations.myBuckets.after_key
+    if (result.data.aggregations.bucketResults) {
+      afterKey = result.data.aggregations.bucketResults.after_key
       transformedAggs.forEach((agg: string) => {
         cardinality[agg] = result.data.aggregations[`${agg}_count`].value
         response.setHeader(`total-results-${agg}`, result.data.aggregations[`${agg}_count`].value);
       });
-      buckets = result.data.aggregations.myBuckets.buckets
+      buckets = result.data.aggregations.bucketResults.buckets
     } else {
       transformedAggs.forEach((agg: string) => {
         cardinality[agg] = result.data.aggregations[agg].buckets.length
@@ -142,7 +142,7 @@ export class AggregationController extends Controller {
       if (buckets.length > 0) {
         buckets.forEach((bucketItem: any, ind: number) => {
           const aggKeys: any = {}
-          if (result.data.aggregations.myBuckets) {
+          if (result.data.aggregations.bucketResults) {
             Object.entries(bucketItem.key).forEach(([key, value]) => {
               aggKeys[key] = value
             })
@@ -159,13 +159,13 @@ export class AggregationController extends Controller {
           response.write(Object.values(aggKeys).join(",") + '\n')
         })
       }
-      while (result.data.aggregations.myBuckets && result.data.aggregations.myBuckets.buckets.length > 0 ) {
+      while (result.data.aggregations.bucketResults && result.data.aggregations.bucketResults.buckets.length > 0 ) {
         requestInput.afterKey = afterKey
         requestBuild = buildRequest(requestInput);
         result = await runRequest(requestBuild, null);
-        afterKey = result.data.aggregations.myBuckets.after_key
+        afterKey = result.data.aggregations.bucketResults.after_key
         delay += result.data.took
-        const { buckets: afterBucket } = result.data.aggregations.myBuckets
+        const { buckets: afterBucket } = result.data.aggregations.bucketResults
         if (afterBucket.length > 0 ) {
           afterBucket.forEach((bucketItem: any) => {
             const aggKeys: any = {}
@@ -206,13 +206,13 @@ export class AggregationController extends Controller {
         response.write(JSON.stringify(firstItem[0]))
         buckets.forEach((bucketItem: any) => response.write("," + JSON.stringify(bucketItem)))
       }
-      while (result.data.aggregations.myBuckets && result.data.aggregations.myBuckets.buckets.length > 0 ) {
+      while (result.data.aggregations.bucketResults && result.data.aggregations.bucketResults.buckets.length > 0 ) {
         requestInput.afterKey = afterKey
         requestBuild = buildRequest(requestInput);
         result = await runRequest(requestBuild, null);
-        afterKey = result.data.aggregations.myBuckets.after_key
+        afterKey = result.data.aggregations.bucketResults.after_key
         delay += result.data.took
-        const { buckets: afterBucket } = result.data.aggregations.myBuckets
+        const { buckets: afterBucket } = result.data.aggregations.bucketResults
         if (afterBucket.length > 0 ) {
           afterBucket.forEach((bucketItem: any) => response.write("," + JSON.stringify(bucketItem)))
         }
