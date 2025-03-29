@@ -1,6 +1,7 @@
 import axios from 'axios';
 import loggerStream from './logger';
 import { BodyResponse, ScrolledResponse } from './models/body';
+import { RequestResult, BulkRequestResult } from './models/result';
 
 const log = (json:any) => {
   loggerStream.write(JSON.stringify({
@@ -11,7 +12,7 @@ const log = (json:any) => {
   }));
 }
 
-export const runRequest = async (body: BodyResponse|ScrolledResponse, scroll: string): Promise<any> => { // TODO definition type
+export const runRequest = async (body: BodyResponse|ScrolledResponse, scroll: string): Promise<RequestResult> => {
   let endpoint
   if (body.scroll_id) {
     endpoint = '_search/scroll'
@@ -55,21 +56,17 @@ export const runRequest = async (body: BodyResponse|ScrolledResponse, scroll: st
       // if all attempts failed, or it is another error, return an error
       return {
         data: {
+          took: 0,
           hits: {
             total: {
               value: 1
             },
-            hits: [
-              {
-                _id: 0,
-                _source: {
-                  status: error.response?.status || 500,
-                  statusText: error.response?.statusText || 'Internal Server Error',
-                  error: true
-                }
-              }
-            ]
-          }
+            max_score: 0,
+            hits: []
+          },
+          status: error.response?.status || 500,
+          statusText: error.response?.statusText || 'Internal Server Error',
+          error: true
         }
       };
     }
@@ -77,20 +74,18 @@ export const runRequest = async (body: BodyResponse|ScrolledResponse, scroll: st
 
   if (response.status >= 400) {
     return {
-      hits: {
-        total: {
-          value: 1
+      data: {
+        took: 0,
+        hits: {
+          total: {
+            value: 1
+          },
+          max_score: 0,
+          hits: [],
         },
-        hits: [
-          {
-            _id: 0,
-            _source: {
-              status: response.status,
-              statusText: response.statusText,
-              error: true
-            }
-          }
-        ]
+        status: response.status,
+        statusText: response.statusText,
+        error: true,
       }
     };
   } else {
@@ -98,7 +93,7 @@ export const runRequest = async (body: BodyResponse|ScrolledResponse, scroll: st
   }
 };
 
-export const runBulkRequest = async (body: any): Promise<any> => { // TODO definition type
+export const runBulkRequest = async (body: string): Promise<BulkRequestResult> => {
   const response = await axios(`http://elasticsearch:9200/_msearch`, {
     method: 'post',
     data: body,
@@ -111,21 +106,17 @@ export const runBulkRequest = async (body: any): Promise<any> => { // TODO defin
     return {
       data: {
         responses: [{
+          took: 0,
           hits: {
             total: {
               value: 1
             },
-            hits: [
-              {
-                _id: 0,
-                _source: {
-                  status: response.status,
-                  statusText: response.statusText,
-                  error: true
-                }
-              }
-            ]
-          }
+            max_score: 0,
+            hits: [],
+          },
+          status: response.status,
+          statusText: response.statusText,
+          error: true,
         }]
       }
     };
