@@ -93,7 +93,7 @@ export const runRequest = async (body: BodyResponse|ScrolledResponse, scroll: st
   }
 };
 
-export const runBulkRequest = async (body: any): Promise<BulkRequestResult> => {
+export const runBulkRequest = async (body: string): Promise<BulkRequestResult> => {
   const response = await axios(`http://elasticsearch:9200/_msearch`, {
     method: 'post',
     data: body,

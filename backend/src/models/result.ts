@@ -163,7 +163,7 @@ export interface ResultRawES {
     'sum_other_doc_count': number;
     myBuckets: {
       buckets: BucketItem[];
-      after_key: string;
+      after_key: number;
     }
   }
   status?: number;

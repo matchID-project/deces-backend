@@ -76,7 +76,7 @@ export class AggregationController extends Controller {
       this.setStatus(400);
       return  { msg: "error - simple and complex request at the same time" };
     }
-    await this.streamAggs((request).res, requestInput, accept)
+    await this.streamAggs(request.res, requestInput, accept)
   }
 
   /**
@@ -107,10 +107,10 @@ export class AggregationController extends Controller {
       this.setStatus(400);
       return  { msg: requestInput.errors };
     }
-    await this.streamAggs((request).res, requestInput, accept)
+    await this.streamAggs(request.res, requestInput, accept)
   }
 
-  private async streamAggs(response: any, requestInput: any, accept: string) {
+  private async streamAggs(response: express.Response, requestInput: RequestInput, accept: string) {
     let requestBuild = buildRequest(requestInput);
     const transformedAggs = requestInput.aggs.mask.transform(requestInput.aggs.value)
     let result = await runRequest(requestBuild, null);
@@ -119,6 +119,10 @@ export class AggregationController extends Controller {
     let buckets
     const cardinality: any = {}
     let { took: delay } = result.data
+    if (result.data.error) {
+      this.setStatus(result.data.status);
+      return  { msg: result.data.error };
+    }
     if (result.data.aggregations.myBuckets) {
       afterKey = result.data.aggregations.myBuckets.after_key
       transformedAggs.forEach((agg: string) => {
