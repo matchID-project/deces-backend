@@ -13,20 +13,20 @@ const swaggerDefinitionTemplate: any = {
     title: "API personnes décédées",
     version: process.env.APP_VERSION,
     description:
-    `API pour faciliter le rapprochement des personnes decedees\n \n Swagger File: [${process.env.API_URL}/deces/api/v1/docs/swagger.json](http${process.env.API_SSL && process.env.API_SSL === "1" ? 's' : ''}://${process.env.API_URL}/deces/api/v1/docs/swagger.json)`,
+    `API pour faciliter le rapprochement des personnes decedees\n \n Swagger File: [${process.env.APP_URL}/deces/api/v1/docs/swagger.json](${process.env.APP_URL}/deces/api/v1/docs/swagger.json)`,
     license: {
       name: "lgpl-3.0",
       url: "https://choosealicense.com/licenses/lgpl-3.0/"
     },
     contact: {
       name: "MatchID",
-      url: `http${process.env.API_SSL && process.env.API_SSL === "1" ? 's' : ''}://${process.env.API_URL}`,
+      url: `${process.env.APP_URL}`,
       email: `${process.env.API_EMAIL}`
     }
   },
   servers: [
     {
-      url: `http${process.env.API_SSL && process.env.API_SSL === "1" ? 's' : ''}://${process.env.API_URL}/deces/api/v1`,
+      url: `${process.env.APP_URL}/deces/api/v1`,
       description: "Backend API URL"
     }
   ]

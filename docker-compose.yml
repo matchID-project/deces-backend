@@ -46,7 +46,6 @@ services:
       - SMTP_PORT=${SMTP_PORT}
       - SMTP_USER=${SMTP_USER}
       - SMTP_PWD=${SMTP_PWD}
-      - API_URL=${API_URL}
       - API_SSL=${API_SSL}
       - API_EMAIL=${API_EMAIL}
       - DATAGOUV_CATALOG_URL=${DATAGOUV_CATALOG_URL}

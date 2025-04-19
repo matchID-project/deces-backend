@@ -39,10 +39,9 @@ export PORT=8084
 export BACKEND=${APP_PATH}/backend
 export BACKEND_PORT=8080
 export BACKEND_HOST=backend
-export APP_URL?=https://${APP_DNS}
-export API_URL?=localhost:${PORT}
-export API_EMAIL?=matchid.project@gmail.com
 export API_SSL?=1
+export APP_URL?=http$([ "$API_SSL" == 1 ] && echo "s" || echo "")://${APP_DNS}
+export API_EMAIL?=matchid.project@gmail.com
 export BACKEND_TOKEN_USER?=${API_EMAIL}
 export BACKEND_TOKEN_KEY?=$(shell echo $$RANDOM )
 export BACKEND_TOKEN_PASSWORD?=$(shell echo $$RANDOM )

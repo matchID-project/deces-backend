@@ -4,7 +4,7 @@ import { generateRoutes, generateSpec, ExtendedRoutesConfig, ExtendedSpecConfig 
 (async () => {
   const specOptions: ExtendedSpecConfig = {
     basePath: "/api",
-    host: `${process.env.API_URL}`,
+    host: `${process.env.APP_URL}`,
     entryFile: './src/index.ts',
     specVersion: 3,
     outputDirectory: './src/api',
