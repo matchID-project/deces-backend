@@ -94,14 +94,56 @@ export const runRequest = async (body: BodyResponse|ScrolledResponse, scroll: st
 };
 
 export const runBulkRequest = async (body: string): Promise<BulkRequestResult> => {
-  const response = await axios(`http://elasticsearch:9200/_msearch`, {
-    method: 'post',
-    data: body,
-    headers: {
-      'Content-Type': 'application/x-ndjson',
-      'Cache-Control': 'no-cache'
+  // Exponential backoff parameters
+  const maxRetries = 3;
+  const initialBackoff = 300;
+  let retries = 0;
+  let backoff = initialBackoff;
+
+  let response;
+  while (retries <= maxRetries) {
+    try {
+      response = await axios(`http://elasticsearch:9200/_msearch`, {
+        method: 'post',
+        data: body,
+        headers: {
+          'Content-Type': 'application/x-ndjson',
+          'Cache-Control': 'no-cache'
+        },
+        timeout: 10000 // timemout of 10s
+      });
+      break; // if ok, exit the loop
+    } catch (error) {
+      if ((error.response?.status >= 500 || error.code === 'ECONNABORTED') && retries < maxRetries) {
+        // if it's a timeout or a 5xx error, retry
+        log({
+          elasticsearchError: error.toString(),
+          msg: `Elasticsearch overloaded, retrying in ${backoff}ms... (${maxRetries - retries} attempts left)`
+        });
+        await new Promise(resolve => setTimeout(resolve, backoff));
+        retries++;
+        backoff *= 2; // exponential backoff
+        continue;
+      }
+      return {
+        data: {
+          responses: [{
+            took: 0,
+            hits: {
+              total: {
+                value: 1
+              },
+              max_score: 0,
+              hits: [],
+            },
+            status: response.status,
+            statusText: response.statusText,
+            error: true,
+          }]
+        }
+      };
     }
-  });
+  }
   if (response.status >= 400) {
     return {
       data: {
