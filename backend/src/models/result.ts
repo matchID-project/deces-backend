@@ -137,6 +137,16 @@ export interface ResultAgg {
   response?: ResTypeAgg;
 }
 
+export interface RequestResult {
+  data: ResultRawES;
+}
+
+export interface BulkRequestResult {
+  data: {
+    responses: ResultRawES[];
+  }
+}
+
 export interface ResultRawES {
   '_scroll_id'?: string;
   took: number;
@@ -148,10 +158,22 @@ export interface ResultRawES {
     hits:  ResultRawHit[]
   };
   aggregations?: {
+    [key: string]: any;
     'doc_count_error_upper_bound': number;
     'sum_other_doc_count': number;
-    buckets: any[];
+    bucketResults: {
+      buckets: BucketItem[];
+      after_key: number;
+    }
   }
+  status?: number;
+  statusText?: string;
+  error?: boolean;
+}
+
+interface BucketItem {
+  key: string;
+  doc_count: number;
 }
 
 export interface ResultRawHit {
@@ -184,7 +206,7 @@ export interface ResultRawHit {
     DEPARTEMENT_DECES: string;
     PAYS_DECES: string;
     PAYS_DECES_CODEISO3: string;
-  }
+  };
 }
 
 export const getFromGeoPoint = (geoPoint: string, latOrLon: string): number  => {

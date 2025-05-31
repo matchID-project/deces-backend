@@ -1,6 +1,7 @@
 import axios from 'axios';
 import loggerStream from './logger';
 import { BodyResponse, ScrolledResponse } from './models/body';
+import { RequestResult, BulkRequestResult } from './models/result';
 
 const log = (json:any) => {
   loggerStream.write(JSON.stringify({
@@ -11,7 +12,7 @@ const log = (json:any) => {
   }));
 }
 
-export const runRequest = async (body: BodyResponse|ScrolledResponse, scroll: string): Promise<any> => { // TODO definition type
+export const runRequest = async (body: BodyResponse|ScrolledResponse, scroll: string): Promise<RequestResult> => {
   let endpoint
   if (body.scroll_id) {
     endpoint = '_search/scroll'
@@ -55,21 +56,17 @@ export const runRequest = async (body: BodyResponse|ScrolledResponse, scroll: st
       // if all attempts failed, or it is another error, return an error
       return {
         data: {
+          took: 0,
           hits: {
             total: {
               value: 1
             },
-            hits: [
-              {
-                _id: 0,
-                _source: {
-                  status: error.response?.status || 500,
-                  statusText: error.response?.statusText || 'Internal Server Error',
-                  error: true
-                }
-              }
-            ]
-          }
+            max_score: 0,
+            hits: []
+          },
+          status: error.response?.status || 500,
+          statusText: error.response?.statusText || 'Internal Server Error',
+          error: true
         }
       };
     }
@@ -77,20 +74,18 @@ export const runRequest = async (body: BodyResponse|ScrolledResponse, scroll: st
 
   if (response.status >= 400) {
     return {
-      hits: {
-        total: {
-          value: 1
+      data: {
+        took: 0,
+        hits: {
+          total: {
+            value: 1
+          },
+          max_score: 0,
+          hits: [],
         },
-        hits: [
-          {
-            _id: 0,
-            _source: {
-              status: response.status,
-              statusText: response.statusText,
-              error: true
-            }
-          }
-        ]
+        status: response.status,
+        statusText: response.statusText,
+        error: true,
       }
     };
   } else {
@@ -98,34 +93,72 @@ export const runRequest = async (body: BodyResponse|ScrolledResponse, scroll: st
   }
 };
 
-export const runBulkRequest = async (body: any): Promise<any> => { // TODO definition type
-  const response = await axios(`http://elasticsearch:9200/_msearch`, {
-    method: 'post',
-    data: body,
-    headers: {
-      'Content-Type': 'application/x-ndjson',
-      'Cache-Control': 'no-cache'
+export const runBulkRequest = async (body: string): Promise<BulkRequestResult> => {
+  // Exponential backoff parameters
+  const maxRetries = 3;
+  const initialBackoff = 300;
+  let retries = 0;
+  let backoff = initialBackoff;
+
+  let response;
+  while (retries <= maxRetries) {
+    try {
+      response = await axios(`http://elasticsearch:9200/_msearch`, {
+        method: 'post',
+        data: body,
+        headers: {
+          'Content-Type': 'application/x-ndjson',
+          'Cache-Control': 'no-cache'
+        },
+        timeout: 10000 // timemout of 10s
+      });
+      break; // if ok, exit the loop
+    } catch (error) {
+      if ((error.response?.status >= 500 || error.code === 'ECONNABORTED') && retries < maxRetries) {
+        // if it's a timeout or a 5xx error, retry
+        log({
+          elasticsearchError: error.toString(),
+          msg: `Elasticsearch overloaded, retrying in ${backoff}ms... (${maxRetries - retries} attempts left)`
+        });
+        await new Promise(resolve => setTimeout(resolve, backoff));
+        retries++;
+        backoff *= 2; // exponential backoff
+        continue;
+      }
+      return {
+        data: {
+          responses: [{
+            took: 0,
+            hits: {
+              total: {
+                value: 1
+              },
+              max_score: 0,
+              hits: [],
+            },
+            status: response.status,
+            statusText: response.statusText,
+            error: true,
+          }]
+        }
+      };
     }
-  });
+  }
   if (response.status >= 400) {
     return {
       data: {
         responses: [{
+          took: 0,
           hits: {
             total: {
               value: 1
             },
-            hits: [
-              {
-                _id: 0,
-                _source: {
-                  status: response.status,
-                  statusText: response.statusText,
-                  error: true
-                }
-              }
-            ]
-          }
+            max_score: 0,
+            hits: [],
+          },
+          status: response.status,
+          statusText: response.statusText,
+          error: true,
         }]
       }
     };
