@@ -198,10 +198,16 @@ export const processCsv =  async (job: Job<any>, jobFile: JobInput): Promise<any
     })
     .pipe(processStream)
     .on('error', (e: any) => {
-      log({matchingProcessingError: e.toString(), jobId})
+      log({
+        matchingProcessingError: e.message || e.toString(),
+        errorStack: e.stack,
+        errorName: e.name,
+        errorMeta: e.meta ? JSON.stringify(e.meta) : undefined,
+        jobId
+      });
       readStream.close()
       stopJob.push(job.id);
-      stopJobReason.push({id: job.id, msg: e.toString()})
+      stopJobReason.push({id: job.id, msg: e.message || e.toString()})
     })
     .pipe(jsonStringStream)
     .on('error', (e: any) => log({stringifyProcessingError: e.toString(), jobId}))
@@ -224,30 +230,38 @@ export const processCsv =  async (job: Job<any>, jobFile: JobInput): Promise<any
 }
 
 export const processChunk = async (chunk: any[], candidateNumber: number, params: ScoreParams): Promise<any[]> => {
-  const bulkRequest = chunk.map((row: any) => { // TODO: type
+  const bulkRequest = {searches: chunk.map((row: any) => {
     const requestInput = new RequestInput({...row, dateFormat: params.dateFormatA});
-    return [JSON.stringify({index: "deces"}), JSON.stringify(buildRequest(requestInput))];
-  })
-  const msearchRequest = bulkRequest.map((x: any) => x.join('\n\r')).join('\n\r') + '\n';
-  const result =  await timerRunBulkRequest(msearchRequest);
-  if (result.data.responses.length > 0) {
-    return result.data.responses.map((item: ResultRawES, idx: number) => {
-      if (item.hits.hits.length > 0) {
-        const scoredResults = scoreResults(chunk[idx], item.hits.hits.map(buildResultSingle), {...params})
-        if (scoredResults && scoredResults.length > 0) {
-          const selectedCanditates = scoredResults.slice(0, candidateNumber)
-          return selectedCanditates.map((selectedCanditate: any) => {
-            return {...chunk[idx], ...selectedCanditate}
-          })
+    return [{index: "deces"}, buildRequest(requestInput)];
+  }).flat()}
+
+  try {
+    const result =  await timerRunBulkRequest(bulkRequest);
+    if (result && result.responses && result.responses.length > 0) {
+      return result.responses.map((item: ResultRawES, idx: number) => {
+        if (item.hits.hits.length > 0) {
+          const scoredResults = scoreResults(chunk[idx], item.hits.hits.map(buildResultSingle), {...params})
+          if (scoredResults && scoredResults.length > 0) {
+            const selectedCanditates = scoredResults.slice(0, candidateNumber)
+            return selectedCanditates.map((selectedCanditate: any) => {
+              return {...chunk[idx], ...selectedCanditate}
+            })
+          } else {
+            return [{...chunk[idx]}]
+          }
         } else {
           return [{...chunk[idx]}]
         }
-      } else {
-        return [{...chunk[idx]}]
-      }
-    })
-  } else {
-    return chunk
+      })
+    } else {
+      return chunk.map(row => [{...row}]);
+    }
+  } catch (error) {
+    log({
+      processChunkError: error.message || error.toString(),
+      errorStack: error.stack,
+    });
+    throw error;
   }
 }
 
