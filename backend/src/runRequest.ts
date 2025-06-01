@@ -74,7 +74,6 @@ export const runRequest = async (body: BodyResponse|ScrolledResponse, scroll: st
 export const runBulkRequest = async (bulkRequest: any): Promise<any> => {
   const client = getClient();
   try {
-    console.log(`bulkRequest: ${JSON.stringify(bulkRequest.searches.slice(0, 5))}`);
     const response = await client.msearch(bulkRequest);
     return response;
   } catch (error) {

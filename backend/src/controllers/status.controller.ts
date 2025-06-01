@@ -1,6 +1,12 @@
 import { Controller, Get, Route, Response, Tags  } from 'tsoa';
 import { HealthcheckResponse } from '../models/result';
-import axios from 'axios';
+import { getClient } from '../elasticsearch';
+import loggerStream from '../logger';
+
+interface DecesRecord {
+  DATE_DECES: string;
+  SOURCE: string;
+}
 
 let uniqRecordsCount: number;
 let lastDataset: string;
@@ -34,33 +40,70 @@ export class StatusController extends Controller {
   @Tags('Info')
   @Get('/version')
   public async version(): Promise<any> {
-    if (! uniqRecordsCount) {
-      const response = await axios(`http://elasticsearch:9200/deces/_count`);
-      if (response.status === 200) {
-        uniqRecordsCount = response.data.count
-      }
-    }
-    if (! lastRecordDate || ! lastDataset) {
-      const response = await axios(`http://elasticsearch:9200/deces/_search?sort=SOURCE:desc,DATE_DECES.raw:desc&size=1`);
-      if (response.status === 200) {
-        lastRecordDate = response.data.hits.hits[0]._source.DATE_DECES.replace(/(\d{4})(\d{2})(\d{2})/,"$3/$2/$1")
-        lastDataset = response.data.hits.hits[0]._source.SOURCE
-      }
-    }
-    if (! updateDate) {
-      const response = await axios(`http://elasticsearch:9200/_cat/indices/deces?h=creation.date.string`);
-      if (response.status === 200) {
-        updateDate = response.data.trim().replace(/T.*/,'').replaceAll('-','').replace(/(\d{4})(\d{2})(\d{2})/,"$3/$2/$1")
-      }
-    }
+    try {
+      const client = getClient();
 
+      if (!uniqRecordsCount) {
+        const response = await client.count({
+          index: 'deces'
+        });
+        uniqRecordsCount = response.count;
+      }
 
-    return {
-      backend: process.env.APP_VERSION,
-      uniqRecordsCount,
-      lastRecordDate,
-      lastDataset,
-      updateDate
+      if (!lastRecordDate || !lastDataset) {
+        const response = await client.search({
+          index: 'deces',
+          body: {
+            sort: [
+              { SOURCE: 'desc' },
+              { 'DATE_DECES.raw': 'desc' }
+            ],
+            size: 1
+          } as any
+        });
+
+        if (response.hits.hits.length > 0) {
+          const source = response.hits.hits[0]._source as DecesRecord;
+          lastRecordDate = source.DATE_DECES.replace(/(\d{4})(\d{2})(\d{2})/,"$3/$2/$1");
+          lastDataset = source.SOURCE;
+        }
+      }
+
+      if (!updateDate) {
+        const response = await client.cat.indices({
+          index: 'deces',
+          format: 'json',
+          h: 'creation.date.string'
+        });
+
+        if (response.length > 0) {
+          updateDate = response[0]['creation.date.string']
+            .trim()
+            .replace(/T.*/,'')
+            .replaceAll('-','')
+            .replace(/(\d{4})(\d{2})(\d{2})/,"$3/$2/$1");
+        }
+      }
+
+      return {
+        backend: process.env.APP_VERSION,
+        uniqRecordsCount,
+        lastRecordDate,
+        lastDataset,
+        updateDate
+      };
+    } catch (error) {
+      loggerStream.write(JSON.stringify({
+        "backend": {
+          "server-date": new Date(Date.now()).toISOString(),
+          "error": error.toString(),
+          "msg": "Error fetching version info"
+        }
+      }));
+      return {
+        backend: process.env.APP_VERSION,
+        error: 'Failed to fetch Elasticsearch data'
+      };
     }
   }
 }
