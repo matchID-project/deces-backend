@@ -1,4 +1,4 @@
-import axios from 'axios';
+import { getClient } from './elasticsearch';
 import loggerStream from './logger';
 import { BodyResponse, ScrolledResponse } from './models/body';
 
@@ -11,71 +11,46 @@ const log = (json:any) => {
   }));
 }
 
-export const runRequest = async (body: BodyResponse|ScrolledResponse, scroll: string): Promise<any> => { // TODO definition type
-  let endpoint
-  if (body.scroll_id) {
-    endpoint = '_search/scroll'
-  } else if (scroll) {
-    endpoint = `deces/_search?scroll=${scroll}`
-  } else {
-    endpoint = 'deces/_search'
-  }
+const isBodyResponse = (body: BodyResponse|ScrolledResponse): body is BodyResponse => {
+  return 'query' in body;
+}
 
-  // Exponential backoff parameters
-  const maxRetries = 3;
-  const initialBackoff = 300;
-  let retries = 0;
-  let backoff = initialBackoff;
-
-  let response;
-  while (retries <= maxRetries) {
-    try {
-      response = await axios(`http://elasticsearch:9200/${endpoint}`, {
-        method: 'post',
-        data: JSON.stringify(body),
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        timeout: 10000 // timemout of 10s
+export const runRequest = async (body: BodyResponse|ScrolledResponse, scroll: string): Promise<any> => {
+  const client = getClient();
+  let operation = 'unknown';
+  try {
+    if (body.scroll_id) {
+      operation = 'scroll';
+      const response = await client.scroll({
+        scroll_id: body.scroll_id,
+        scroll
       });
-      break; // if ok, exit the loop
-    } catch (error) {
-      if ((error.response?.status >= 500 || error.code === 'ECONNABORTED') && retries < maxRetries) {
-        // if it's a timeout or a 5xx error, retry
-        log({
-          elasticsearchError: error.toString(),
-          msg: `Elasticsearch overloaded, retrying in ${backoff}ms... (${maxRetries - retries} attempts left)`
-        });
-        await new Promise(resolve => setTimeout(resolve, backoff));
-        retries++;
-        backoff *= 2; // exponential backoff
-        continue;
-      }
-
-      // if all attempts failed, or it is another error, return an error
-      return {
-        data: {
-          hits: {
-            total: {
-              value: 1
-            },
-            hits: [
-              {
-                _id: 0,
-                _source: {
-                  status: error.response?.status || 500,
-                  statusText: error.response?.statusText || 'Internal Server Error',
-                  error: true
-                }
-              }
-            ]
-          }
-        }
-      };
+      return response;
+    } else if (scroll && isBodyResponse(body)) {
+      operation = 'search_with_scroll';
+      const response = await client.search({
+        index: 'deces',
+        scroll,
+        body: body as any
+      });
+      return response;
+    } else if (isBodyResponse(body)) {
+      operation = 'search';
+      const response = await client.search({
+        index: 'deces',
+        body: body as any
+      });
+      return response;
+    } else {
+      operation = 'invalid_body_type';
+      throw new Error('Invalid request body type');
     }
-  }
+  } catch (error) {
+    log({
+      elasticsearchError: error.toString(),
+      msg: `Elasticsearch request failed during ${operation}`
+    });
 
-  if (response.status >= 400) {
     return {
       hits: {
         total: {
@@ -85,51 +60,28 @@ export const runRequest = async (body: BodyResponse|ScrolledResponse, scroll: st
           {
             _id: 0,
             _source: {
-              status: response.status,
-              statusText: response.statusText,
+              status: error.statusCode || 500,
+              statusText: error.message || 'Internal Server Error',
               error: true
             }
           }
         ]
       }
     };
-  } else {
-    return response;
   }
 };
 
-export const runBulkRequest = async (body: any): Promise<any> => { // TODO definition type
-  const response = await axios(`http://elasticsearch:9200/_msearch`, {
-    method: 'post',
-    data: body,
-    headers: {
-      'Content-Type': 'application/x-ndjson',
-      'Cache-Control': 'no-cache'
-    }
-  });
-  if (response.status >= 400) {
-    return {
-      data: {
-        responses: [{
-          hits: {
-            total: {
-              value: 1
-            },
-            hits: [
-              {
-                _id: 0,
-                _source: {
-                  status: response.status,
-                  statusText: response.statusText,
-                  error: true
-                }
-              }
-            ]
-          }
-        }]
-      }
-    };
-  } else {
+export const runBulkRequest = async (bulkRequest: any): Promise<any> => {
+  const client = getClient();
+  try {
+    const response = await client.msearch(bulkRequest);
     return response;
+  } catch (error) {
+    const errorMessage = `Elasticsearch bulk request failed: ${error.message || error.toString()}`;
+    log({
+      elasticsearchError: error.toString(),
+      msg: 'Elasticsearch bulk request failed'
+    });
+    throw new Error(errorMessage);
   }
 };
