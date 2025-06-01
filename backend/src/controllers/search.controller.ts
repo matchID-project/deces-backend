@@ -151,7 +151,7 @@ export class SearchController extends Controller {
       }
       const requestBuild = buildRequest(requestInput);
       const result = await runRequest(requestBuild, requestInput.scroll);
-      const builtResult = buildResult(result.data, requestInput)
+      const builtResult = buildResult(result, requestInput)
 
       if (accept === 'text/csv') {
         if (builtResult.response.total < 500000) {
@@ -216,7 +216,7 @@ export class SearchController extends Controller {
       requestInput.scrollId = builtResult.response.scrollId
       requestBuild = buildRequest(requestInput);
       result = await runRequest(requestBuild, requestInput.scroll);
-      builtResult = buildResult(result.data, requestInput)
+      builtResult = buildResult(result, requestInput)
       builtResult.response.persons.forEach((row: any) => {
         csvStream.write([
           ...resultsHeader.map(key => prettyString(jsonPath(row, key.label)))
@@ -241,7 +241,7 @@ export class SearchController extends Controller {
     const requestInput = new RequestInput({id});
     const requestBuild = buildRequest(requestInput);
     const result = await runRequest(requestBuild, requestInput.scroll);
-    const builtResult = buildResult(result.data, requestInput)
+    const builtResult = buildResult(result, requestInput)
     return builtResult
   }
 
@@ -269,7 +269,7 @@ export class SearchController extends Controller {
     const requestInput = new RequestInput({id});
     const requestBuild = buildRequest(requestInput);
     const result = await runRequest(requestBuild, requestInput.scroll);
-    const builtResult = buildResult(result.data, requestInput)
+    const builtResult = buildResult(result, requestInput)
     if (builtResult.response.persons.length > 0) {
       const date = new Date(Date.now()).toISOString()
       const bytes = forge.random.getBytesSync(24);
@@ -407,11 +407,13 @@ export class SearchController extends Controller {
         }
       })
     }
-    const bulkRequest = Object.keys(updates).map((id: any) =>
-      [JSON.stringify({index: "deces"}), JSON.stringify(buildRequest(new RequestInput({id})))]
-    );
-    const msearchRequest = bulkRequest.map((x: any) => x.join('\n\r')).join('\n\r') + '\n';
-    const result =  await runBulkRequest(msearchRequest);
+    const bulkRequest = {
+      searches: Object.keys(updates).map((id: any) => [
+        { index: "deces" },
+        buildRequest(new RequestInput({id}))
+      ]).flat()
+    };
+    const result = await runBulkRequest(bulkRequest);
     return result.data.responses.map((r:any) => buildResultSingle(r.hits.hits[0]))
       .map((r:any) => {
         delete r.score;
