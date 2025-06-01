@@ -200,7 +200,7 @@ export const processCsv =  async (job: Job<any>, jobFile: JobInput): Promise<any
     .on('error', (e: any) => {
       log({
         matchingProcessingError: e.message || e.toString(),
-        //errorStack: e.stack,
+        errorStack: e.stack,
         errorName: e.name,
         errorMeta: e.meta ? JSON.stringify(e.meta) : undefined,
         jobId
@@ -229,7 +229,7 @@ export const processCsv =  async (job: Job<any>, jobFile: JobInput): Promise<any
   }
 }
 
-export const processChunk = async (chunk: any[], candidateNumber: number, params: ScoreParams, chunkJob: Job): Promise<any[]> => {
+export const processChunk = async (chunk: any[], candidateNumber: number, params: ScoreParams): Promise<any[]> => {
   const bulkRequest = {searches: chunk.map((row: any) => {
     const requestInput = new RequestInput({...row, dateFormat: params.dateFormatA});
     return [{index: "deces"}, buildRequest(requestInput)];
@@ -259,15 +259,14 @@ export const processChunk = async (chunk: any[], candidateNumber: number, params
   } catch (error) {
     log({
       processChunkError: error.message || error.toString(),
-      //errorStack: error.stack,
-      //jobData: chunkJob.data
+      errorStack: error.stack,
     });
     throw error;
   }
 }
 
 new Worker('chunks', async (chunkJob: Job) => {
-  return await processChunk(chunkJob.data.chunk, chunkJob.data.candidateNumber, {dateFormatA: chunkJob.data.dateFormatA, pruneScore: chunkJob.data.pruneScore, candidateNumber: chunkJob.data.candidateNumber}, chunkJob);
+  return await processChunk(chunkJob.data.chunk, chunkJob.data.candidateNumber, {dateFormatA: chunkJob.data.dateFormatA, pruneScore: chunkJob.data.pruneScore, candidateNumber: chunkJob.data.candidateNumber});
 }, {
   connection: {
     host: 'redis'

@@ -23,7 +23,8 @@ export const getClient = (): Client => {
       loggerStream.write(JSON.stringify({
         "backend": {
           "server-date": new Date(Date.now()).toISOString(),
-          "elasticsearchError": error.toString(),
+          "elasticsearchError": error.message || error.toString(),
+          "elasticsearchStack": error.stack,
           "msg": `Elasticsearch ${context} error`
         }
       }));
@@ -56,7 +57,8 @@ export const checkClientHealth = async (): Promise<boolean> => {
     loggerStream.write(JSON.stringify({
       "backend": {
         "server-date": new Date(Date.now()).toISOString(),
-        "elasticsearchError": error.toString(),
+        "elasticsearchError": error.message || error.toString(),
+        "elasticsearchStack": error.stack,
         "msg": "Elasticsearch health check failed"
       }
     }));
