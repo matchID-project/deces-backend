@@ -108,7 +108,7 @@ export class SearchController extends Controller {
       }
       const requestBuild = buildRequest(requestInput);
       const result = await runRequest(requestBuild, scroll);
-      const builtResult = buildResult(result.data, requestInput)
+      const builtResult = buildResult(result, requestInput)
       this.setStatus(200);
       return  builtResult;
     } else {
@@ -414,7 +414,7 @@ export class SearchController extends Controller {
       ]).flat()
     };
     const result = await runBulkRequest(bulkRequest);
-    return result.data.responses.map((r:any) => buildResultSingle(r.hits.hits[0]))
+    return result.responses.map((r:any) => buildResultSingle(r.hits.hits[0]))
       .map((r:any) => {
         delete r.score;
         delete r.scores;
