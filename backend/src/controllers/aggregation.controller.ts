@@ -76,7 +76,7 @@ export class AggregationController extends Controller {
       this.setStatus(400);
       return  { msg: "error - simple and complex request at the same time" };
     }
-    await this.streamAggs((request).res, requestInput, accept)
+    await this.streamAggs(request.res, requestInput, accept)
   }
 
   /**
@@ -107,10 +107,10 @@ export class AggregationController extends Controller {
       this.setStatus(400);
       return  { msg: requestInput.errors };
     }
-    await this.streamAggs((request).res, requestInput, accept)
+    await this.streamAggs(request.res, requestInput, accept)
   }
 
-  private async streamAggs(response: any, requestInput: any, accept: string) {
+  private async streamAggs(response: express.Response, requestInput: RequestInput, accept: string) {
     let requestBuild = buildRequest(requestInput);
     const transformedAggs = requestInput.aggs.mask.transform(requestInput.aggs.value)
     let result = await runRequest(requestBuild, null);
@@ -119,13 +119,17 @@ export class AggregationController extends Controller {
     let buckets
     const cardinality: any = {}
     let { took: delay } = result
-    if (result.aggregations.myBuckets) {
-      afterKey = result.aggregations.myBuckets.after_key
+    if (result.error) {
+      this.setStatus(result.status);
+      return  { msg: result.error };
+    }
+    if (result.aggregations.bucketResults) {
+      afterKey = result.aggregations.bucketResults.after_key
       transformedAggs.forEach((agg: string) => {
         cardinality[agg] = result.aggregations[`${agg}_count`].value
         response.setHeader(`total-results-${agg}`, result.aggregations[`${agg}_count`].value);
       });
-      buckets = result.aggregations.myBuckets.buckets
+      buckets = result.aggregations.bucketResults.buckets
     } else {
       transformedAggs.forEach((agg: string) => {
         cardinality[agg] = result.aggregations[agg].buckets.length
@@ -138,7 +142,7 @@ export class AggregationController extends Controller {
       if (buckets.length > 0) {
         buckets.forEach((bucketItem: any, ind: number) => {
           const aggKeys: any = {}
-          if (result.aggregations.myBuckets) {
+          if (result.aggregations.bucketResults) {
             Object.entries(bucketItem.key).forEach(([key, value]) => {
               aggKeys[key] = value
             })
@@ -155,13 +159,13 @@ export class AggregationController extends Controller {
           response.write(Object.values(aggKeys).join(",") + '\n')
         })
       }
-      while (result.aggregations.myBuckets && result.aggregations.myBuckets.buckets.length > 0 ) {
+      while (result.aggregations.bucketResults && result.aggregations.bucketResults.buckets.length > 0 ) {
         requestInput.afterKey = afterKey
         requestBuild = buildRequest(requestInput);
         result = await runRequest(requestBuild, null);
-        afterKey = result.aggregations.myBuckets.after_key
+        afterKey = result.aggregations.bucketResults.after_key
         delay += result.took
-        const { buckets: afterBucket } = result.aggregations.myBuckets
+        const { buckets: afterBucket } = result.aggregations.bucketResults
         if (afterBucket.length > 0 ) {
           afterBucket.forEach((bucketItem: any) => {
             const aggKeys: any = {}
@@ -202,18 +206,18 @@ export class AggregationController extends Controller {
         response.write(JSON.stringify(firstItem[0]))
         buckets.forEach((bucketItem: any) => response.write("," + JSON.stringify(bucketItem)))
       }
-      while (result.aggregations.myBuckets && result.aggregations.myBuckets.buckets.length > 0 ) {
+      while (result.aggregations.bucketResults && result.aggregations.bucketResults.buckets.length > 0 ) {
         requestInput.afterKey = afterKey
         requestBuild = buildRequest(requestInput);
         result = await runRequest(requestBuild, null);
-        afterKey = result.aggregations.myBuckets.after_key
+        afterKey = result.aggregations.bucketResults.after_key
         delay += result.took
-        const { buckets: afterBucket } = result.aggregations.myBuckets
+        const { buckets: afterBucket } = result.aggregations.bucketResults
         if (afterBucket.length > 0 ) {
           afterBucket.forEach((bucketItem: any) => response.write("," + JSON.stringify(bucketItem)))
         }
       }
-      response.write(`],"delay": ${delay as string}}}`)
+      response.write(`],"delay": ${String(delay)}}}`)
       response.end();
     }
   }
