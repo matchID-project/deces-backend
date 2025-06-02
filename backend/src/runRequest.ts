@@ -1,6 +1,7 @@
 import { getClient } from './elasticsearch';
 import loggerStream from './logger';
 import { BodyResponse, ScrolledResponse } from './models/body';
+import { ResultRawES } from './models/result';
 
 const log = (json:any) => {
   loggerStream.write(JSON.stringify({
@@ -15,7 +16,7 @@ const isBodyResponse = (body: BodyResponse|ScrolledResponse): body is BodyRespon
   return 'query' in body;
 }
 
-export const runRequest = async (body: BodyResponse|ScrolledResponse, scroll: string): Promise<any> => {
+export const runRequest = async (body: BodyResponse|ScrolledResponse, scroll: string): Promise<ResultRawES> => {
   const client = getClient();
   let operation = 'unknown';
   try {
@@ -52,26 +53,26 @@ export const runRequest = async (body: BodyResponse|ScrolledResponse, scroll: st
     });
 
     return {
+      took: 0,
       hits: {
         total: {
-          value: 1
+          value: 0
         },
-        hits: [
-          {
-            _id: 0,
-            _source: {
-              status: error.statusCode || 500,
-              statusText: error.message || 'Internal Server Error',
-              error: true
-            }
-          }
-        ]
-      }
+        max_score: 0,
+        hits: []
+      },
+      status: error.statusCode || 500,
+      statusText: error.message || 'Internal Server Error',
+      error: true
     };
   }
 };
 
-export const runBulkRequest = async (bulkRequest: any): Promise<any> => {
+interface ResultBulkES {
+    responses: ResultRawES[];
+}
+
+export const runBulkRequest = async (bulkRequest: any): Promise<ResultBulkES> => {
   const client = getClient();
   try {
     const response = await client.msearch(bulkRequest);
