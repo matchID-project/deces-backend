@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { sanitizeUrl } from '@braintree/sanitize-url';
 import loggerStream from './logger';
 import { URL } from 'url';
 import net from 'net';
@@ -53,16 +54,19 @@ export const sendWebhook = async (
   if (!url) {
     return false;
   }
-  if (!validateWebhookUrl(url)) {
-    log({ invalidWebhookUrl: url });
-    return false;
-  }
   try {
+    if (!validateWebhookUrl(url)) {
+      throw new Error('invalid webhook URL');
+    }
     const payload: any = { event, jobId };
     if (event === 'completed') {
       payload.url = `${process.env.APP_URL}/link?job=${jobId}`;
     }
-    const res = await axios.post(url, payload, { maxRedirects: 0, timeout: 5000 });
+    const sanitized = sanitizeUrl(url);
+    const res = await axios.post(sanitized, payload, {
+      maxRedirects: 0,
+      timeout: 5000,
+    });
     return res.status >= 200 && res.status < 300;
   } catch (err) {
     log({ webhookError: (err as Error).toString() });
