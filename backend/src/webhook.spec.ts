@@ -1,6 +1,6 @@
 import http from 'http';
 import { describe, expect, it } from 'vitest';
-import { sendWebhook, validateWebhookUrl } from './webhook';
+import { sendWebhook, validateWebhookUrl, requestChallenge, validateChallenge, webhookRegistry, isWebhookValidated } from './webhook';
 
 // We rely on a local HTTP server rather than an external service (e.g.
 // webhook.site) so tests remain fully offline.
@@ -75,5 +75,24 @@ describe('webhook.ts - sendWebhook', () => {
     const result = await sendWebhook(`http://localhost:${port}`, 'completed', 'abc');
     await waitClose(server);
     expect(result).toBe(false);
+  });
+
+  it('should manage challenge workflow', async () => {
+    const server = http.createServer((_req, res) => {
+      res.statusCode = 200;
+      res.end();
+    });
+    await new Promise(resolve => server.listen(0, resolve));
+    const port = (server.address() as any).port;
+    const url = `http://localhost:${port}`;
+    const first = requestChallenge(url);
+    expect(first.status).toBe('initiated');
+    const again = requestChallenge(url);
+    expect(again.challenge).toBe(first.challenge);
+    expect(isWebhookValidated(url)).toBe(false);
+    const validateRes = await validateChallenge(url);
+    expect(validateRes.status).toBe('validated');
+    expect(isWebhookValidated(url)).toBe(true);
+    await waitClose(server);
   });
 });
