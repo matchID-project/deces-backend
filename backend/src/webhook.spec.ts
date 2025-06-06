@@ -1,6 +1,6 @@
 import http from 'http';
 import { describe, expect, it } from 'vitest';
-import { sendWebhook } from './webhook';
+import { sendWebhook, validateWebhookUrl } from './webhook';
 
 // We rely on a local HTTP server rather than an external service (e.g.
 // webhook.site) so tests remain fully offline.
@@ -58,6 +58,11 @@ describe('webhook.ts - sendWebhook', () => {
   it('should return false when request fails', async () => {
     const result = await sendWebhook('http://localhost:9', 'completed', 'abc');
     expect(result).toBe(false);
+  });
+
+  it('should reject invalid webhook URLs', async () => {
+    expect(validateWebhookUrl('ftp://example.com')).toBe(false);
+    expect(validateWebhookUrl('http://localhost:8000')).toBe(false);
   });
 
   it('should return false on server error', async () => {

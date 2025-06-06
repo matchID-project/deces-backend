@@ -36,6 +36,9 @@ Bulk jobs can optionally trigger HTTP callbacks when their status changes. The
 ```
 The `url` property is only present when `event` equals `completed`.
 
+Only `http` or `https` URLs hosted on public networks are accepted. Requests to
+private or local addresses are ignored to prevent misuse.
+
 Detailed documentation is available at [this swagger page](https://deces.matchid.io/deces/api/v1/docs)
 
 ## Installation
