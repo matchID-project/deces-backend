@@ -14,11 +14,27 @@ API for people who died in France from 1970.
   * Sex
 * The API can handle common mistakes in fields thanks to fuzzy matching
 * Bulk process (CSV or bulk JSON) for multiple identities
+* Optional webhook callbacks to notify bulk job status
 * Express framework for REST API
 * OpenAPIv3 documentation automatically generated using
   [TSOA](https://github.com/lukeautry/tsoa)
 * Docker image is published at [docker
   hub](https://hub.docker.com/r/matchid/deces-backend) using GitHub Actions.
+
+### Webhook callbacks
+
+Bulk jobs can optionally trigger HTTP callbacks when their status changes. The
+`webhook` parameter accepts a URL that will receive JSON payloads on `started`,
+`completed`, `failed` and `deleted` events:
+
+```json
+{
+  "event": "completed",
+  "jobId": "<unique identifier>",
+  "url": "https://example.com/link?job=<unique identifier>"
+}
+```
+The `url` property is only present when `event` equals `completed`.
 
 Detailed documentation is available at [this swagger page](https://deces.matchid.io/deces/api/v1/docs)
 
