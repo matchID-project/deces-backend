@@ -21,44 +21,6 @@ API for people who died in France from 1970.
 * Docker image is published at [docker
   hub](https://hub.docker.com/r/matchid/deces-backend) using GitHub Actions.
 
-### Webhook callbacks
-
-Bulk jobs can optionally trigger HTTP callbacks when their status changes. The
-`webhook` parameter accepts a URL that will receive JSON payloads on `started`,
-`completed`, `failed` and `deleted` events:
-
-```json
-{
-  "event": "completed",
-  "jobId": "<unique identifier>",
-  "url": "https://example.com/link?job=<unique identifier>"
-}
-```
-The `url` property is only present when `event` equals `completed`.
-
-Only `http` or `https` URLs hosted on public networks are accepted. Ports are
-restricted to `443` or `8443`, and the server resolves the hostname on every
-request to reject private IPs. Requests to private or local addresses are
-ignored to prevent misuse.
-
-Before callbacks are used, the URL must be validated through the `/webhook`
-endpoint:
-
-```bash
-POST /deces/api/v1/webhook
-{ "url": "https://example.com/endpoint", "challenge": "get" }
-```
-
-The server returns a random `challenge` string. To confirm ownership, send
-
-```bash
-POST /deces/api/v1/webhook
-{ "url": "https://example.com/endpoint", "challenge": "validate" }
-```
-
-The endpoint will POST the challenge to the provided URL and respond with
-`validated` when successful.
-
 Detailed documentation is available at [this swagger page](https://deces.matchid.io/deces/api/v1/docs)
 
 ## Installation
