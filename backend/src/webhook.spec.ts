@@ -69,7 +69,7 @@ describe('webhook.ts - sendWebhook', () => {
     expect(result).toBe(false);
   });
 
-  it('should reject invalid webhook URLs', async () => {
+  it('should reject invalid webhook URLs', () => {
     expect(validateWebhookUrl('ftp://example.com')).toBe(false);
     expect(validateWebhookUrl('http://localhost:8000')).toBe(false);
   });
