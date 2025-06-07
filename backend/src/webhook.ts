@@ -153,6 +153,9 @@ export const sendWebhook = async (
       payload.url = `${process.env.APP_URL}/link?job=${jobId}`;
     }
     const sanitized = sanitizeUrl(url);
+    if (sanitized === 'about:blank') {
+      throw new Error('invalid webhook URL');
+    }
     const res = await axios.post(sanitized, payload, {
       maxRedirects: 0,
       timeout: 5000,

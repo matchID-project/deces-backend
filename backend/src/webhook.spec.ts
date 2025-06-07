@@ -1,6 +1,10 @@
 import http from 'http';
 import dns from 'node:dns/promises';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+vi.mock('@braintree/sanitize-url', () => ({ sanitizeUrl: vi.fn((url: string) => url) }));
+
+import { sanitizeUrl } from '@braintree/sanitize-url';
 import * as webhookModule from './webhook';
 const { sendWebhook, validateWebhookUrl, requestChallenge, validateChallenge, webhookRegistry, isWebhookValidated } = webhookModule;
 
@@ -76,6 +80,13 @@ describe('webhook.ts - sendWebhook', () => {
   it('should reject invalid webhook URLs', () => {
     expect(validateWebhookUrl('ftp://example.com')).toBe(false);
     expect(validateWebhookUrl('http://localhost:8000')).toBe(false);
+  });
+
+  it('should return false when sanitization fails', async () => {
+    vi.spyOn(webhookModule, 'validateWebhookUrl').mockReturnValue(true);
+    (sanitizeUrl as any).mockReturnValue('about:blank');
+    const result = await sendWebhook('https://example.com', 'completed', 'abc');
+    expect(result).toBe(false);
   });
 
   it('should return false on server error', async () => {
