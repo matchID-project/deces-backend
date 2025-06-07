@@ -11,7 +11,7 @@
     "start": "node .",
     "predev": "npm run lint && npm run tsoa",
     "dev": "ts-node-dev --respawn -- src/index.ts",
-    "test": "BACKEND_TMPFILE_PERSISTENCE=3000 vitest run",
+    "test": "MOCK_AUTH0=true BACKEND_TMPFILE_PERSISTENCE=3000 vitest run",
     "test-grep": "vitest run --testNamePattern ${GREP:-agg}"
   },
   "author": "Cristian Brokate",
@@ -29,6 +29,7 @@
     "iconv-lite": "^0.6.3",
     "JSONStream": "^1.3.5",
     "jsonwebtoken": "^9.0.2",
+    "jwks-rsa": "^3.2.0",
     "morgan": "^1.10.0",
     "multer": "^2.0.1",
     "node-forge": "^1.3.1",
