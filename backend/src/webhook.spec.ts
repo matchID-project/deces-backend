@@ -1,5 +1,6 @@
 import http from 'http';
-import { describe, expect, it } from 'vitest';
+import dns from 'node:dns/promises';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { sendWebhook, validateWebhookUrl, requestChallenge, validateChallenge, webhookRegistry, isWebhookValidated } from './webhook';
 
 // We rely on a local HTTP server rather than an external service (e.g.
@@ -10,6 +11,14 @@ const waitClose = (server: http.Server): Promise<void> => {
 };
 
 describe('webhook.ts - sendWebhook', () => {
+  beforeEach(() => {
+    vi.spyOn(dns, 'lookup').mockResolvedValue({ address: '203.0.113.10', family: 4 });
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    webhookRegistry.clear();
+  });
   it('should return false when url is undefined', async () => {
     const res = await sendWebhook(undefined, 'started', '1');
     expect(res).toBe(false);

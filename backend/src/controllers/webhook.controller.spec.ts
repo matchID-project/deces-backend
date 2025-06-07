@@ -1,5 +1,6 @@
 import http from 'http';
-import { describe, expect, it } from 'vitest';
+import dns from 'node:dns/promises';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { WebhookValidationController } from './webhook.controller';
 
 const waitClose = (server: http.Server): Promise<void> => {
@@ -8,6 +9,14 @@ const waitClose = (server: http.Server): Promise<void> => {
 
 describe('webhook.controller.ts', () => {
   const controller = new WebhookValidationController();
+
+  beforeEach(() => {
+    vi.spyOn(dns, 'lookup').mockResolvedValue({ address: '203.0.113.10', family: 4 });
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
 
   it('should fail validation when no challenge was requested', async () => {
     const res = await controller.webhook({ url: 'http://localhost:1', challenge: 'validate' });

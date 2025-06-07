@@ -3,6 +3,7 @@ import { sanitizeUrl } from '@braintree/sanitize-url';
 import loggerStream from './logger';
 import { URL } from 'url';
 import net from 'net';
+import dns from 'node:dns/promises';
 import crypto from 'crypto';
 
 const log = (json: any) => {
@@ -32,10 +33,25 @@ const isPrivateHostname = (hostname: string): boolean => {
   return false;
 };
 
+const allowedPorts = [443, 8443];
+
+const resolveIsPrivate = async (hostname: string): Promise<boolean> => {
+  try {
+    const { address } = await dns.lookup(hostname);
+    return isPrivateHostname(address);
+  } catch {
+    return true;
+  }
+};
+
 export const validateWebhookUrl = (urlString: string): boolean => {
   try {
     const parsed = new URL(urlString);
     if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
+      return false;
+    }
+    const port = parsed.port ? parseInt(parsed.port, 10) : (parsed.protocol === 'https:' ? 443 : 80);
+    if (!allowedPorts.includes(port)) {
       return false;
     }
     if (isPrivateHostname(parsed.hostname)) {
@@ -127,6 +143,10 @@ export const sendWebhook = async (
   try {
     if (!validateWebhookUrl(url)) {
       throw new Error('invalid webhook URL');
+    }
+    const parsed = new URL(url);
+    if (await resolveIsPrivate(parsed.hostname)) {
+      throw new Error('private host');
     }
     const payload: any = { event, jobId };
     if (event === 'completed') {

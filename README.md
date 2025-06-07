@@ -36,8 +36,10 @@ Bulk jobs can optionally trigger HTTP callbacks when their status changes. The
 ```
 The `url` property is only present when `event` equals `completed`.
 
-Only `http` or `https` URLs hosted on public networks are accepted. Requests to
-private or local addresses are ignored to prevent misuse.
+Only `http` or `https` URLs hosted on public networks are accepted. Ports are
+restricted to `443` or `8443`, and the server resolves the hostname on every
+request to reject private IPs. Requests to private or local addresses are
+ignored to prevent misuse.
 
 Before callbacks are used, the URL must be validated through the `/webhook`
 endpoint:
