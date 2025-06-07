@@ -62,7 +62,7 @@ export class AuthController extends Controller {
           access_token: accessToken,
           created_at: decoded.jti,
           expiration_date: decoded.exp.toString(),
-          renewal_limit_date: (Number(decoded.jti) + 2592000 * 11).toString()
+          renewal_limit_date: (Number(decoded.jti) + 2592000 * 12).toString()
         }
       }
     } else if ((Object.keys(userDB).indexOf(jsonToken.user)>=0) && (userDB[jsonToken.user] === crypto.createHash('sha256').update(jsonToken.password).digest('hex'))) {
@@ -73,7 +73,7 @@ export class AuthController extends Controller {
           access_token: accessToken,
           created_at: decoded.jti,
           expiration_date: decoded.exp.toString(),
-          renewal_limit_date: (Number(decoded.jti) + 2592000 * 11).toString()
+          renewal_limit_date: (Number(decoded.jti) + 2592000 * 12).toString()
       }
     } else if (validateOTP(jsonToken.user,jsonToken.password)) {
       const accessToken = jwt.sign({...jsonToken, scopes: ['user']}, process.env.BACKEND_TOKEN_KEY, { expiresIn: "30d", jwtid: Math.floor(Date.now() / 1000).toString() })
@@ -83,7 +83,7 @@ export class AuthController extends Controller {
           access_token: accessToken,
           created_at: decoded.jti,
           expiration_date: decoded.exp.toString(),
-          renewal_limit_date: (Number(decoded.jti) + 2592000 * 11).toString()
+          renewal_limit_date: (Number(decoded.jti) + 2592000 * 12).toString()
       }
     }
     this.setStatus(401);
@@ -110,12 +110,12 @@ export class AuthController extends Controller {
       try {
         let decoded: any = jwt.verify(token, process.env.BACKEND_TOKEN_KEY)
         const now = Math.floor(Date.now() / 1000)
-        // refresh until 11 month of creation
-        const oneYearAftercreation = Number(decoded.jti) + 2592000 * 11;
+        const oneYearAftercreation = Number(decoded.jti) + 2592000 * 12;
         if (now < oneYearAftercreation) {
           delete decoded.exp;
           delete decoded.iat;
-          const accessToken = jwt.sign(decoded, process.env.BACKEND_TOKEN_KEY, { expiresIn: "30d" });
+          const expiresInSeconds = Math.min(2592000, oneYearAftercreation - now);
+          const accessToken = jwt.sign(decoded, process.env.BACKEND_TOKEN_KEY, { expiresIn: expiresInSeconds });
           decoded = jwt.verify(accessToken, process.env.BACKEND_TOKEN_KEY)
           return {
             msg: "jwt has been properly renewed",
@@ -142,7 +142,7 @@ export class AuthController extends Controller {
         msg: "jwt is valid",
         created_at: decoded.jti,
         expiration_date: decoded.exp.toString(),
-        renewal_limit_date: (Number(decoded.jti) + 2592000 * 11).toString()
+        renewal_limit_date: (Number(decoded.jti) + 2592000 * 12).toString()
       }
     }
   }
