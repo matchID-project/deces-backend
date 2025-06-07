@@ -6,6 +6,7 @@ import { RequestInput } from './models/requestInput';
 import { buildRequest } from './buildRequest';
 import { runBulkRequest } from './runRequest';
 import { sendJobUpdate } from './mail';
+import { sendWebhook } from './webhook';
 import { buildResultSingle, ResultRawES } from './models/result';
 import { scoreResults } from './score';
 import { ScoreParams } from './models/entities'
@@ -443,11 +444,24 @@ interface Options {
 
 workerJobs.on('completed', async (job: Job) => {
     await sendJobUpdate(job.data.user, "L'appariement est terminé", job.data.randomKey);
+    if (job.data.webhook) {
+      await sendWebhook(job.data.webhook, 'completed', job.data.randomKey);
+    }
     if (!stopJob.includes(job.id)) {
       setTimeout(async () => {
         fs.unlink(`${process.env.JOBS}/${job.id}.out.enc`, (err: Error) => {if (err) log({unlinkOutputDeleteError: err});});
         await sendJobUpdate(job.data.user, "Le fichier a été supprimé", job.data.randomKey);
+        if (job.data.webhook) {
+          await sendWebhook(job.data.webhook, 'deleted', job.data.randomKey);
+        }
       }, Number(job.data.tmpfilePersistence || "28800000")) // Delete results after 8 hour
+    }
+});
+
+workerJobs.on('failed', async (job: Job) => {
+    await sendJobUpdate(job.data.user, "Le traitement a échoué", job.data.randomKey);
+    if (job.data.webhook) {
+      await sendWebhook(job.data.webhook, 'failed', job.data.randomKey);
     }
 });
 
@@ -494,6 +508,9 @@ export const csvHandle = async (request: Request, options: Options): Promise<any
       {jobId, priority: Math.round(options.totalRows/1000)+1}
     )
     await sendJobUpdate(options.user, "L'appariement a bien commencé", options.randomKey);
+    if (options.webhook) {
+      await sendWebhook(options.webhook, 'started', options.randomKey);
+    }
     return {msg: 'started', id: options.randomKey};
   } else {
     request.res.status(429).send({msg: `There is already ${jobsUser.length} running or waiting jobs`});

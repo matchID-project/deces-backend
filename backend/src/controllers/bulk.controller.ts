@@ -103,6 +103,10 @@ export class BulkController extends Controller {
    *                skipLines:
    *                  type: number
    *                  description: Nombre de lignes à sauter
+   *                webhook:
+   *                  type: string
+   *                  description: URL d'un webhook appelé pour notifier "started", "completed", "failed" et "deleted"
+   *                  example: "https://example.com/callback"
    *                fileName:
    *                  type: string
    *                  description: Fichier CSV contenant le noms des identités à comparer
@@ -140,6 +144,7 @@ export class BulkController extends Controller {
       options.escape = options.escape || '"';
       options.quote = options.quote === "null" ? null : (options.quote || '"');
       options.skipLines = options.skipLines || 0;
+      options.webhook = options.webhook || options.webhookUrl;
       options.randomKey = randomKey;
       options.totalRows = 0;
       options.inputHeaders = [];
