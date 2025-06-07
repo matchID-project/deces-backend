@@ -59,3 +59,4 @@ AUTH0_AUDIENCE=<audience de l'API>
 Les points de terminaison `/register` et `/auth` s'appuient sur les services
 `passwordless/start` et `oauth/token` d'Auth0. Un jeton d'API peut être généré
 via la route protégée `/apikey` en indiquant la durée souhaitée de validité.
+Pour exécuter les tests sans accès réseau, activez le mode simulé avec `MOCK_AUTH0=true`.

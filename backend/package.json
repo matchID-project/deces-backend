@@ -11,7 +11,7 @@
     "start": "node .",
     "predev": "npm run lint && npm run tsoa",
     "dev": "ts-node-dev --respawn -- src/index.ts",
-    "test": "BACKEND_TMPFILE_PERSISTENCE=3000 vitest run",
+    "test": "MOCK_AUTH0=true BACKEND_TMPFILE_PERSISTENCE=3000 vitest run",
     "test-grep": "vitest run --testNamePattern ${GREP:-agg}"
   },
   "author": "Cristian Brokate",

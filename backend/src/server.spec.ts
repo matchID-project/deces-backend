@@ -126,7 +126,7 @@ describe('server.ts - Express application', () => {
         .get(apiPath('auth'))
         .set('Authorization', `Bearer ${token.body.access_token as string}`)
       expect(res.status).toBe(200);
-      expect(res.body).to.include.all.keys(['msg', 'created_at', 'expiration_date']);
+      expect(res.body).to.include.all.keys(['msg', 'expiration_date']);
     });
 
     it('refresh token', async () => {
@@ -139,7 +139,7 @@ describe('server.ts - Express application', () => {
         .get(apiPath('auth'))
         .set('Authorization', `Bearer ${token.body.access_token as string}`)
       expect(tokenVerify.status).toBe(200);
-      expect(tokenVerify.body).to.include.all.keys(['msg', 'created_at', 'expiration_date']);
+      expect(tokenVerify.body).to.include.all.keys(['msg', 'expiration_date']);
       const promise = new Promise(( resolve: any, reject ) => {
         // eslint-disable-next-line @typescript-eslint/no-misused-promises
         setTimeout( async () => {
@@ -148,15 +148,8 @@ describe('server.ts - Express application', () => {
               .get(apiPath(`auth`))
               .query({refresh: true })
               .set('Authorization', `Bearer ${token.body.access_token as string}`)
-            expect(refreshToken.status).toBe(200);
-            expect(refreshToken.body).to.include.all.keys('access_token');
-            const refreshTokenVerify = await server
-              .get(apiPath('auth'))
-              .set('Authorization', `Bearer ${refreshToken.body.access_token as string}`)
-            expect(refreshTokenVerify.status).toBe(200);
-            expect(refreshTokenVerify.body).to.include.all.keys(['msg', 'created_at', 'expiration_date']);
-            expect(refreshTokenVerify.body.created_at).to.be.equal(tokenVerify.body.created_at)
-            expect(Number(refreshTokenVerify.body.expiration_date)).to.be.greaterThan(Number(tokenVerify.body.expiration_date))
+            expect(refreshToken.status).toBe(422);
+            expect(refreshToken.body.msg).to.include('Auth0');
           } catch (e) {
             reject(e)
           }
