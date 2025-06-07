@@ -17,7 +17,7 @@
   "author": "Cristian Brokate",
   "license": "ISC",
   "dependencies": {
-    "@elastic/elasticsearch": "8.6.1",
+    "@elastic/elasticsearch": "8.18.2",
     "@jollie/soundex-fr": "^1.0.8",
     "axios": "^1.7.7",
     "bullmq": "^5.21.2",
