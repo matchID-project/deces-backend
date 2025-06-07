@@ -14,6 +14,7 @@ API for people who died in France from 1970.
   * Sex
 * The API can handle common mistakes in fields thanks to fuzzy matching
 * Bulk process (CSV or bulk JSON) for multiple identities
+* Optional webhook callbacks with a challenge validation endpoint
 * Express framework for REST API
 * OpenAPIv3 documentation automatically generated using
   [TSOA](https://github.com/lukeautry/tsoa)
