@@ -25,7 +25,7 @@ describe('webhook.controller.ts', () => {
 
   it('should run full challenge workflow', async () => {
     const server = http.createServer((_req, res) => { res.statusCode = 200; res.end(); });
-    await new Promise(resolve => server.listen(0, resolve));
+    await new Promise<void>(resolve => server.listen(0, () => resolve()));
     const port = (server.address() as any).port;
     const url = `http://localhost:${port}`;
     const init = await controller.webhook({ url, challenge: 'get' });

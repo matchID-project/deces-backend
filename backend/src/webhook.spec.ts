@@ -36,7 +36,7 @@ describe('webhook.ts - sendWebhook', () => {
         res.end('ok');
       });
     });
-    await new Promise(resolve => server.listen(0, resolve));
+    await new Promise<void>(resolve => server.listen(0, () => resolve()));
     const port = (server.address() as any).port;
     const result = await sendWebhook(`http://localhost:${port}`, 'completed', 'abc');
     await waitClose(server);
@@ -56,7 +56,7 @@ describe('webhook.ts - sendWebhook', () => {
         res.end('ok');
       });
     });
-    await new Promise(resolve => server.listen(0, resolve));
+    await new Promise<void>(resolve => server.listen(0, () => resolve()));
     const port = (server.address() as any).port;
     const result = await sendWebhook(`http://localhost:${port}`, 'failed', 'abc');
     await waitClose(server);
@@ -79,7 +79,7 @@ describe('webhook.ts - sendWebhook', () => {
       res.statusCode = 500;
       res.end();
     });
-    await new Promise(resolve => server.listen(0, resolve));
+    await new Promise<void>(resolve => server.listen(0, () => resolve()));
     const port = (server.address() as any).port;
     const result = await sendWebhook(`http://localhost:${port}`, 'completed', 'abc');
     await waitClose(server);
@@ -91,7 +91,7 @@ describe('webhook.ts - sendWebhook', () => {
       res.statusCode = 200;
       res.end();
     });
-    await new Promise(resolve => server.listen(0, resolve));
+    await new Promise<void>(resolve => server.listen(0, () => resolve()));
     const port = (server.address() as any).port;
     const url = `http://localhost:${port}`;
     const first = requestChallenge(url);
