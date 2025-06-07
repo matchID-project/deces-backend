@@ -43,3 +43,19 @@ Before starting a database has to be charged in elasticsearch. Please refer to
 Source code has been published using [LGPL 3.0](https://github.com/matchID-project/deces-backend/blob/dev/LICENCE).
 
 © 2020 Cristian Brokate, DNUM - SDIT
+
+## Authentification
+
+Depuis cette version, l'API utilise **Auth0** en mode passwordless.
+Configurez les variables d'environnement suivantes pour votre tenant :
+
+```
+AUTH0_DOMAIN=<votre domaine>
+AUTH0_CLIENT_ID=<identifiant client>
+AUTH0_CLIENT_SECRET=<secret client>
+AUTH0_AUDIENCE=<audience de l'API>
+```
+
+Les points de terminaison `/register` et `/auth` s'appuient sur les services
+`passwordless/start` et `oauth/token` d'Auth0. Un jeton d'API peut être généré
+via la route protégée `/apikey` en indiquant la durée souhaitée de validité.

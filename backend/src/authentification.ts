@@ -1,5 +1,6 @@
 import * as express from "express";
 import * as jwt from "jsonwebtoken";
+import { verifyAuth0Token } from './auth0';
 
 const bannedIP: any = {};
 const toBeBannedIP: any = {};
@@ -47,19 +48,15 @@ export const expressAuthentication = (
       } else {
         token = authHeader.split(' ')[1];
       }
-      jwt.verify(token, process.env.BACKEND_TOKEN_KEY, (err: any, decoded: any) => {
-        if (err) {
-          reject(err);
-        } else {
-          // Check if JWT contains all required scopes
-          for (const scope of scopes) {
-            if (!decoded.scopes.includes(scope)) {
-              reject(new jwt.JsonWebTokenError("JWT does not contain required scope."));
-            }
+      verifyAuth0Token(token).then((decoded: any) => {
+        for (const scope of scopes) {
+          if (!decoded.scope || !decoded.scope.includes(scope)) {
+            reject(new jwt.JsonWebTokenError('JWT does not contain required scope.'));
+            return;
           }
-          resolve(decoded);
         }
-      });
+        resolve(decoded);
+      }).catch((err: any) => reject(err));
     });
   }
 }
