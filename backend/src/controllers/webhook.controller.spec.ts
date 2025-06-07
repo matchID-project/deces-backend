@@ -2,6 +2,7 @@ import http from 'http';
 import dns from 'node:dns/promises';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { WebhookValidationController } from './webhook.controller';
+import * as webhookModule from '../webhook';
 
 const waitClose = (server: http.Server): Promise<void> => {
   return new Promise(resolve => server.close(() => resolve()));
@@ -12,6 +13,7 @@ describe('webhook.controller.ts', () => {
 
   beforeEach(() => {
     vi.spyOn(dns, 'lookup').mockResolvedValue({ address: '203.0.113.10', family: 4 });
+    vi.spyOn(webhookModule, 'validateWebhookUrl').mockReturnValue(true);
   });
 
   afterEach(() => {

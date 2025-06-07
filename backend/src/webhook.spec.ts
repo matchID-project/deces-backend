@@ -1,7 +1,8 @@
 import http from 'http';
 import dns from 'node:dns/promises';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { sendWebhook, validateWebhookUrl, requestChallenge, validateChallenge, webhookRegistry, isWebhookValidated } from './webhook';
+import * as webhookModule from './webhook';
+const { sendWebhook, validateWebhookUrl, requestChallenge, validateChallenge, webhookRegistry, isWebhookValidated } = webhookModule;
 
 // We rely on a local HTTP server rather than an external service (e.g.
 // webhook.site) so tests remain fully offline.
@@ -25,6 +26,7 @@ describe('webhook.ts - sendWebhook', () => {
   });
 
   it('should POST event and jobId', async () => {
+    vi.spyOn(webhookModule, 'validateWebhookUrl').mockReturnValue(true);
     process.env.APP_URL = 'http://app';
     let body: any;
     const server = http.createServer((req, res) => {
@@ -45,6 +47,7 @@ describe('webhook.ts - sendWebhook', () => {
   });
 
   it('should not include url for non-completed events', async () => {
+    vi.spyOn(webhookModule, 'validateWebhookUrl').mockReturnValue(true);
     process.env.APP_URL = 'http://app';
     let body: any;
     const server = http.createServer((req, res) => {
@@ -65,6 +68,7 @@ describe('webhook.ts - sendWebhook', () => {
   });
 
   it('should return false when request fails', async () => {
+    vi.spyOn(webhookModule, 'validateWebhookUrl').mockReturnValue(true);
     const result = await sendWebhook('http://localhost:9', 'completed', 'abc');
     expect(result).toBe(false);
   });
@@ -75,6 +79,7 @@ describe('webhook.ts - sendWebhook', () => {
   });
 
   it('should return false on server error', async () => {
+    vi.spyOn(webhookModule, 'validateWebhookUrl').mockReturnValue(true);
     const server = http.createServer((_req, res) => {
       res.statusCode = 500;
       res.end();
@@ -87,6 +92,7 @@ describe('webhook.ts - sendWebhook', () => {
   });
 
   it('should manage challenge workflow', async () => {
+    vi.spyOn(webhookModule, 'validateWebhookUrl').mockReturnValue(true);
     const server = http.createServer((_req, res) => {
       res.statusCode = 200;
       res.end();
