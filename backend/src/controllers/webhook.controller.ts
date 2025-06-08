@@ -1,5 +1,6 @@
 import { Body, Controller, Post, Route, Security, Tags } from 'tsoa';
-import { requestChallenge, validateChallenge } from '../webhook';
+import { requestChallenge, validateChallenge, getWebhookStatus, deleteWebhook } from '../webhook';
+import { WebhookRequest } from '../models/entities';
 
 @Route('webhook')
 export class WebhookValidationController extends Controller {
@@ -7,11 +8,20 @@ export class WebhookValidationController extends Controller {
   @Tags('Webhook')
   @Post('')
   public async webhook(
-    @Body() body: { url: string; challenge?: 'get' | 'validate' }
-  ): Promise<{ status: string; challenge?: string; message?: string }> {
-    if (body.challenge === 'validate') {
-      return await validateChallenge(body.url);
+    @Body() body: WebhookRequest
+  ): Promise<{ status: string; challenge?: string; msg?: string }> {
+    switch (body.action) {
+      case 'register':
+        return requestChallenge(body.url);
+      case 'challenge':
+        return await validateChallenge(body.url);
+      case 'status':
+        return getWebhookStatus(body.url);
+      case 'delete':
+        return deleteWebhook(body.url);
+      default:
+        this.setStatus(400);
+        return { status: 'error', msg: 'Invalid action' };
     }
-    return requestChallenge(body.url);
   }
 }

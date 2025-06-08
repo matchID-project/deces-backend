@@ -32,19 +32,19 @@ export interface RequestField {
   }
 
 /**
- * Coordonnés GPS
+ * GPS coordinates
  */
 export interface GeoPoint {
   /**
-   * Latitude de la coordonnée GPS
+   * Latitude of the GPS coordinate
    */
   latitude: number;
   /**
-   * Latitude de la coordonnée GPS
+   * Longitude of the GPS coordinate
    */
   longitude: number;
   /**
-   * Rayon de distance du point GPS
+   * Distance radius from the GPS point
    */
   distance: string;
 }
@@ -192,4 +192,18 @@ export interface Wikidict {
 export interface sendOTPResponse {
   valid: boolean;
   msg: string
+}
+
+/**
+ * Webhook Request
+ * @tsoaModel
+ * @example
+ * {
+ *   "url": "https://example.com/webhook",
+ *   "action": "register"
+ * }
+ */
+export interface WebhookRequest {
+  url: string;
+  action: 'register' | 'challenge' | 'status' | 'delete';
 }
