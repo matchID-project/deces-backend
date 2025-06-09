@@ -3,6 +3,7 @@ import express from 'express';
 import forge from 'node-forge';
 import { Controller, Hidden, Get, Post, Delete, Route, Query, Tags, Request, Path, Security } from 'tsoa';
 import { csvHandle, returnBulkResults, deleteThreadJob, validFields } from '../processStream';
+import { validateWebhookUrl, isWebhookValidated } from '../webhook';
 
 /**
  * @swagger
@@ -103,6 +104,10 @@ export class BulkController extends Controller {
    *                skipLines:
    *                  type: number
    *                  description: Nombre de lignes à sauter
+   *                webhook:
+   *                  type: string
+   *                  description: URL d'un webhook appelé pour notifier "started", "completed", "failed" et "deleted"
+   *                  example: "https://example.com/callback"
    *                fileName:
    *                  type: string
    *                  description: Fichier CSV contenant le noms des identités à comparer
@@ -140,6 +145,7 @@ export class BulkController extends Controller {
       options.escape = options.escape || '"';
       options.quote = options.quote === "null" ? null : (options.quote || '"');
       options.skipLines = options.skipLines || 0;
+      options.webhook = options.webhook || options.webhookUrl;
       options.randomKey = randomKey;
       options.totalRows = 0;
       options.inputHeaders = [];
@@ -149,6 +155,20 @@ export class BulkController extends Controller {
       options.mapField = {};
       options.tmpfilePersistence = Math.max(60000, options.tmpfilePersistence || process.env.BACKEND_TMPFILE_PERSISTENCE);
       validFields.forEach(key => options.mapField[options[key] || key] = key );
+
+      // Webhook validation rules
+      if (options.webhook) {
+        const validation = validateWebhookUrl(options.webhook);
+        if (!validation.isValid) {
+          this.setStatus(400);
+          return { msg: validation.message };
+        }
+        if (!isWebhookValidated(options.webhook)) {
+          this.setStatus(400);
+          return { msg: 'Webhook must be registered and validated before submitting a bulk job' };
+        }
+      }
+
       return await csvHandle(request, options)
     } else {
       // res.send({msg: 'no files attached'});
