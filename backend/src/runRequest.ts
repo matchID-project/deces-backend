@@ -1,7 +1,7 @@
+import { estypes } from '@elastic/elasticsearch';
 import { getClient } from './elasticsearch';
 import loggerStream from './logger';
 import { BodyResponse, ScrolledResponse } from './models/body';
-import { ResultRawES } from './models/result';
 
 const log = (json:any) => {
   loggerStream.write(JSON.stringify({
@@ -16,7 +16,7 @@ const isBodyResponse = (body: BodyResponse|ScrolledResponse): body is BodyRespon
   return 'query' in body;
 }
 
-export const runRequest = async (body: BodyResponse|ScrolledResponse, scroll: string): Promise<ResultRawES> => {
+export const runRequest = async (body: BodyResponse|ScrolledResponse, scroll: string): Promise<any> => {
   const client = getClient();
   let operation = 'unknown';
   try {
@@ -68,11 +68,7 @@ export const runRequest = async (body: BodyResponse|ScrolledResponse, scroll: st
   }
 };
 
-interface ResultBulkES {
-    responses: ResultRawES[];
-}
-
-export const runBulkRequest = async (bulkRequest: any): Promise<ResultBulkES> => {
+export const runBulkRequest = async (bulkRequest: any): Promise<estypes.MsearchResponse> => {
   const client = getClient();
   try {
     const response = await client.msearch(bulkRequest);
