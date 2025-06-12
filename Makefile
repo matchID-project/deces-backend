@@ -435,7 +435,7 @@ communes-pull: ${COMMUNES_JSON}
 
 communes: communes-pull
 
-disposable-mail-push:
+${DISPOSABLE_MAIL}: config
 	@echo "preparing disposable mail resources"
 	@curl --retry 5 -L -l 'https://raw.githubusercontent.com/unkn0w/disposable-email-domain-list/main/domains.txt' -o ${DISPOSABLE_MAIL}.tmp1
 	@curl --retry 5 -L -l 'https://gist.githubusercontent.com/adamloving/4401361/raw/e81212c3caecb54b87ced6392e0a0de2b6466287/temporary-email-address-domains' -o ${DISPOSABLE_MAIL}.tmp2
@@ -443,17 +443,8 @@ disposable-mail-push:
 	@curl --retry 5 -L -l 'https://raw.githubusercontent.com/FGRibreau/mailchecker/master/list.txt' -o ${DISPOSABLE_MAIL}.tmp4
 	@cat ${DISPOSABLE_MAIL}.tmp1 ${DISPOSABLE_MAIL}.tmp2 ${DISPOSABLE_MAIL}.tmp3 ${DISPOSABLE_MAIL}.tmp4 | sort | uniq > ${DISPOSABLE_MAIL}
 	@rm ${DISPOSABLE_MAIL}.tmp1 ${DISPOSABLE_MAIL}.tmp2 ${DISPOSABLE_MAIL}.tmp3 ${DISPOSABLE_MAIL}.tmp4
-	@make -C ${APP_PATH}/${GIT_TOOLS} storage-push\
-		FILE=${DISPOSABLE_MAIL}\
-		STORAGE_BUCKET=${STORAGE_BUCKET} STORAGE_ACCESS_KEY=${STORAGE_ACCESS_KEY} STORAGE_SECRET_KEY=${STORAGE_SECRET_KEY};\
 
-${DISPOSABLE_MAIL}: config
-	@echo "downloading disposable mail resources"
-	@make -C ${APP_PATH}/${GIT_TOOLS} storage-pull\
-		FILE=disposable-mail.txt DATA_DIR=${BACKEND}/data\
-		STORAGE_BUCKET=${STORAGE_BUCKET} STORAGE_ACCESS_KEY=${STORAGE_ACCESS_KEY} STORAGE_SECRET_KEY=${STORAGE_SECRET_KEY};\
-
-disposable-mail-pull: ${DISPOSABLE_MAIL}
+disposable-mail: ${DISPOSABLE_MAIL}
 
 ${PROOFS}:
 	mkdir -p ${PROOFS}
