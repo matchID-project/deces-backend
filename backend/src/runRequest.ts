@@ -1,3 +1,4 @@
+import { estypes } from '@elastic/elasticsearch';
 import { getClient } from './elasticsearch';
 import loggerStream from './logger';
 import { BodyResponse, ScrolledResponse } from './models/body';
@@ -52,26 +53,22 @@ export const runRequest = async (body: BodyResponse|ScrolledResponse, scroll: st
     });
 
     return {
+      took: 0,
       hits: {
         total: {
-          value: 1
+          value: 0
         },
-        hits: [
-          {
-            _id: 0,
-            _source: {
-              status: error.statusCode || 500,
-              statusText: error.message || 'Internal Server Error',
-              error: true
-            }
-          }
-        ]
-      }
+        max_score: 0,
+        hits: []
+      },
+      status: error.statusCode || 500,
+      statusText: error.message || 'Internal Server Error',
+      error: true
     };
   }
 };
 
-export const runBulkRequest = async (bulkRequest: any): Promise<any> => {
+export const runBulkRequest = async (bulkRequest: any): Promise<estypes.MsearchResponse> => {
   const client = getClient();
   try {
     const response = await client.msearch(bulkRequest);
