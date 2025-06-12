@@ -11,8 +11,8 @@
     "start": "node .",
     "predev": "npm run lint && npm run tsoa",
     "dev": "ts-node-dev --respawn -- src/index.ts",
-    "test": "MOCK_AUTH0=true BACKEND_TMPFILE_PERSISTENCE=3000 vitest run",
-    "test-grep": "vitest run --testNamePattern ${GREP:-agg}"
+    "test": "export $(grep -v '^#' .env.test | xargs) && vitest run",
+    "test-grep": "export $(grep -v '^#' .env.test | xargs) && vitest run --testNamePattern ${GREP:-agg}"
   },
   "author": "Cristian Brokate",
   "license": "ISC",
@@ -58,6 +58,7 @@
     "@types/swagger-ui-express": "^4.1.6",
     "@typescript-eslint/eslint-plugin": "^8.11.0",
     "@typescript-eslint/parser": "^8.11.0",
+    "dotenv": "^16.5.0",
     "eslint": "^9.13.0",
     "eslint-plugin-jsdoc": "^50.4.3",
     "eslint-plugin-prefer-arrow": "^1.2.3",

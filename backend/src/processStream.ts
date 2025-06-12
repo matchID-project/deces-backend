@@ -21,6 +21,18 @@ import timer from './timer';
 
 const timerRunBulkRequest = timer(runBulkRequest, 'runBulkRequest', 1);
 
+const isTestMode = process.env.NODE_ENV === 'test' || process.env.MOCK_AUTH0 === 'true';
+
+const redisConnection = isTestMode ? {
+  host: process.env.REDIS_HOST || 'localhost',
+  port: Number(process.env.REDIS_PORT || 6379),
+  maxRetriesPerRequest: 1,
+  enableOfflineQueue: false,
+  retryStrategy: (): null => null
+} : {
+  host: 'redis'
+};
+
 export const validFields: string[] = ['q', 'firstName', 'lastName', 'legalName', 'sex', 'birthDate', 'birthCity', 'birthLocationCode', 'birthPostalCode', 'birthDepartment', 'birthCountry',
 'birthGeoPoint', 'deathDate', 'deathCity', 'deathLocationCode', 'deathPostalCode', 'deathDepartment', 'deathCountry', 'deathGeoPoint', 'deathAge', 'lastSeenAliveDate', 'source',
 'size', 'fuzzy', 'block'];
@@ -58,21 +70,15 @@ const stopJobReason: StopJobReason[] = [];
 const stopJobError = 'job has been stopped';
 const inputsArray: JobInput[]= []
 const jobQueue = new Queue('jobs',  {
-  connection: {
-    host: 'redis'
-  }
+  connection: redisConnection
 });
 
 const chunkEvents = new QueueEvents('chunks', {
-  connection: {
-    host: 'redis'
-  }
+  connection: redisConnection
 });
 
 const chunkQueue = new Queue('chunks',  {
-  connection: {
-    host: 'redis'
-  },
+  connection: redisConnection,
   defaultJobOptions: {
     removeOnFail: true
   }
@@ -268,10 +274,8 @@ export const processChunk = async (chunk: any[], candidateNumber: number, params
 new Worker('chunks', async (chunkJob: Job) => {
   return await processChunk(chunkJob.data.chunk, chunkJob.data.candidateNumber, {dateFormatA: chunkJob.data.dateFormatA, pruneScore: chunkJob.data.pruneScore, candidateNumber: chunkJob.data.candidateNumber});
 }, {
-  connection: {
-    host: 'redis'
-  },
-  concurrency: Number(process.env.BACKEND_CHUNK_CONCURRENCY)
+  connection: redisConnection,
+  concurrency: Number(process.env.BACKEND_CHUNK_CONCURRENCY) || 1
 })
 
 const workerJobs = new Worker('jobs', async (job: Job) => {
@@ -279,10 +283,8 @@ const workerJobs = new Worker('jobs', async (job: Job) => {
   const jobFile = inputsArray.splice(jobIndex, 1).pop();
   return await processCsv(job, jobFile);
 }, {
-  connection: {
-    host: 'redis'
-  },
-  concurrency: Number(process.env.BACKEND_JOB_CONCURRENCY)
+  connection: redisConnection,
+  concurrency: Number(process.env.BACKEND_JOB_CONCURRENCY) || 1
 })
 
 

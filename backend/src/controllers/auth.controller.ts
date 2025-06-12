@@ -1,7 +1,7 @@
 import * as jwt from "jsonwebtoken";
 import {Body, Controller, Get, Post, Route, Security, Tags, Header, Query} from 'tsoa';
 import { sendOTPResponse } from '../models/entities';
-import { sendAuth0OTP, verifyAuth0OTP, createApiKey } from '../auth0';
+import { sendAuth0OTP, verifyAuth0OTP, createApiKey, verifyAuth0Token } from '../auth0';
 import {userDB} from '../userDB';
 import crypto from 'crypto';
 import { validateOTP, sendOTP } from '../mail';

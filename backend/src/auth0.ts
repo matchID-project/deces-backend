@@ -1,10 +1,12 @@
 import axios from 'axios';
-import * as jwks from 'jwks-rsa';
+import { JwksClient } from 'jwks-rsa';
 import * as jwt from 'jsonwebtoken';
 import { sendOTP, validateOTP } from './mail';
 
 const isMock = process.env.MOCK_AUTH0 === 'true';
-export const auth0Client = jwks.createRemoteJWKSet(new URL(`https://${process.env.AUTH0_DOMAIN}/.well-known/jwks.json`));
+export const auth0Client = isMock ? null : new JwksClient({
+  jwksUri: `https://${process.env.AUTH0_DOMAIN}/.well-known/jwks.json`
+});
 
 export async function verifyAuth0Token(token: string): Promise<any> {
   if (isMock) {
@@ -18,17 +20,25 @@ export async function verifyAuth0Token(token: string): Promise<any> {
       });
     });
   }
-  return await jwt.verify(token, async (header, callback) => {
-    try {
-      const key = await auth0Client.getKey(header as any);
-      callback(null, key.publicKey || key.rsaPublicKey);
-    } catch (err) {
-      callback(err as any, undefined);
-    }
-  }, {
-    audience: process.env.AUTH0_AUDIENCE,
-    issuer: `https://${process.env.AUTH0_DOMAIN}/`,
-    algorithms: ['RS256']
+  return new Promise((resolve, reject) => {
+    jwt.verify(token, async (header, callback) => {
+      try {
+        const key = await auth0Client.getSigningKey(header.kid);
+        callback(null, key.getPublicKey());
+      } catch (err) {
+        callback(err as any, undefined);
+      }
+    }, {
+      audience: process.env.AUTH0_AUDIENCE,
+      issuer: `https://${process.env.AUTH0_DOMAIN}/`,
+      algorithms: ['RS256']
+    }, (err, decoded) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(decoded);
+      }
+    });
   });
 }
 
@@ -48,11 +58,11 @@ export async function sendAuth0OTP(email: string) {
 export async function verifyAuth0OTP(email: string, otp: string) {
   if (isMock) {
     if (email === process.env.BACKEND_TOKEN_USER && otp === process.env.BACKEND_TOKEN_PASSWORD) {
-      const token = jwt.sign({ user: email, scope: ['admin', 'user'] }, process.env.BACKEND_TOKEN_KEY as string, { expiresIn: '1d' });
+      const token = jwt.sign({ user: email, scope: ['admin', 'user'] }, process.env.BACKEND_TOKEN_KEY, { expiresIn: '1d' });
       return { access_token: token, expires_in: 86400 };
     }
     if (validateOTP(email, otp)) {
-      const token = jwt.sign({ user: email, scope: ['user'] }, process.env.BACKEND_TOKEN_KEY as string, { expiresIn: '30d' });
+      const token = jwt.sign({ user: email, scope: ['user'] }, process.env.BACKEND_TOKEN_KEY, { expiresIn: '30d' });
       return { access_token: token, expires_in: 2592000 };
     }
     throw new Error('Wrong username or password');
@@ -71,7 +81,7 @@ export async function verifyAuth0OTP(email: string, otp: string) {
 
 export async function createApiKey(expiresIn: number) {
   if (isMock) {
-    const token = jwt.sign({ type: 'apikey' }, process.env.BACKEND_TOKEN_KEY as string, { expiresIn });
+    const token = jwt.sign({ type: 'apikey' }, process.env.BACKEND_TOKEN_KEY, { expiresIn });
     return { access_token: token, expires_in: expiresIn };
   }
   const res = await axios.post(`https://${process.env.AUTH0_DOMAIN}/oauth/token`, {
