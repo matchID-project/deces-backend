@@ -21,7 +21,7 @@
     "@jollie/soundex-fr": "^1.0.8",
     "axios": "^1.7.7",
     "@braintree/sanitize-url": "^6.0.3",
-    "bullmq": "^5.21.2",
+    "bullmq": "^5.53.2",
     "damlev": "^1.0.0",
     "express": "^4.21.1",
     "fast-csv": "^5.0.2",
