@@ -1,5 +1,9 @@
 import { readFileSync, readdirSync, statSync } from 'fs';
 import path from "path";
+import { runBulkRequest } from './runRequest';
+import { buildRequest } from './buildRequest';
+import { buildResultSingle, Result } from './models/result';
+import { RequestInput } from './models/requestInput';
 
 const walk = (directory: string): string[]=> {
   const fileList: string[] = [];
@@ -37,3 +41,51 @@ try {
     console.log('Failed loading updatedFields',e);
 }
 export const updatedFields: any = Object.keys(rawData).length ? rawData : {};
+
+export const getAllUpdates = (): any => {
+  return {...updatedFields};
+}
+
+export const getAuthorUpdates = (author: string):any => {
+  const updates:any = {};
+  Object.keys(updatedFields).forEach((id:any) => {
+    let keep = false;
+    const modifications = updatedFields[id].map((m:any) => {
+      const modif:any = {...m}
+      if (modif.author !== author) {
+        modif.author = modif.author ? modif.author.substring(0,2)
+          + '...' + modif.author.replace(/@.*/,'').substring(modif.author.replace(/@.*/,'').length-2)
+          + '@' + modif.author.replace(/.*@/,'') : '';
+        modif.message = undefined;
+        modif.review = undefined;
+      } else {
+        keep = true
+      }
+      return modif;
+    });
+    if (keep) {
+      updates[id] = modifications;
+    }
+  });
+  return updates;
+}
+
+export const resultsFromUpdates = async (updates: any): Promise<Result> => {
+  const bulkRequest = {searches: Object.keys(updates).map((id: any) => {
+    const requestInput = new RequestInput({id});
+    return [{index: "deces"}, buildRequest(requestInput)];
+  }).flat()}
+  const result =  await runBulkRequest(bulkRequest);
+  return result.responses
+}
+
+export const cleanRawUpdates = (rawUpdates: any, updates: any): Promise<Result> => {
+  return rawUpdates.map((r:any) => buildResultSingle(r.hits.hits[0]))
+    .filter((r:any) => Object.keys(r).length > 0)
+    .map((r:any) => {
+      delete r.score;
+      delete r.scores;
+      r.modifications = updates[r.id];
+      return r;
+    });
+}
