@@ -1,4 +1,5 @@
 import { SearchController } from './search.controller';
+import { resetTodayDeces } from './status.controller';
 import { PersonCompare } from '../models/entities';
 import express from 'express';
 import { describe, expect, it } from 'vitest'
@@ -150,5 +151,12 @@ describe('search.controller.ts - POST compare', () => {
     const res = controller.compareIdentitiesPost(body)
     expect(res).to.contain.all.keys(['score', 'birthLocation', 'name'])
     expect(res.score).to.equal(0.6);
+  });
+});
+
+describe('status.controller.ts - today deaths', () => {
+  it('today deaths', async () => {
+    const todayDeces = await resetTodayDeces('20200620');
+    expect(todayDeces.length).to.equal(1);
   });
 });

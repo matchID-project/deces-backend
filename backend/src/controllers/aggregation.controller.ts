@@ -149,10 +149,9 @@ export class AggregationController extends Controller {
             })
           }
           if (ind === 0) {
-            response.write(Object.keys(aggKeys).join(",") + '\n')
+            response.write(`${Object.keys(aggKeys).join(",")}\n`)
           }
-          /* eslint-disable-next-line @typescript-eslint/no-base-to-string */
-          response.write(Object.values(aggKeys).join(",") + '\n')
+          response.write(`${Object.values(aggKeys).join(",")}\n`)
         })
       }
       while (result.aggregations.myBuckets && result.aggregations.myBuckets.buckets.length > 0 ) {
@@ -169,8 +168,7 @@ export class AggregationController extends Controller {
               aggKeys[key] = value
             })
             aggKeys.value = bucketItem.doc_count
-            /* eslint-disable-next-line @typescript-eslint/no-base-to-string */
-            response.write(Object.values(aggKeys).join(",") + '\n')
+            response.write(`${Object.values(aggKeys).join(",")}\n`)
           })
         }
       }

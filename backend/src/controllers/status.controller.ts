@@ -1,7 +1,9 @@
 import { Controller, Get, Route, Response, Tags  } from 'tsoa';
 import { HealthcheckResponse } from '../models/result';
-import { getClient } from '../elasticsearch';
+import { wikidata } from '../wikidata';
+import { buildResultSingle } from '../models/result';
 import loggerStream from '../logger';
+import { getClient } from '../elasticsearch';
 
 interface DecesRecord {
   DATE_DECES: string;
@@ -12,6 +14,16 @@ let uniqRecordsCount: number;
 let lastDataset: string;
 let lastRecordDate: string;
 let updateDate: string;
+let todayDeces: any[];
+
+const log = (json:any) => {
+  loggerStream.write(JSON.stringify({
+    "backend": {
+      "server-date": new Date(Date.now()).toISOString(),
+      ...json
+    }
+  }));
+}
 
 /**
  * @swagger
@@ -85,12 +97,19 @@ export class StatusController extends Controller {
         }
       }
 
+      if (! todayDeces) {
+        const today = new Date().toISOString().split('T')[0].replaceAll("-","")
+        todayDeces = await resetTodayDeces(today);
+      }
+
+
       return {
         backend: process.env.APP_VERSION,
         uniqRecordsCount,
         lastRecordDate,
         lastDataset,
-        updateDate
+        updateDate,
+        todayDeces
       };
     } catch (error) {
       loggerStream.write(JSON.stringify({
@@ -107,3 +126,48 @@ export class StatusController extends Controller {
     }
   }
 }
+
+export const resetTodayDeces = async (day: string): Promise<any[]> => {
+  try {
+    const client = getClient();
+    const response = await client.search({
+              index: 'deces',
+              body: {
+                query: {
+                  match: {
+                    DATE_DECES: day,
+                  }
+                },
+                size: 3
+              } as any
+            });
+    const records = response.hits.hits.filter((item: any) => item._id in wikidata)
+    if (records.length > 0) {
+      return records.map((item: any) => buildResultSingle(item))
+    } else {
+      return []
+    }
+  } catch (error) {
+    log({resetTodayDecesError: error})
+    return [];
+  }
+}
+
+const resetAtMidnight = () => {
+    const now = new Date();
+    const night = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate() + 1,
+        0, 0, 0
+    );
+    const msToMidnight = night.getTime() - now.getTime();
+
+    setTimeout(async () => {
+        const today = new Date().toISOString().split('T')[0].replaceAll("-","")
+        todayDeces = await resetTodayDeces(today);
+        resetAtMidnight();
+    }, msToMidnight);
+}
+
+resetAtMidnight();
