@@ -6,6 +6,7 @@ import { RequestInput } from './models/requestInput';
 import { buildRequest } from './buildRequest';
 import { runBulkRequest } from './runRequest';
 import { sendJobUpdate } from './mail';
+import { sendWebhook } from './webhook';
 import { buildResultSingle, ResultRawES } from './models/result';
 import { scoreResults } from './score';
 import { ScoreParams } from './models/entities'
@@ -198,10 +199,16 @@ export const processCsv =  async (job: Job<any>, jobFile: JobInput): Promise<any
     })
     .pipe(processStream)
     .on('error', (e: any) => {
-      log({matchingProcessingError: e.toString(), jobId})
+      log({
+        matchingProcessingError: e.message || e.toString(),
+        errorStack: e.stack,
+        errorName: e.name,
+        errorMeta: e.meta ? JSON.stringify(e.meta) : undefined,
+        jobId
+      });
       readStream.close()
       stopJob.push(job.id);
-      stopJobReason.push({id: job.id, msg: e.toString()})
+      stopJobReason.push({id: job.id, msg: e.message || e.toString()})
     })
     .pipe(jsonStringStream)
     .on('error', (e: any) => log({stringifyProcessingError: e.toString(), jobId}))
@@ -224,30 +231,38 @@ export const processCsv =  async (job: Job<any>, jobFile: JobInput): Promise<any
 }
 
 export const processChunk = async (chunk: any[], candidateNumber: number, params: ScoreParams): Promise<any[]> => {
-  const bulkRequest = chunk.map((row: any) => { // TODO: type
+  const bulkRequest = {searches: chunk.map((row: any) => {
     const requestInput = new RequestInput({...row, dateFormat: params.dateFormatA});
-    return [JSON.stringify({index: "deces"}), JSON.stringify(buildRequest(requestInput))];
-  })
-  const msearchRequest = bulkRequest.map((x: any) => x.join('\n\r')).join('\n\r') + '\n';
-  const result =  await timerRunBulkRequest(msearchRequest);
-  if (result.data.responses.length > 0) {
-    return result.data.responses.map((item: ResultRawES, idx: number) => {
-      if (item.hits.hits.length > 0) {
-        const scoredResults = scoreResults(chunk[idx], item.hits.hits.map(buildResultSingle), {...params})
-        if (scoredResults && scoredResults.length > 0) {
-          const selectedCanditates = scoredResults.slice(0, candidateNumber)
-          return selectedCanditates.map((selectedCanditate: any) => {
-            return {...chunk[idx], ...selectedCanditate}
-          })
+    return [{index: "deces"}, buildRequest(requestInput)];
+  }).flat()}
+
+  try {
+    const result =  await timerRunBulkRequest(bulkRequest);
+    if (result && result.responses && result.responses.length > 0) {
+      return result.responses.map((item: ResultRawES, idx: number) => {
+        if (item.hits.hits.length > 0) {
+          const scoredResults = scoreResults(chunk[idx], item.hits.hits.map(buildResultSingle), {...params})
+          if (scoredResults && scoredResults.length > 0) {
+            const selectedCanditates = scoredResults.slice(0, candidateNumber)
+            return selectedCanditates.map((selectedCanditate: any) => {
+              return {...chunk[idx], ...selectedCanditate}
+            })
+          } else {
+            return [{...chunk[idx]}]
+          }
         } else {
           return [{...chunk[idx]}]
         }
-      } else {
-        return [{...chunk[idx]}]
-      }
-    })
-  } else {
-    return chunk
+      })
+    } else {
+      return chunk.map(row => [{...row}]);
+    }
+  } catch (error) {
+    log({
+      processChunkError: error.message || error.toString(),
+      errorStack: error.stack,
+    });
+    throw error;
   }
 }
 
@@ -429,11 +444,24 @@ interface Options {
 
 workerJobs.on('completed', async (job: Job) => {
     await sendJobUpdate(job.data.user, "L'appariement est terminé", job.data.randomKey);
+    if (job.data.webhook) {
+      await sendWebhook(job.data.webhook, 'completed', job.data.randomKey);
+    }
     if (!stopJob.includes(job.id)) {
       setTimeout(async () => {
         fs.unlink(`${process.env.JOBS}/${job.id}.out.enc`, (err: Error) => {if (err) log({unlinkOutputDeleteError: err});});
         await sendJobUpdate(job.data.user, "Le fichier a été supprimé", job.data.randomKey);
+        if (job.data.webhook) {
+          await sendWebhook(job.data.webhook, 'deleted', job.data.randomKey);
+        }
       }, Number(job.data.tmpfilePersistence || "28800000")) // Delete results after 8 hour
+    }
+});
+
+workerJobs.on('failed', async (job: Job) => {
+    await sendJobUpdate(job.data.user, "Le traitement a échoué", job.data.randomKey);
+    if (job.data.webhook) {
+      await sendWebhook(job.data.webhook, 'failed', job.data.randomKey);
     }
 });
 
@@ -480,6 +508,9 @@ export const csvHandle = async (request: Request, options: Options): Promise<any
       {jobId, priority: Math.round(options.totalRows/1000)+1}
     )
     await sendJobUpdate(options.user, "L'appariement a bien commencé", options.randomKey);
+    if (options.webhook) {
+      await sendWebhook(options.webhook, 'started', options.randomKey);
+    }
     return {msg: 'started', id: options.randomKey};
   } else {
     request.res.status(429).send({msg: `There is already ${jobsUser.length} running or waiting jobs`});
@@ -688,6 +719,7 @@ export const prettyString = (json: Json|Json[]|number|string): string => {
   }
   if (typeof(json) === 'object') {
     if (Array.isArray(json)) {
+      /* eslint-disable-next-line @typescript-eslint/no-base-to-string */
       return json.join(', ');
     }
     return JSON.stringify(json);

@@ -18,6 +18,7 @@ import "./controllers/aggregation.controller";
 import "./controllers/status.controller";
 import "./controllers/job.controller";
 import "./controllers/auth.controller";
+import "./controllers/webhook.controller";
 
 const log = (json:any) => {
   loggerStream.write(JSON.stringify({
