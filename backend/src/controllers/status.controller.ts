@@ -3,7 +3,6 @@ import { HealthcheckResponse } from '../models/result';
 import { wikidata } from '../wikidata';
 import { buildResultSingle } from '../models/result';
 import loggerStream from '../logger';
-import axios from 'axios';
 import { getClient } from '../elasticsearch';
 
 interface DecesRecord {
@@ -15,7 +14,7 @@ let uniqRecordsCount: number;
 let lastDataset: string;
 let lastRecordDate: string;
 let updateDate: string;
-let todayDeces: Array<any>;
+let todayDeces: any[];
 
 const log = (json:any) => {
   loggerStream.write(JSON.stringify({
@@ -98,12 +97,19 @@ export class StatusController extends Controller {
         }
       }
 
+      if (! todayDeces) {
+        const today = new Date().toISOString().split('T')[0].replaceAll("-","")
+        todayDeces = await resetTodayDeces(today);
+      }
+
+
       return {
         backend: process.env.APP_VERSION,
         uniqRecordsCount,
         lastRecordDate,
         lastDataset,
-        updateDate
+        updateDate,
+        todayDeces
       };
     } catch (error) {
       loggerStream.write(JSON.stringify({
@@ -121,18 +127,21 @@ export class StatusController extends Controller {
   }
 }
 
-const resetTodayDeces = async (): Promise<Array<any>> => {
+export const resetTodayDeces = async (day: string): Promise<any[]> => {
   try {
-    const today = new Date().toISOString().split('T')[0].replaceAll("-","")
-    const response = await axios({
-      url: `http://elasticsearch:9200/deces/_search`,
-      params: {
-        q: `DATE_DECES:${today}`,
-        size: 3
-      },
-      timeout: 5000
-    });
-    const records = response.data.hits.hits.filter((item: any) => item._id in wikidata)
+    const client = getClient();
+    const response = await client.search({
+              index: 'deces',
+              body: {
+                query: {
+                  match: {
+                    DATE_DECES: day,
+                  }
+                },
+                size: 3
+              } as any
+            });
+    const records = response.hits.hits.filter((item: any) => item._id in wikidata)
     if (records.length > 0) {
       return records.map((item: any) => buildResultSingle(item))
     } else {
@@ -154,8 +163,9 @@ const resetAtMidnight = () => {
     );
     const msToMidnight = night.getTime() - now.getTime();
 
-    setTimeout(() => {
-        resetTodayDeces();
+    setTimeout(async () => {
+        const today = new Date().toISOString().split('T')[0].replaceAll("-","")
+        todayDeces = await resetTodayDeces(today);
         resetAtMidnight();
     }, msToMidnight);
 }
