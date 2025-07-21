@@ -19,7 +19,7 @@
   "dependencies": {
     "@elastic/elasticsearch": "8.18.2",
     "@jollie/soundex-fr": "^1.0.8",
-    "axios": "^1.7.7",
+    "axios": "^1.10.0",
     "@braintree/sanitize-url": "^6.0.3",
     "bullmq": "^5.21.2",
     "damlev": "^1.0.0",
