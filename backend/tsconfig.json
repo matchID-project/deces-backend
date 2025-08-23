@@ -5,6 +5,7 @@
         "module": "commonjs",
         "esModuleInterop": true,
         "allowSyntheticDefaultImports": true,
+        "types": ["node"],
         "target": "es2021",
         "noImplicitAny": false,
         "moduleResolution": "node",

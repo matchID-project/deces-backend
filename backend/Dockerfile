@@ -62,7 +62,7 @@ VOLUME /${app_path}/dist
 VOLUME /${app_path}/tests
 VOLUME /${app_path}/data
 
-COPY tsconfig.json ./
+COPY tsconfig*.json ./
 COPY eslint.config.mjs ./
 
 # Expose the listening port of your app
@@ -85,7 +85,7 @@ RUN npm run build --verbose && tar czvf dist.tar.gz dist
 ###############################
 # Step 4: "production" target #
 ###############################
-FROM node:20-alpine3.18 AS production
+FROM node:20-alpine3.22 AS production
 ARG app_path
 ARG port
 ARG app_ver
