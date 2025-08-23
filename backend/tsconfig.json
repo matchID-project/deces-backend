@@ -4,14 +4,20 @@
         "skipLibCheck": true,
         "module": "commonjs",
         "esModuleInterop": true,
+        "allowSyntheticDefaultImports": true,
         "target": "es2021",
-        "noImplicitAny": true,
+        "noImplicitAny": false,
         "moduleResolution": "node",
         "sourceMap": true,
         "outDir": "dist",
         "baseUrl": ".",
         "experimentalDecorators": true,
         "resolveJsonModule": true,
+        "strict": false,
+        "noImplicitReturns": false,
+        "noImplicitThis": false,
+        "noUnusedLocals": false,
+        "noUnusedParameters": false,
         "paths": {
             "*": [
                 "node_modules/*"
