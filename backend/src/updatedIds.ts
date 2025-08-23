@@ -4,6 +4,7 @@ import { runBulkRequest } from './runRequest';
 import { buildRequest } from './buildRequest';
 import { buildResultSingle, Result } from './models/result';
 import { RequestInput } from './models/requestInput';
+import { estypes } from '@elastic/elasticsearch';
 
 const walk = (directory: string): string[]=> {
   const fileList: string[] = [];
@@ -70,7 +71,7 @@ export const getAuthorUpdates = (author: string):any => {
   return updates;
 }
 
-export const resultsFromUpdates = async (updates: any): Promise<Result> => {
+export const resultsFromUpdates = async (updates: any): Promise<estypes.MsearchResponse['responses']> => {
   const bulkRequest = {searches: Object.keys(updates).map((id: any) => {
     const requestInput = new RequestInput({id});
     return [{index: "deces"}, buildRequest(requestInput)];

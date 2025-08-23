@@ -106,6 +106,7 @@ export PERF=${BACKEND}/tests/performance
 export PERF_SCENARIO_V1=${PERF}/scenarios/test-backend-v1.yml
 export PERF_REPORTS=${PERF}/reports/
 export PERF_NAMES=${BACKEND}/tests/clients_test.csv
+export PERF_UTILS=${PERF}/scenarios/utils
 
 -include ${APP_PATH}/${GIT_TOOLS}/artifacts.SCW
 export SCW_REGION?=fr-par
@@ -334,7 +335,6 @@ backend/tests/clients_test.csv:
 
 # test artillery
 test-perf-v1:
-	sed -i -E "s/;/,/g"  backend/tests/clients_test.csv
 	make -C ${APP_PATH}/${GIT_TOOLS} test-api-generic PERF_SCENARIO=${PERF_SCENARIO_V1} PERF_TEST_ENV=api-perf PERF_REPORTS=${PERF_REPORTS} DC_NETWORK=${DC_NETWORK} PERF_NAMES=${PERF_NAMES};
 
 backend-perf-clinic:

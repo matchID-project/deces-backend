@@ -460,14 +460,14 @@ const buildAggregation = (aggs: string[], aggsSize: number, afterKey: number): a
       }
       return aggregation
     })
-    aggregationRequest.myBuckets = {
+    aggregationRequest.bucketResults = {
       composite: {
         size: 1000,
         sources: aggregationArray
       }
     }
     if (afterKey !== undefined) {
-      aggregationRequest.myBuckets.composite.after = afterKey
+      aggregationRequest.bucketResults.composite.after = afterKey
     } else {
       aggs.map((agg: string) => {
         aggregationRequest[`${agg}_count`] = {
