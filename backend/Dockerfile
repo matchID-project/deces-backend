@@ -1,7 +1,7 @@
 #######################
 # Step 1: Base target #
 #######################
-FROM node:20-slim AS base
+FROM node:20-alpine3.22 AS base
 ARG http_proxy
 ARG https_proxy
 ARG no_proxy
@@ -14,10 +14,9 @@ ARG app_path
 # Base dir /app
 WORKDIR /$app_path
 
-# update debian w/proxy & mirror
-RUN echo "$http_proxy $no_proxy" && set -x && [ -z "$MIRROR_DEBIAN" ] || \
-   sed -i.orig -e "s|http://deb.debian.org\([^[:space:]]*\)|$MIRROR_DEBIAN/debian9|g ; s|http://security.debian.org\([^[:space:]]*\)|$MIRROR_DEBIAN/debian9-security|g" /etc/apt/sources.list && \
-   apt-get update -yq && apt-get -y upgrade && apt-get install -y curl
+# update alpine w/proxy & mirror
+RUN echo "$http_proxy $no_proxy" && set -x && \
+   apk update && apk upgrade && apk add --no-cache curl
 
 # use proxy & private npm registry
 RUN if [ ! -z "$http_proxy" ] ; then \
@@ -63,7 +62,7 @@ VOLUME /${app_path}/dist
 VOLUME /${app_path}/tests
 VOLUME /${app_path}/data
 
-COPY tsconfig.json ./
+COPY tsconfig*.json ./
 COPY eslint.config.mjs ./
 
 # Expose the listening port of your app
@@ -86,7 +85,7 @@ RUN npm run build --verbose && tar czvf dist.tar.gz dist
 ###############################
 # Step 4: "production" target #
 ###############################
-FROM node:20-alpine3.18 AS production
+FROM node:20-alpine3.22 AS production
 ARG app_path
 ARG port
 ARG app_ver
