@@ -1,4 +1,12 @@
 config:
+  plugins:
+    expect:
+      reportFailuresAsErrors: true
+      outputFormat: prettyError
+    ensure:
+      maxErrorRate: 1
+      max: 500
+      p95: 200
   environments:
     api-perf:
       target: "http://backend:8080"
@@ -18,24 +26,37 @@ config:
       payload:
         - path: names.csv
           fields:
-            - firstName
+            - lastName
             - id
             - country
             - commune
             - birthDate
-            - lastName
+            - firstName
           order: random
-          # the following doesn't work
           skipHeader: true
-          #delimiter: ";"
+          delimiter: ";"
 scenarios:
   - name: backend-v1
     flow:
     - get:
         url: "/deces/api/v1/search?firstName={{ firstName }}&lastName={{ lastName }}&birthDate={{ birthDate }}&fuzzy=false"
+        expect:
+            - statusCode: 200
+            - contentType: json
+        capture:
+          - json: '$'
+            as: resultGet
+    #- log: "Res GET: {{ resultGet }}"
     - post:
         url: /deces/api/v1/search
         json:
           firstName: "{{ firstName }}"
           lastName: "{{ lastName }}"
           birthDate: "{{ birthDate }}"
+        capture:
+          - json: '$'
+            as: resultPost
+        expect:
+            - statusCode: 200
+            - contentType: json
+    #- log: "Res POST: {{ resultPost }}"

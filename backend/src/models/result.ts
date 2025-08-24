@@ -148,10 +148,20 @@ export interface ResultRawES {
     hits:  ResultRawHit[]
   };
   aggregations?: {
+    [key: string]: any;
     'doc_count_error_upper_bound': number;
     'sum_other_doc_count': number;
-    buckets: any[];
+    bucketResults: {
+      buckets:  {
+        key: string;
+        doc_count: number;
+      }[];
+      after_key: number;
+    }
   }
+  status?: number;
+  statusText?: string;
+  error?: boolean;
 }
 
 export interface ResultRawHit {
@@ -241,7 +251,8 @@ export const buildResult = (result: ResultRawES, requestInput: RequestInput): Re
 
 }
 
-export const buildResultSingle = (item: ResultRawHit): Person => {
+export const buildResultSingle = (item: ResultRawHit): Person|undefined => {
+  if (item === undefined) return {}
   const result: Person = {
     score: item._score,
     // source: dataCatalog[item._source.SOURCE],

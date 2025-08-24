@@ -5,14 +5,14 @@ import express from 'express';
 import { writeFile, access, mkdir, createReadStream } from 'fs';
 import { promisify } from 'util';
 import { resultsHeader, jsonPath, prettyString } from '../processStream';
-import { runRequest, runBulkRequest } from '../runRequest';
+import { runRequest } from '../runRequest';
 import { buildRequest } from '../buildRequest';
 import { RequestInput, RequestBody } from '../models/requestInput';
 import { StrAndNumber, Modification, UpdateRequest, UpdateUserRequest, Review, ReviewsStringified, statusAuthMap, PersonCompare } from '../models/entities';
-import { buildResult, buildResultSingle, Result, ErrorResponse } from '../models/result';
+import { buildResult, Result, ErrorResponse } from '../models/result';
 import { format } from '@fast-csv/format';
 import { ScoreResult, personFromRequest } from '../score';
-import { updatedFields } from '../updatedIds';
+import { getAllUpdates, getAuthorUpdates, updatedFields, resultsFromUpdates, cleanRawUpdates } from '../updatedIds';
 import { sendUpdateConfirmation } from '../mail';
 // import getDataGouvCatalog from '../getDataGouvCatalog';
 
@@ -383,44 +383,10 @@ export class SearchController extends Controller {
   public async updateList(@Request() request: express.Request): Promise<any>  {
     const author = (request as any).user && (request as any).user.user
     const isAdmin = (request as any).user && (request as any).user.scopes && (request as any).user.scopes.includes('admin');
-    let updates:any = {};
-    if (isAdmin) {
-      updates = {...updatedFields};
-    } else {
-      Object.keys(updatedFields).forEach((id:any) => {
-        let filter = false;
-        const modifications = updatedFields[id].map((m:any) => {
-          const modif:any = {...m}
-          if (modif.author !== author) {
-            modif.author = modif.author.substring(0,2)
-              + '...' + modif.author.replace(/@.*/,'').substring(modif.author.replace(/@.*/,'').length-2)
-              + '@' + modif.author.replace(/.*@/,'');
-            modif.message = undefined;
-            modif.review = undefined;
-          } else {
-            filter=true
-          }
-          return modif;
-        });
-        if (filter) {
-          updates[id] = modifications;
-        }
-      })
-    }
-    const bulkRequest = {
-      searches: Object.keys(updates).map((id: any) => [
-        { index: "deces" },
-        buildRequest(new RequestInput({id}))
-      ]).flat()
-    };
-    const result = await runBulkRequest(bulkRequest);
-    return result.responses.map((r:any) => buildResultSingle(r.hits.hits[0]))
-      .map((r:any) => {
-        delete r.score;
-        delete r.scores;
-        r.modifications = updates[r.id];
-        return r;
-      });
+    const updates:any = isAdmin ? getAllUpdates() : getAuthorUpdates(author);
+    if (Object.keys(updates).length === 0) return []
+    const rawUpdates = await resultsFromUpdates(updates);
+    return await cleanRawUpdates(rawUpdates, updates);
   }
 
   private async handleFile(request: express.Request): Promise<any> {
