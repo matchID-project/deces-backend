@@ -18,7 +18,7 @@
   "license": "ISC",
   "dependencies": {
     "@braintree/sanitize-url": "^6.0.3",
-    "@elastic/elasticsearch": "8.18.2",
+    "@elastic/elasticsearch": "8.19.0",
     "@jollie/soundex-fr": "^1.0.8",
     "axios": "^1.7.7",
     "bullmq": "^5.21.2",
