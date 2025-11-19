@@ -23,6 +23,8 @@ export DC_SMTP=${DC} -f ${DC_DIR}/docker-compose-smtp.yml
 # elasticsearch defaut configuration
 export ES_HOST = elasticsearch
 export ES_PORT = 9200
+export ES_USER = elastic
+export ES_PWD = 1234
 export ES_TIMEOUT = 60
 export ES_RESTORE_TIMEOUT = 600
 export ES_INDEX = deces
