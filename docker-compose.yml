@@ -53,6 +53,8 @@ services:
       - DATAGOUV_PROXY_PATH=${DATAGOUV_PROXY_PATH}
       - ES_URL=${ES_HOST}:${ES_PORT}
       - ES_INDEX=${ES_INDEX}
+      - ES_USER=${ES_USER}
+      - ES_PWD=${ES_PWD}
       - COMMUNES_JSON=data/communes.json
       - DISPOSABLE_MAIL=data/disposable-mail.txt
       - DB_JSON=data/userDB.json
