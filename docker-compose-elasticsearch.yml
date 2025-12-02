@@ -27,7 +27,7 @@ services:
       - https_proxy
       - no_proxy
       - discovery.type=single-node
-      - xpack.security.enabled=true
+      - xpack.security.enabled=false
       - LOG4J_FORMAT_MSG_NO_LOOKUPS=true
     ulimits:
       memlock:
