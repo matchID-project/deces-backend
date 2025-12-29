@@ -805,7 +805,7 @@ export const scoreResults = (request: RequestBody, results: Person[], params: Sc
                     result.scores = new ScoreResult(personFromRequest(request), result, params);
                     const perfectScores =
                         ((result.scores.name && result.scores.name.score >= perfectScoreThreshold) ? 1 : 0) +
-                        ((result.scores.birtDate && result.scores.birthDate.score === 1) ? 1 : 0) +
+                        ((result.scores.birthDate && result.scores.birthDate.score === 1) ? 1 : 0) +
                         ((result.scores.birthLocation && result.scores.birthLocation.score >= perfectScoreThreshold) ? 1 : 0)
                     result.scores.score =  round(scoreReduce(result.scores, true) ** (requestMeaningArgsNumber/(0.5 * perfectScores + Object.keys(result.scores).length || 1)));
                 } catch(err) {
