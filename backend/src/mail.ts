@@ -60,7 +60,8 @@ const generateOTP = (email: string) => {
         tmp += digits[Math.floor(Math.random() * 10)];
     }
     OTP[email] = tmp;
-    setTimeout(() => {delete OTP[email]}, 600000);
+    // Durée de validité du code (6h)
+    setTimeout(() => {delete OTP[email]}, 6 * 60 * 60 * 1000);
 }
 
 export const sendOTP = async (email: string): Promise<sendOTPResponse> => {
@@ -76,7 +77,7 @@ export const sendOTP = async (email: string): Promise<sendOTPResponse> => {
         const hash = crypto.createHash('sha256').update(email).digest('hex').substring(0, 16)
         await transporter.sendMail({
             subject: `Validez votre identité - ${process.env.APP_DNS} - ${hash}`,
-            text: `Votre code, valide 10 minutes: ${OTP[email] as string}`,
+            text: `Votre code, valide 6 heures: ${OTP[email] as string}`,
             from: process.env.API_EMAIL,
             to: `${email}`,
         } as any);
