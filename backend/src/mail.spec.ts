@@ -32,9 +32,16 @@ describe('mail.ts - Sending emails', () => {
   }, 10000);
 
   it('Send test email fake smtp server', async () => {
-    const res = await sendOTP("recipient@example.com")
+    let res: any;
+    res = await sendOTP("recipient@example.com")
     // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     expect(res.valid).to.be.true;
+
+    // Test rate limit: second send should fail with rate limit message
+    res = await sendOTP("recipient@example.com")
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+    expect(res.valid).to.be.false;
+    expect(res.msg).to.include('attendre');
   })
 
   it('Send test email fake smtp server to a disposable address', async () => {
