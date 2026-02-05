@@ -40,7 +40,7 @@
     "swagger-ui-svelte": "^0.0.13",
     "tsoa": "^6.5.1",
     "util": "^0.12.5",
-    "winston": "^3.15.0"
+    "winston": "^3.19.0"
   },
   "devDependencies": {
     "@types/express": "^5.0.0",
