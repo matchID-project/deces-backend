@@ -1,11 +1,18 @@
 import { Client, ClientOptions } from '@elastic/elasticsearch';
+// Elasticsearch connection variables
+const USER_NAME = process.env.ES_USER || 'elastic';
+const USER_PWD = process.env.ES_PWD || '1234';
+const HOST = process.env.ES_HOST || 'elasticsearch';
+const PORT = process.env.ES_PORT || '9200';
 import loggerStream from './logger';
 
-const config: ClientOptions = {
-  node: 'http://elasticsearch:9200',
-  requestTimeout: 30000,
-  maxRetries: 3
-};
+ const config: ClientOptions = {
+   node: USER_NAME && USER_PWD
+    ? `http://${encodeURIComponent(USER_NAME)}:${encodeURIComponent(USER_PWD)}@${HOST}:${PORT}`
+    : `http://${HOST}:${PORT}`,
+   requestTimeout: 30000,
+   maxRetries: 3
+ };
 
 let esClientInstance: Client = null;
 
